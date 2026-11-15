@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2pdf.js for PDF Statement Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Supabase JS Client for Real-Time Multi-User Cloud DB Sync -->
+    <!-- Supabase JS Client for Real-Time Multi-User Cloud DB & Auth Sync -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -56,9 +56,11 @@
         .forgot-password-link { font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 500; }
         .forgot-password-link:hover { text-decoration: underline; }
         .modal-form input[type="text"],
-        .modal-form input[type="password"] { width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background-color: #f8fafc; color: #0f172a; }
+        .modal-form input[type="password"],
+        .modal-form input[type="email"] { width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background-color: #f8fafc; color: #0f172a; }
         .modal-form input[type="text"]:focus,
-        .modal-form input[type="password"]:focus { border-color: #0284c7; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+        .modal-form input[type="password"]:focus,
+        .modal-form input[type="email"]:focus { border-color: #0284c7; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
 
         /* Checkbox Option */
         .form-options { margin: 1rem 0 1.5rem 0; }
@@ -103,9 +105,11 @@
                 <i class="fa-solid fa-globe text-sky-400"></i>
                 <span id="langLabel">Chinese/English</span>
             </button>
-            <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
-                <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
-            </button>
+            <div id="authNavArea">
+                <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
+                    <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
+                </button>
+            </div>
             <button onclick="switchView('landing')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
                 <i class="fa-solid fa-house mr-1"></i> Hub Portal
             </button>
@@ -754,7 +758,7 @@
         <p class="mt-1">© 2026 SKYMOVER. All rights reserved.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC WITH SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTIONS & GEOFENCE / SMS CONFIGURATION -->
+    <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION & REAL-TIME WEBSOCKET SYNC -->
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
@@ -762,6 +766,7 @@
         let yardPieChartInstance = null;
         let yardBarChartInstance = null;
         let supabaseClient = null;
+        let currentUser = null;
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -769,11 +774,92 @@
         function initSupabase() {
             try {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                updateSyncBadge('connected', 'Cloud DB Real-Time Live Sync Active');
+                updateSyncBadge('connected', 'Cloud DB & Auth Real-Time Live Sync Active');
+                checkActiveAuthSession();
                 fetchCloudData();
                 subscribeToRealtimeChanges();
             } catch(e) {
                 updateSyncBadge('error', 'Cloud Connection Failed');
+            }
+        }
+
+        async function checkActiveAuthSession() {
+            if(!supabaseClient) return;
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if(session && session.user) {
+                    currentUser = session.user;
+                    updateAuthUI(currentUser);
+                }
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    currentUser = session ? session.user : null;
+                    updateAuthUI(currentUser);
+                });
+            } catch(err) {
+                // Auth session check bypassed for local state
+            }
+        }
+
+        function updateAuthUI(user) {
+            const authNavArea = document.getElementById('authNavArea');
+            if(!authNavArea) return;
+            if(user) {
+                authNavArea.innerHTML = `
+                    <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+                        <i class="fa-solid fa-user-check text-emerald-400"></i>
+                        <span class="text-slate-200 font-semibold truncate max-w-[120px]">${user.email}</span>
+                        <button onclick="handleSupabaseSignOut()" class="text-rose-400 hover:text-rose-300 ml-2 font-bold" title="Sign Out">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                authNavArea.innerHTML = `
+                    <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
+                        <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
+                    </button>
+                `;
+            }
+        }
+
+        async function handleSupabaseSignIn(email, password, rememberMe) {
+            if(!supabaseClient) {
+                alert('Supabase client not initialized.');
+                return;
+            }
+            const submitBtn = document.getElementById('signInSubmitBtn');
+            if(submitBtn) { submitBtn.textContent = 'Authenticating...'; submitBtn.disabled = true; }
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if(error) {
+                    alert('Authentication Error: ' + error.message);
+                } else if(data && data.user) {
+                    currentUser = data.user;
+                    updateAuthUI(currentUser);
+                    alert('Successfully signed in as ' + currentUser.email);
+                    closeSkymoverLogin();
+                }
+            } catch(err) {
+                alert('Sign in failed: ' + err.message);
+            } finally {
+                if(submitBtn) { submitBtn.textContent = 'Sign In to Dashboard'; submitBtn.disabled = false; }
+            }
+        }
+
+        async function handleSupabaseSignOut() {
+            if(!supabaseClient) return;
+            try {
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                updateAuthUI(null);
+                alert('Successfully signed out.');
+            } catch(err) {
+                alert('Sign out error: ' + err.message);
             }
         }
 
@@ -2628,7 +2714,7 @@
             csv([['Date','Category','Description','Amount (PHP)'], ...(yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount])], 'SKYMOVER_Yard_Expenses.csv');
         }
 
-        // --- MERGED LOGIN MODAL & DOM INITIALIZATION ---
+        // --- MERGED LOGIN MODAL, SUPABASE AUTH & DOM INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', () => {
             const loginModal = document.getElementById('loginModal');
             const closeLoginModal = document.getElementById('closeLoginModal');
@@ -2669,7 +2755,7 @@
                 }
             });
 
-            // Handle form submission logic
+            // Handle Supabase Auth login form submission
             if(loginForm) {
                 loginForm.addEventListener('submit', (e) => {
                     e.preventDefault();
@@ -2677,12 +2763,7 @@
                     const password = document.getElementById('loginPassword').value;
                     const rememberMe = document.getElementById('rememberMe').checked;
 
-                    // Implement your authentication or Supabase sync login call here
-                    console.log('Authenticating Skymover user:', { email, rememberMe });
-                    
-                    // Mock success response
-                    alert('Login request submitted successfully!');
-                    closeSkymoverLogin();
+                    handleSupabaseSignIn(email, password, rememberMe);
                 });
             }
 
@@ -2707,20 +2788,20 @@
             <!-- Modal Header -->
             <div class="modal-header">
                 <h2>Welcome to Skymover</h2>
-                <p>Sign in to access your operations dashboard</p>
+                <p>Sign in with your Supabase credentials</p>
             </div>
     
-            <!-- Login Form -->
+            <!-- Supabase Auth Login Form -->
             <form id="skymoverLoginForm" class="modal-form">
                 <div class="form-group">
-                    <label for="loginEmail">Email Address or Username</label>
+                    <label for="loginEmail">Email Address</label>
                     <input 
-                        type="text" 
+                        type="email" 
                         id="loginEmail" 
                         name="email" 
-                        placeholder="Enter your email or username" 
+                        placeholder="name@skymover.com" 
                         required 
-                        autocomplete="username"
+                        autocomplete="email"
                     />
                 </div>
     
@@ -2733,7 +2814,7 @@
                         type="password" 
                         id="loginPassword" 
                         name="password" 
-                        placeholder="Enter your password" 
+                        placeholder="••••••••" 
                         required 
                         autocomplete="current-password"
                     />
@@ -2747,7 +2828,7 @@
                     </label>
                 </div>
     
-                <button type="submit" class="skymover-btn-primary">Sign In to Dashboard</button>
+                <button type="submit" id="signInSubmitBtn" class="skymover-btn-primary">Sign In to Dashboard</button>
             </form>
     
             <!-- Modal Footer -->
