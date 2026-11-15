@@ -791,7 +791,7 @@
         async function confirmResetAllDatabases() {
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
             if(pwd !== 'Skymover_Transportation_2026') {
-                if(pwd !== null) alert('❌ Incorrect password. Reset cancelled.');
+                if(pwd !== null) console.log('Incorrect password. Reset cancelled.');
                 return;
             }
 
@@ -837,8 +837,6 @@
             refreshYard();
             renderTransshipmentTable();
             closeSubModule();
-
-            alert('✅ All database records have been successfully reset and synced across all users in real-time!');
         }
 
         // ==========================================
@@ -868,7 +866,6 @@
             saveCloudData();
             document.getElementById('geofenceForm').reset();
             renderConfiguredZones();
-            alert('✅ Geofence zone polygon "' + name + '" successfully configured and synced!');
         }
 
         function renderConfiguredZones() {
@@ -919,7 +916,6 @@
             (db.vehicles || [{id: 'SKV-101'}, {id: 'SKV-102'}]).forEach(v => {
                 sendDriverSms(v.id, customMsg);
             });
-            alert('✅ SMS Dispatch Broadcast sent successfully to all active drivers!');
             closeGeofenceSmsModal();
             refreshDriverSmsInbox();
         }
@@ -941,9 +937,6 @@
             sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe speed and follow terminal protocols.`);
             
             saveCloudData();
-            alert('📡 GPS Geofence Scan Completed!
-
-' + alertMsg);
             
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) {
@@ -1223,7 +1216,8 @@
         }
 
         function submitDriverProofOfDelivery() {
-            alert('Proof of Delivery successfully submitted and synced across Driver Portal, Management Backend, and Cloud DB!');
+            const msg = document.getElementById('uploadSuccessMsg');
+            if(msg) msg.classList.remove('hidden');
         }
 
         function openNewDriverRegistrationModal() {
@@ -1246,7 +1240,6 @@
             db.drivers.push({ name, license, phone, truck, status: 'Available', rating: '5.0 ★' });
             saveCloudData();
             closeNewDriverRegistrationModal();
-            alert('New driver ' + name + ' registered successfully and saved to Unified Database!');
             document.getElementById('driverRegForm').reset();
         }
 
@@ -1294,7 +1287,7 @@
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">Ready</div></div>
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Audit Photo Queue</span><div class="text-lg font-bold text-amber-400 mt-1">${(db.uploads || []).length} Attached</div></div>
                         </div>
-                        <button onclick="alert('LogiLENS scanner initiated: All active yard & driver photo attachments verified.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
+                        <button onclick="console.log('LogiLENS scanner initiated.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
                     </div>
                 `;
             } else if(tab === 'track') {
@@ -1472,13 +1465,11 @@
                 try {
                     let d = JSON.parse(r.result);
                     if(!d.managementBackend || !d.emptyYard) throw 0;
-                    if(!confirm('Restore enterprise backup? Current local backend and yard records will be replaced.')) return;
                     db = d.managementBackend;
                     yardDb = d.emptyYard;
                     saveCloudData();
-                    alert('Unified Enterprise Backup successfully restored!');
                     closeSubModule();
-                } catch(x) { alert('Invalid Skymover backup file format.'); }
+                } catch(x) { console.log('Invalid backup format.'); }
                 e.target.value = '';
             };
             r.readAsText(f);
@@ -1625,7 +1616,6 @@
                             <i class="fa-solid fa-file-pdf"></i> Download PDF Report
                         </button>
                         <button onclick="exportFullDetailedReportCSV()" class="bg-purple-600 text-white text-xs font-semibold px-4 py-2 rounded-xl">Export Merged CSV</button>
-                        <button onclick="window.print()" class="bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-xl">Print Report</button>
                     </div>
                 </div>
                 <div id="extractionReportPdfContent" class="space-y-6 text-xs text-slate-900 bg-white p-4 rounded-xl shadow">
@@ -1643,7 +1633,7 @@
 
         function downloadExtractionReportPDF() {
             const element = document.getElementById('extractionReportPdfContent');
-            if(!element) return alert('Report content not found.');
+            if(!element) return;
 
             const opt = {
                 margin:       10,
@@ -1710,7 +1700,6 @@
             renderTransshipmentTable();
             const form = document.getElementById('transForm');
             if(form) form.reset();
-            alert('Transshipment order successfully saved and synced across all users.');
         }
 
         function acceptTransshipment(idx) {
@@ -1726,7 +1715,6 @@
             sendDriverSms('SKV-101', `New Waybill Accepted: Transport container ${db.transshipments[idx].container} from ${db.transshipments[idx].origin} to Valenzuela Depot.`);
             saveCloudData();
             renderTransshipmentTable();
-            alert('Transshipment order accepted! Data synchronized to Management Backend and Driver Portal.');
         }
 
         function rejectTransshipment(idx) {
@@ -2172,9 +2160,7 @@
         }
 
         function exportChartAsImage() {
-            if(!trendChartInstance) {
-                return alert('Chart is not initialized yet.');
-            }
+            if(!trendChartInstance) return;
             const imageURL = trendChartInstance.toBase64Image();
             const link = document.createElement('a');
             link.href = imageURL;
@@ -2187,7 +2173,7 @@
         function downloadMonthlyStatementPDF() {
             const selectEl = document.getElementById('statementMonthSelect');
             const targetMonth = selectEl ? selectEl.value : '';
-            if(!targetMonth) return alert('Please select a valid month to download statement.');
+            if(!targetMonth) return;
 
             const revs = (yardDb.revenues || []).filter(r => r.date && r.date.startsWith(targetMonth));
             const exps = (yardDb.expenses || []).filter(e => e.date && e.date.startsWith(targetMonth));
@@ -2305,7 +2291,6 @@
             });
             saveCloudData();
             form.reset();
-            alert('Yard expense successfully recorded and synced across cloud database.');
             renderYardExpenses();
         }
 
@@ -2351,7 +2336,7 @@
             let f = Object.fromEntries(new FormData(e.target));
             f.number = f.number.trim().toUpperCase();
             if(yardDb.containers.some(c => c.number.toUpperCase() === f.number && c.status !== 'Released')) {
-                return alert('This container is already recorded inside the yard.');
+                return;
             }
             let c = {
                 ...f, 
@@ -2396,8 +2381,6 @@
             saveCloudData();
             e.target.reset();
             clearGateInPhotos();
-            
-            alert('Yard Gate-In saved successfully and synced across all users in real-time!');
             switchYardTab('yardInventory');
         }
 
@@ -2405,15 +2388,11 @@
             e.preventDefault();
             let f = Object.fromEntries(new FormData(e.target));
             let c = yardDb.containers.find(x => x.id === f.container);
-            if(!c) return alert('Select a valid container.');
+            if(!c) return;
 
             const storageDays = parseInt(document.getElementById('calcStorageDays').value) || 0;
             const totalAmountStr = document.getElementById('calcTotalAmount').value.replace(/,/g, '');
             const totalAmountNum = parseFloat(totalAmountStr) || 0;
-
-            if(!confirm('Confirm gate-out for ' + c.number + '?
-Storage Days: ' + storageDays + '
-Total Billing Amount: ₱' + document.getElementById('calcTotalAmount').value)) return;
             
             if(c.vanInStats === 'UNPAID') {
                 c.vanInStats = 'PAID';
@@ -2469,8 +2448,6 @@ Total Billing Amount: ₱' + document.getElementById('calcTotalAmount').value)) 
             saveCloudData();
             e.target.reset();
             clearGateOutPhotos();
-            
-            alert('Yard Gate-Out successfully recorded and synced to cloud database.');
             switchYardTab('yardInventory');
         }
 
@@ -2480,7 +2457,7 @@ Total Billing Amount: ₱' + document.getElementById('calcTotalAmount').value)) 
             let s = prompt('Enter new status: Available, Reserved, or Hold', c.status);
             if(s === null) return;
             let m = {available:'Available', reserved:'Reserved', hold:'Hold'}[s.trim().toLowerCase()];
-            if(!m) return alert('Use Available, Reserved, or Hold.');
+            if(!m) return;
             c.status = m;
             saveCloudData();
         }
