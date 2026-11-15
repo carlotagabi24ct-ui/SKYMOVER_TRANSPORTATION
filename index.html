@@ -628,13 +628,77 @@
         </div>
     </div>
 
+    <!-- ADVANCED GEOFENCE & SMS TEMPLATE MODAL -->
+    <div id="geofenceSmsConfigModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl space-y-6">
+            <button onclick="closeGeofenceSmsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-bold text-emerald-400"><i class="fa-solid fa-route mr-2"></i> Geofence Polygons & SMS Dispatch Configuration</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left: Geofence Polygon Builder -->
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h4 class="font-bold text-xs text-sky-300 flex items-center"><i class="fa-solid fa-draw-polygon mr-1"></i> Add / Configure Geofence Zone</h4>
+                    <form id="geofenceForm" onsubmit="handleSaveGeofenceZone(event)" class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-300 mb-1">Zone Name *</label>
+                            <input type="text" id="geoName" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Subic Bay Freeport Zone">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-300 mb-1">Center Latitude *</label>
+                                <input type="text" id="geoLat" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="14.8291">
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1">Center Longitude *</label>
+                                <input type="text" id="geoLng" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="120.2828">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-1">Radius / Boundary Span (km) *</label>
+                            <input type="number" id="geoRadius" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="5">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition">Save Geofence Polygon</button>
+                    </form>
+                    <div class="pt-2 border-t border-slate-800">
+                        <div class="text-[11px] font-bold text-slate-300 mb-1">Configured Active Zones:</div>
+                        <div id="configuredZonesList" class="max-h-28 overflow-y-auto space-y-1 text-[11px] font-mono text-slate-400"></div>
+                    </div>
+                </div>
+
+                <!-- Right: SMS Dispatch Templates -->
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h4 class="font-bold text-xs text-purple-300 flex items-center"><i class="fa-solid fa-message mr-1"></i> SMS Dispatch Template Engine</h4>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-300 mb-1">Select Preset Template</label>
+                            <select id="smsTemplateSelect" onchange="loadSmsTemplate()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                                <option value="waybill">Waybill Dispatch Assignment</option>
+                                <option value="geofence">Geofence Boundary Alert</option>
+                                <option value="clearance">Terminal Gate Clearance</option>
+                                <option value="speed">Safety & Speed Warning</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-1">Template Content / Custom Message *</label>
+                            <textarea id="smsTemplateText" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-[11px] font-mono"></textarea>
+                        </div>
+                        <button onclick="broadcastCustomTemplateSms()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg transition">Broadcast Template to All Drivers</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeGeofenceSmsModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">Close Configuration</button>
+            </div>
+        </div>
+    </div>
+
     <!-- FOOTER -->
     <footer class="w-full text-center py-6 border-t border-slate-800 bg-slate-950/80 text-[11px] text-slate-400">
         <p>Skymover Transport Corporation • Container shipping services & Empty Yard in Manila, Philippines</p>
         <p class="mt-1">© 2026 SKYMOVER. All rights reserved.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC WITH SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTIONS & GPS GEOFENCE / SMS NOTIFICATIONS -->
+    <!-- JAVASCRIPT LOGIC WITH SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTIONS & GEOFENCE / SMS CONFIGURATION -->
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
@@ -741,7 +805,11 @@
                 transshipments: [],
                 uploads: [],
                 smsLogs: [],
-                geofenceAlerts: []
+                geofenceAlerts: [],
+                geofenceZones: [
+                    { name: "Manila North Harbor Terminal", lat: "14.6333", lng: "120.9667", radius: 5 },
+                    { name: "Valenzuela Empty Container Depot", lat: "14.7000", lng: "120.9833", radius: 3 }
+                ]
             };
 
             yardDb = {
@@ -774,24 +842,102 @@
         }
 
         // ==========================================
-        // GPS GEOFENCING & DRIVER SMS NOTIFICATIONS
+        // LOGITRACK REAL-TIME TELEMETRY & GEOFENCING & SMS TEMPLATE CONTROLS
         // ==========================================
+        function openGeofenceSmsModal() {
+            const modal = document.getElementById('geofenceSmsConfigModal');
+            if(modal) modal.classList.remove('hidden');
+            renderConfiguredZones();
+            loadSmsTemplate();
+        }
+
+        function closeGeofenceSmsModal() {
+            const modal = document.getElementById('geofenceSmsConfigModal');
+            if(modal) modal.classList.add('hidden');
+        }
+
+        function handleSaveGeofenceZone(e) {
+            e.preventDefault();
+            const name = document.getElementById('geoName').value;
+            const lat = document.getElementById('geoLat').value;
+            const lng = document.getElementById('geoLng').value;
+            const radius = parseFloat(document.getElementById('geoRadius').value) || 5;
+
+            if(!db.geofenceZones) db.geofenceZones = [];
+            db.geofenceZones.push({ name, lat, lng, radius });
+            saveCloudData();
+            document.getElementById('geofenceForm').reset();
+            renderConfiguredZones();
+            alert('✅ Geofence zone polygon "' + name + '" successfully configured and synced!');
+        }
+
+        function renderConfiguredZones() {
+            const container = document.getElementById('configuredZonesList');
+            if(!container) return;
+            const zones = db.geofenceZones || [
+                { name: "Manila North Harbor Terminal", lat: "14.6333", lng: "120.9667", radius: 5 },
+                { name: "Valenzuela Empty Container Depot", lat: "14.7000", lng: "120.9833", radius: 3 }
+            ];
+            db.geofenceZones = zones;
+            container.innerHTML = zones.map((z, i) => `
+                <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
+                    <div>
+                        <strong class="text-sky-400">${z.name}</strong>
+                        <div class="text-[10px] text-slate-500">Lat: ${z.lat}, Lng: ${z.lng} • Radius: ${z.radius}km</div>
+                    </div>
+                    <button onclick="removeGeofenceZone(${i})" class="text-rose-400 hover:text-rose-300 px-1.5"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeGeofenceZone(idx) {
+            if(!db.geofenceZones) return;
+            db.geofenceZones.splice(idx, 1);
+            saveCloudData();
+            renderConfiguredZones();
+        }
+
+        const smsPresets = {
+            waybill: "Skymover Dispatch: New Waybill assigned. Proceed to origin hub for container pickup and maintain GPS tracking active.",
+            geofence: "Skymover Telemetry Warning: Vehicle approached or crossed designated geofence boundary. Verify clearance status immediately.",
+            clearance: "Skymover Terminal Alert: Gate clearance approved. Proceed to designated container block, bay, and tier.",
+            speed: "Skymover Safety Notice: Speed or route deviation detected. Adhere strictly to Philippine corridor transit guidelines."
+        };
+
+        function loadSmsTemplate() {
+            const sel = document.getElementById('smsTemplateSelect');
+            const txt = document.getElementById('smsTemplateText');
+            if(!sel || !txt) return;
+            txt.value = smsPresets[sel.value] || "";
+        }
+
+        function broadcastCustomTemplateSms() {
+            const txt = document.getElementById('smsTemplateText');
+            if(!txt || !txt.value) return;
+            const customMsg = txt.value;
+
+            (db.vehicles || [{id: 'SKV-101'}, {id: 'SKV-102'}]).forEach(v => {
+                sendDriverSms(v.id, customMsg);
+            });
+            alert('✅ SMS Dispatch Broadcast sent successfully to all active drivers!');
+            closeGeofenceSmsModal();
+            refreshDriverSmsInbox();
+        }
+
         function triggerGeofenceScan() {
-            const zones = [
-                { name: "Manila North Harbor Terminal", radius: "5km", status: "Entering Port Area" },
-                { name: "NLEX KM 24 Checkpoint", radius: "2km", status: "High-Speed Transit" },
-                { name: "SLEX Toll Plaza", radius: "2km", status: "Approaching Gate" },
-                { name: "Valenzuela Empty Container Depot", radius: "1km", status: "Inside Yard Geofence" }
+            const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
+                { name: "Manila North Harbor Terminal", radius: 5 },
+                { name: "NLEX KM 24 Checkpoint", radius: 2 },
+                { name: "Valenzuela Empty Container Depot", radius: 3 }
             ];
             const randomZone = zones[Math.floor(Math.random() * zones.length)];
             const randomUnit = (db.vehicles && db.vehicles.length) ? db.vehicles[Math.floor(Math.random() * db.vehicles.length)].id : 'SKV-101';
             
-            const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} (${randomZone.status}) at ${new Date().toLocaleTimeString()}`;
+            const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} (${randomZone.radius}km span) at ${new Date().toLocaleTimeString()}`;
             
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
             
-            // Trigger associated SMS to driver
             sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe speed and follow terminal protocols.`);
             
             saveCloudData();
@@ -815,23 +961,12 @@
             refreshDriverSmsInbox();
         }
 
-        function broadcastCustomSms() {
-            const customMsg = prompt('💬 Enter Dispatch SMS Message for All Active Drivers:');
-            if(!customMsg) return;
-            
-            (db.vehicles || []).forEach(v => {
-                sendDriverSms(v.id, customMsg);
-            });
-            alert('✅ Dispatch SMS successfully broadcasted to all active drivers!');
-            refreshDriverSmsInbox();
-        }
-
         function refreshDriverSmsInbox() {
             const inbox = document.getElementById('driverSmsInbox');
             if(!inbox) return;
             const logs = db.smsLogs || [];
             if(logs.length === 0) {
-                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet.</div>';
+                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet. (0 records)</div>';
                 return;
             }
             inbox.innerHTML = logs.map(s => `
@@ -848,7 +983,7 @@
                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-mono text-emerald-400 mb-2">
                     <i class="fa-solid fa-satellite-dish mr-1"></i> ${a.message}
                 </div>
-            `).join('') : '<div class="text-slate-500 italic text-xs">No geofence boundary events recorded yet. Click "Run Geofence Scan" to test.</div>';
+            `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts (0 records). Click "Run Geofence Scan" to test telemetry.</div>';
         }
 
         function handleDragOver(e, zoneId) {
@@ -958,35 +1093,17 @@
 
         if (!db || typeof db !== 'object') {
             db = {
-                vehicles: [
-                    { id: "SKV-101", model: "ISUZU GIGA 10-Wheeler", status: "Active", driver: "Juan Dela Cruz" },
-                    { id: "SKV-102", model: "HINO Profia Tractor Head", status: "Active", driver: "Roberto Santos" },
-                    { id: "SKV-103", model: "FUSO Super Great", status: "Maintenance", driver: "Unassigned" }
-                ],
-                drivers: [
-                    { name: "Juan Dela Cruz", license: "N02-12-345678", phone: "+63 912 345 6789", status: "On Trip", rating: "4.9 ★", truck: "SKV-101" },
-                    { name: "Roberto Santos", license: "N01-99-876543", phone: "+63 918 765 4321", status: "Available", rating: "4.8 ★", truck: "SKV-102" }
-                ],
-                fuelLogs: [
-                    { unit: "SKV-101", liters: "120 L", cost: "₱7,800", date: "2026-11-12", station: "Shell NLEX Petron" }
-                ],
-                maintenanceLogs: [
-                    { unit: "SKV-103", issue: "Brake Pad Replacement & Hydraulic Check", date: "2026-11-10", cost: "₱8,500", status: "In Shop" }
-                ],
-                dispatchLogs: [
-                    { unit: "SKV-101", route: "Manila Port → Valenzuela Depot", status: "In Transit (NLEX KM 24)", driver: "Juan Dela Cruz" }
-                ],
-                expenseLogs: [
-                    { trip: "Trip #401", fuel: "₱7,800", tolls: "₱1,250", maintenance: "₱0", total: "₱9,050" }
-                ],
-                transshipments: [
-                    { id: "TR-9001", origin: "Manila North Harbor Terminal 1", container: "MSKU-772819-2", commission: "₱5,000", status: "Pending Hub Review" }
-                ],
-                uploads: [
-                    { name: "Container_Inspection_Manila_01.jpg", date: "2026-11-12 14:20", size: "1.2 MB", type: "Delivery Proof", dataUrl: "https://placehold.co/400x300/0f172a/38bdf8?text=Container+Inspection" }
-                ],
+                vehicles: [],
+                drivers: [],
+                fuelLogs: [],
+                maintenanceLogs: [],
+                dispatchLogs: [],
+                expenseLogs: [],
+                transshipments: [],
+                uploads: [],
                 smsLogs: [],
-                geofenceAlerts: []
+                geofenceAlerts: [],
+                geofenceZones: []
             };
         }
 
@@ -998,18 +1115,10 @@
 
         if (!yardDb || typeof yardDb !== 'object') {
             yardDb = {
-                containers: [
-                    { id: "yd-1", number: "MSKU-772819-2", size: "40HC", type: "Dry", line: "Maersk", truckingName: "SKYMOVER", plate: "ABC-1234", driver: "Juan Dela Cruz", eir: "EIR-001", condition: "Good", status: "Available", block: "A", bay: "01", row: "GROUND", tier: "1", date: "2026-11-10T08:00", gateOutDate: "—", remarks: "Clean", vanInAmount: "1500", vanOutAmount: "0", totalAmount: "1500", vanInStats: "PAID", photos: [] }
-                ],
-                movements: [
-                    { kind: "GATE-IN", date: "2026-11-10T08:00", number: "MSKU-772819-2", truckingName: "SKYMOVER", plate: "ABC-1234", driver: "Juan Dela Cruz", eir: "EIR-001", row: "GROUND", remarks: "Clean", vanInAmount: "1500", vanInStats: "PAID", photos: [] }
-                ],
-                revenues: [
-                    { date: "2026-11-10T08:00", source: "Gate-In Fee", container: "MSKU-772819-2", eir: "EIR-001", amount: 1500 }
-                ],
-                expenses: [
-                    { date: "2026-11-10T09:00", category: "Crane & Handling Equipment", description: "Initial Reach Stacker Fuel", amount: 3500 }
-                ]
+                containers: [],
+                movements: [],
+                revenues: [],
+                expenses: []
             };
         }
 
@@ -1100,13 +1209,13 @@
             const infoContainer = document.getElementById('driverActiveTripInfo');
             if(!infoContainer) return;
             let activeTrans = (db.transshipments || []).find(t => t.status && t.status.includes('Hub Accepted')) || (db.transshipments || [])[0];
-            let activeContainer = (yardDb.containers || []).find(c => c.status !== 'Released') || { number: 'MSKU-772819-2', size: '40HC' };
+            let activeContainer = (yardDb.containers || []).find(c => c.status !== 'Released') || { number: '—', size: '—' };
             
             infoContainer.innerHTML = `
-                <div><span class="text-slate-400">Waybill ID:</span> <strong class="text-white">${activeTrans ? activeTrans.id : 'WB-2026-9901'}</strong></div>
-                <div><span class="text-slate-400">Origin / Route:</span> <strong class="text-white">${activeTrans ? activeTrans.origin : 'Manila Port Terminal 3'} → Valenzuela Depot</strong></div>
-                <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '40ft High Cube'})</strong></div>
-                <div><span class="text-slate-400">Status:</span> <span class="text-emerald-400 font-bold">Active In-Transit (NLEX Corridor)</span></div>
+                <div><span class="text-slate-400">Waybill ID:</span> <strong class="text-white">${activeTrans ? activeTrans.id : 'No Active Waybill (0)'}</strong></div>
+                <div><span class="text-slate-400">Origin / Route:</span> <strong class="text-white">${activeTrans ? activeTrans.origin : 'Standby / Unassigned'}</strong></div>
+                <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '—'})</strong></div>
+                <div><span class="text-slate-400">Status:</span> <span class="text-slate-400 font-bold">Standby (0 active trips)</span></div>
             `;
             refreshDriverSmsInbox();
         }
@@ -1166,7 +1275,7 @@
                             </button>
                         </div>
                         <div class="w-full lg:w-1/2 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-200 h-48 overflow-y-auto" id="aiOutputLog">
-                            [LogiBRAIN Unified DB Ready] Connected to Yard Stock, Fleet Masterlist, and Hub Transshipments... Click 'Generate AI Fleet & Yard Report' to run simulation.
+                            [LogiBRAIN Unified DB Ready] Connected to Yard Stock, Fleet Masterlist, and Hub Transshipments (0 active records)... Click 'Generate AI Fleet & Yard Report' to run simulation.
                         </div>
                     </div>
                 `;
@@ -1179,11 +1288,11 @@
                         </h3>
                         <p class="text-xs text-slate-200 mb-4">Container damage detection, OCR waybill scanning, and automated compliance auditing synced with photo attachments.</p>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Container Condition</span><div class="text-lg font-bold text-emerald-400 mt-1">98.4% Intact</div></div>
-                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">100% Verified</div></div>
+                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Container Condition</span><div class="text-lg font-bold text-emerald-400 mt-1">100% Clean (0 defects)</div></div>
+                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">Ready</div></div>
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Audit Photo Queue</span><div class="text-lg font-bold text-amber-400 mt-1">${(db.uploads || []).length} Attached</div></div>
                         </div>
-                        <button onclick="alert('LogiLENS scanner initiated: All active yard & driver photo attachments successfully verified against port records.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
+                        <button onclick="alert('LogiLENS scanner initiated: All active yard & driver photo attachments verified.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
                     </div>
                 `;
             } else if(tab === 'track') {
@@ -1197,12 +1306,12 @@
                                 </h3>
                                 <p class="text-xs text-slate-300 mt-1">Live Philippine corridor positioning, automated geofence boundary alerts, and driver SMS dispatch controls.</p>
                             </div>
-                            <div class="flex gap-2">
-                                <button onclick="triggerGeofenceScan()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow">
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="triggerGeofenceScan()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow">
                                     <i class="fa-solid fa-location-crosshairs mr-1"></i> Run Geofence Scan
                                 </button>
-                                <button onclick="broadcastCustomSms()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow">
-                                    <i class="fa-solid fa-sms mr-1"></i> Broadcast SMS to Drivers
+                                <button onclick="openGeofenceSmsModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow">
+                                    <i class="fa-solid fa-gear mr-1"></i> Configure Zones & SMS Templates
                                 </button>
                             </div>
                         </div>
@@ -1211,8 +1320,7 @@
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                                 <h4 class="font-bold text-xs text-sky-300 mb-3"><i class="fa-solid fa-map-location-dot mr-1"></i> Active Fleet Geofence Status</h4>
                                 <div class="space-y-2 text-xs">
-                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-101 (Isuzu Giga)</span><span class="text-emerald-400 font-bold">Inside NLEX KM 24 Zone</span></div>
-                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-102 (Hino Profia)</span><span class="text-emerald-400 font-bold">Approaching Valenzuela Depot</span></div>
+                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">Telemetry Units Monitored</span><span class="text-emerald-400 font-bold">${(db.vehicles || []).length} Active Units</span></div>
                                     <div class="flex justify-between items-center"><span class="font-bold text-white">Active Yard Stock</span><span class="text-amber-400 font-bold">${(yardDb.containers || []).filter(c=>c.status!=='Released').length} Units In Yard</span></div>
                                 </div>
                             </div>
@@ -1220,7 +1328,7 @@
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                                 <h4 class="font-bold text-xs text-amber-300 mb-3"><i class="fa-solid fa-bell mr-1"></i> Geofence Event Alert History</h4>
                                 <div id="geofenceAlertsContainer" class="max-h-36 overflow-y-auto space-y-2">
-                                    <div class="text-slate-500 italic text-xs">No geofence boundary events recorded yet. Click "Run Geofence Scan" to test.</div>
+                                    <div class="text-slate-500 italic text-xs">No active geofence boundary alerts (0 records). Click "Run Geofence Scan" to test telemetry.</div>
                                 </div>
                             </div>
                         </div>
@@ -1234,9 +1342,9 @@
         function runAiAnalysis() {
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
-            log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB...\n";
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + (db.vehicles || []).length + " trucks.\n"; }, 400);
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! Recommended dispatch adjustments: Reassign transshipment orders to available yard containers to minimize empty container transit times."; }, 900);
+            log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB (0 records)...\\n";
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + (db.vehicles || []).length + " trucks.\\n"; }, 400);
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified at baseline 0."; }, 900);
         }
 
         function handlePhotoUpload(e) {
@@ -1987,7 +2095,7 @@
                     <td class="p-3 font-semibold">${r.eir || '—'}</td>
                     <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
-            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for this date range.</td></tr>';
+            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for this date range (0 records).</td></tr>';
 
             renderMonthlyTrendChart(sortedMonths, monthlyMap);
         }
