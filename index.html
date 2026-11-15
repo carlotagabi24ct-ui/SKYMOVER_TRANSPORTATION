@@ -34,7 +34,7 @@
         .drag-over { border-color: #0284c7 !important; background-color: rgba(2, 132, 199, 0.05) !important; }
 
         /* Modal Overlay & Backdrop */
-        .skymover-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.25s ease-out forwards; }
+        .skymover-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.25s ease-out forwards; }
 
         /* Modal Box Container */
         .skymover-modal-container { background: #ffffff; width: 100%; max-width: 420px; margin: 1rem; padding: 2.5rem 2rem; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); position: relative; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -846,7 +846,7 @@
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                // Guest / Unauthenticated
+                // Guest / Unauthenticated: Force login modal open and keep background views hidden
                 window.openSkymoverLogin();
             }
         }
@@ -879,6 +879,11 @@
             } finally {
                 if(submitBtn) { submitBtn.textContent = 'Sign In to Dashboard'; submitBtn.disabled = false; }
             }
+        }
+
+        function closeSkymoverLogin() {
+            const loginModal = document.getElementById('loginModal');
+            if(loginModal) loginModal.style.display = 'none';
         }
 
         async function handleSupabaseSignOut() {
@@ -1993,7 +1998,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             const loginModal = document.getElementById('loginModal');
             window.openSkymoverLogin = function() { if(loginModal) loginModal.style.display = 'flex'; };
-            document.getElementById('closeLoginModal')?.addEventListener('click', () => { loginModal.style.display = 'none'; });
+            document.getElementById('closeLoginModal')?.addEventListener('click', () => { 
+                // When closed without logging in, ensure it stays hidden but restricted
+                loginModal.style.display = 'none'; 
+            });
             document.getElementById('skymoverLoginForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();
                 handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, false);
@@ -2004,7 +2012,7 @@
     </script>
 
     <!-- Login Modal Overlay -->
-    <div id="loginModal" class="skymover-modal-overlay" style="display: none;">
+    <div id="loginModal" class="skymover-modal-overlay" style="display: flex;">
         <div class="skymover-modal-container">
             <button type="button" class="modal-close-btn" id="closeLoginModal">&times;</button>
             <div class="modal-header">
