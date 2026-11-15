@@ -120,7 +120,7 @@
                 <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-800 pb-3">
                     <button onclick="switchAiTab('brain')" id="tabBrainBtn" class="px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow">LogiBRAIN AI</button>
                     <button onclick="switchAiTab('lens')" id="tabLensBtn" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">LogiLENS Inspector</button>
-                    <button onclick="switchAiTab('track')" id="tabTrackBtn" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">LogiTRACK GPS</button>
+                    <button onclick="switchAiTab('track')" id="tabTrackBtn" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">LogiTRACK GPS & Geofence</button>
                 </div>
                 <div id="aiContainer"></div>
             </div>
@@ -131,14 +131,23 @@
             <div class="glass-card border border-slate-800 p-6 rounded-2xl">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white"><i class="fa-solid id-card text-purple-400 mr-2"></i> Driver's Portal & Waybill Mobile View</h2>
+                        <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-id-card text-purple-400 mr-2"></i> Driver's Portal & Waybill Mobile View</h2>
                         <p class="text-xs text-slate-300">Mobile waybill dispatch, active route navigation, and proof-of-delivery photo uploads.</p>
                     </div>
                     <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Register New Driver</button>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-                    <h3 class="font-bold text-sm text-purple-300">Active Assigned Trip</h3>
+                    <h3 class="font-bold text-sm text-purple-300">Active Assigned Trip & Driver SMS Feed</h3>
                     <div id="driverActiveTripInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono text-slate-200"></div>
+                    
+                    <!-- DRIVER SMS NOTIFICATION INBOX -->
+                    <div class="border-t border-slate-800 pt-4">
+                        <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> Driver SMS Notification Inbox</h4>
+                        <div id="driverSmsInbox" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono space-y-2 max-h-36 overflow-y-auto text-slate-300">
+                            <div class="text-slate-500 italic">No SMS notifications received yet.</div>
+                        </div>
+                    </div>
+
                     <div class="pt-2">
                         <label class="block text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-camera mr-1"></i> Upload Proof of Delivery / Waybill Photo</label>
                         <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" class="w-full text-xs bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200">
@@ -625,7 +634,7 @@
         <p class="mt-1">© 2026 SKYMOVER. All rights reserved.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC WITH SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTIONS -->
+    <!-- JAVASCRIPT LOGIC WITH SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTIONS & GPS GEOFENCE / SMS NOTIFICATIONS -->
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
@@ -682,7 +691,6 @@
             }
         }
 
-        // SUPABASE REAL-TIME WEBSOCKET SUBSCRIPTION TO SYNC OTHER USERS' INPUTS INSTANTLY
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
             supabaseClient
@@ -716,7 +724,6 @@
             }
         }
 
-        // PASSWORD-PROTECTED RESET DATABASE FUNCTION
         async function confirmResetAllDatabases() {
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records to 0:');
             if(pwd !== 'Skymover_Transportation_2026') {
@@ -732,7 +739,9 @@
                 dispatchLogs: [],
                 expenseLogs: [],
                 transshipments: [],
-                uploads: []
+                uploads: [],
+                smsLogs: [],
+                geofenceAlerts: []
             };
 
             yardDb = {
@@ -762,6 +771,84 @@
             closeSubModule();
 
             alert('✅ All database records have been successfully reset to 0 and synced across all users in real-time!');
+        }
+
+        // ==========================================
+        // GPS GEOFENCING & DRIVER SMS NOTIFICATIONS
+        // ==========================================
+        function triggerGeofenceScan() {
+            const zones = [
+                { name: "Manila North Harbor Terminal", radius: "5km", status: "Entering Port Area" },
+                { name: "NLEX KM 24 Checkpoint", radius: "2km", status: "High-Speed Transit" },
+                { name: "SLEX Toll Plaza", radius: "2km", status: "Approaching Gate" },
+                { name: "Valenzuela Empty Container Depot", radius: "1km", status: "Inside Yard Geofence" }
+            ];
+            const randomZone = zones[Math.floor(Math.random() * zones.length)];
+            const randomUnit = (db.vehicles && db.vehicles.length) ? db.vehicles[Math.floor(Math.random() * db.vehicles.length)].id : 'SKV-101';
+            
+            const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} (${randomZone.status}) at ${new Date().toLocaleTimeString()}`;
+            
+            if(!db.geofenceAlerts) db.geofenceAlerts = [];
+            db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
+            
+            // Trigger associated SMS to driver
+            sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe speed and follow terminal protocols.`);
+            
+            saveCloudData();
+            alert('📡 GPS Geofence Scan Completed!\n\n' + alertMsg);
+            
+            const trackContainer = document.getElementById('geofenceAlertsContainer');
+            if(trackContainer) {
+                renderGeofenceLogs(trackContainer);
+            }
+        }
+
+        function sendDriverSms(unitId, messageText) {
+            if(!db.smsLogs) db.smsLogs = [];
+            const smsItem = {
+                unit: unitId,
+                message: messageText,
+                time: new Date().toISOString()
+            };
+            db.smsLogs.unshift(smsItem);
+            saveCloudData();
+            refreshDriverSmsInbox();
+        }
+
+        function broadcastCustomSms() {
+            const customMsg = prompt('💬 Enter Dispatch SMS Message for All Active Drivers:');
+            if(!customMsg) return;
+            
+            (db.vehicles || []).forEach(v => {
+                sendDriverSms(v.id, customMsg);
+            });
+            alert('✅ Dispatch SMS successfully broadcasted to all active drivers!');
+            refreshDriverSmsInbox();
+        }
+
+        function refreshDriverSmsInbox() {
+            const inbox = document.getElementById('driverSmsInbox');
+            if(!inbox) return;
+            const logs = db.smsLogs || [];
+            if(logs.length === 0) {
+                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet.</div>';
+                return;
+            }
+            inbox.innerHTML = logs.map(s => `
+                <div class="border-b border-slate-900 pb-1.5 mb-1.5 last:border-0">
+                    <span class="text-sky-400 font-bold">[${s.unit}]</span> <span class="text-slate-200">${s.message}</span>
+                    <div class="text-[9px] text-slate-500">${new Date(s.time).toLocaleTimeString()}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderGeofenceLogs(containerEl) {
+            const alerts = db.geofenceAlerts || [];
+            containerEl.innerHTML = alerts.length ? alerts.map(a => `
+                <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-mono text-emerald-400 mb-2">
+                    <i class="fa-solid fa-satellite-dish mr-1"></i> ${a.message}
+                </div>
+            `).join('') : '<div class="text-slate-500 italic text-xs">No geofence boundary events recorded yet. Click "Run Geofence Scan" to test.</div>';
         }
 
         function handleDragOver(e, zoneId) {
@@ -897,7 +984,9 @@
                 ],
                 uploads: [
                     { name: "Container_Inspection_Manila_01.jpg", date: "2026-11-12 14:20", size: "1.2 MB", type: "Delivery Proof", dataUrl: "https://placehold.co/400x300/0f172a/38bdf8?text=Container+Inspection" }
-                ]
+                ],
+                smsLogs: [],
+                geofenceAlerts: []
             };
         }
 
@@ -1019,6 +1108,7 @@
                 <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '40ft High Cube'})</strong></div>
                 <div><span class="text-slate-400">Status:</span> <span class="text-emerald-400 font-bold">Active In-Transit (NLEX Corridor)</span></div>
             `;
+            refreshDriverSmsInbox();
         }
 
         function submitDriverProofOfDelivery() {
@@ -1099,19 +1189,45 @@
             } else if(tab === 'track') {
                 if(btnTrack) btnTrack.className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
                 container.innerHTML = `
-                    <div>
-                        <h3 class="text-xl font-bold text-emerald-400 mb-2 flex items-center">
-                            <i class="fa-solid fa-satellite-dish mr-2"></i> LogiTRACK Real-Time Telemetry & GPS
-                        </h3>
-                        <p class="text-xs text-slate-200 mb-4">Live Philippine corridor positioning (NLEX, SLEX, North/South Harbor), geofencing alerts, and active container tracking.</p>
-                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 mb-4">
-                            <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-101 (Isuzu Giga)</span><span class="text-emerald-400 font-bold">NLEX KM 24 (In Transit)</span></div>
-                            <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-102 (Hino Profia)</span><span class="text-emerald-400 font-bold">SLEX Toll Plaza (Arriving)</span></div>
-                            <div class="flex justify-between items-center text-xs"><span class="font-bold text-white">Active Yard Stock</span><span class="text-amber-400 font-bold">${(yardDb.containers || []).filter(c=>c.status!=='Released').length} Units In Yard</span></div>
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <h3 class="text-xl font-bold text-emerald-400 flex items-center">
+                                    <i class="fa-solid fa-satellite-dish mr-2"></i> LogiTRACK Real-Time Telemetry & GPS Geofencing
+                                </h3>
+                                <p class="text-xs text-slate-300 mt-1">Live Philippine corridor positioning, automated geofence boundary alerts, and driver SMS dispatch controls.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="triggerGeofenceScan()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow">
+                                    <i class="fa-solid fa-location-crosshairs mr-1"></i> Run Geofence Scan
+                                </button>
+                                <button onclick="broadcastCustomSms()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow">
+                                    <i class="fa-solid fa-sms mr-1"></i> Broadcast SMS to Drivers
+                                </button>
+                            </div>
                         </div>
-                        <button onclick="alert('GPS Telemetry refreshed: All active units reporting stable connection.')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Refresh Satellite Telemetry</button>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                                <h4 class="font-bold text-xs text-sky-300 mb-3"><i class="fa-solid fa-map-location-dot mr-1"></i> Active Fleet Geofence Status</h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-101 (Isuzu Giga)</span><span class="text-emerald-400 font-bold">Inside NLEX KM 24 Zone</span></div>
+                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">SKV-102 (Hino Profia)</span><span class="text-emerald-400 font-bold">Approaching Valenzuela Depot</span></div>
+                                    <div class="flex justify-between items-center"><span class="font-bold text-white">Active Yard Stock</span><span class="text-amber-400 font-bold">${(yardDb.containers || []).filter(c=>c.status!=='Released').length} Units In Yard</span></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                                <h4 class="font-bold text-xs text-amber-300 mb-3"><i class="fa-solid fa-bell mr-1"></i> Geofence Event Alert History</h4>
+                                <div id="geofenceAlertsContainer" class="max-h-36 overflow-y-auto space-y-2">
+                                    <div class="text-slate-500 italic text-xs">No geofence boundary events recorded yet. Click "Run Geofence Scan" to test.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
+                const trackContainer = document.getElementById('geofenceAlertsContainer');
+                if(trackContainer) renderGeofenceLogs(trackContainer);
             }
         }
 
@@ -1497,6 +1613,7 @@
                 status: 'Assigned / On Trip',
                 driver: 'Assigned Hub Driver'
             });
+            sendDriverSms('SKV-101', `New Waybill Accepted: Transport container ${db.transshipments[idx].container} from ${db.transshipments[idx].origin} to Valenzuela Depot.`);
             saveCloudData();
             renderTransshipmentTable();
             alert('Transshipment order accepted! Data synchronized to Management Backend and Driver Portal.');
