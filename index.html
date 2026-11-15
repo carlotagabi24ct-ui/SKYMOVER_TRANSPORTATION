@@ -33,51 +33,51 @@
         .pill.Released { background: #f1f5f9; color: #334155; }
         .drag-over { border-color: #0284c7 !important; background-color: rgba(2, 132, 199, 0.05) !important; }
 
-/* Modal Overlay & Backdrop */
-.skymover-modal-overlay {position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(15, 23, 42, 0.65);backdrop-filter: blur(4px);z-index: 9999;display: flex;align-items: center;justify-content: center;animation: fadeIn 0.25s ease-out forwards;}
+        /* Modal Overlay & Backdrop */
+        .skymover-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.25s ease-out forwards; }
 
-/* Modal Box Container */
-.skymover-modal-container {background: #ffffff;width: 100%;max-width: 420px;margin: 1rem;padding: 2.5rem 2rem;border-radius: 12px;box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);position: relative;animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;}
+        /* Modal Box Container */
+        .skymover-modal-container { background: #ffffff; width: 100%; max-width: 420px; margin: 1rem; padding: 2.5rem 2rem; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); position: relative; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-/* Close Button */
-.modal-close-btn {position: absolute;top: 1.25rem;right: 1.25rem;background: none;border: none;font-size: 1.5rem;color: #64748b;cursor: pointer;line-height: 1;transition: color 0.2s;}
-.modal-close-btn:hover {color: #0f172a;}
+        /* Close Button */
+        .modal-close-btn { position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; line-height: 1; transition: color 0.2s; }
+        .modal-close-btn:hover { color: #0f172a; }
 
-/* Header */
-.modal-header {margin-bottom: 1.75rem;text-align: left;}
-.modal-header h2 {font-size: 1.5rem;font-weight: 700;color: #0f172a;margin-bottom: 0.35rem;}
-.modal-header p {font-size: 0.875rem;color: #64748b;}
+        /* Header */
+        .modal-header { margin-bottom: 1.75rem; text-align: left; }
+        .modal-header h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem; }
+        .modal-header p { font-size: 0.875rem; color: #64748b; }
 
-/* Form Elements & Inputs */
-.modal-form .form-group {margin-bottom: 1.25rem;}
-.modal-form label {display: block;font-size: 0.875rem;font-weight: 600;color: #334155;margin-bottom: 0.5rem;}
-.password-label-wrapper {display: flex;justify-content: space-between;align-items: center;margin-bottom: 0.5rem;}
-.password-label-wrapper label {margin-bottom: 0;}
-.forgot-password-link {font-size: 0.75rem;color: #0284c7;text-decoration: none;font-weight: 500;}
-.forgot-password-link:hover {text-decoration: underline;}
-.modal-form input[type="text"],
-.modal-form input[type="password"] {width: 100%;padding: 0.75rem 1rem;font-size: 0.95rem;border: 1px solid #cbd5e1;border-radius: 8px;outline: none;transition: border-color 0.2s, box-shadow 0.2s;background-color: #f8fafc;}
-.modal-form input[type="text"]:focus,
-.modal-form input[type="password"]:focus {border-color: #0284c7;background-color: #ffffff;box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);}
+        /* Form Elements & Inputs */
+        .modal-form .form-group { margin-bottom: 1.25rem; }
+        .modal-form label { display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+        .password-label-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .password-label-wrapper label { margin-bottom: 0; }
+        .forgot-password-link { font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 500; }
+        .forgot-password-link:hover { text-decoration: underline; }
+        .modal-form input[type="text"],
+        .modal-form input[type="password"] { width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background-color: #f8fafc; color: #0f172a; }
+        .modal-form input[type="text"]:focus,
+        .modal-form input[type="password"]:focus { border-color: #0284c7; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
 
-/* Checkbox Option */
-.form-options {margin: 1rem 0 1.5rem 0;}
-.checkbox-container {display: flex;align-items: center;font-size: 0.875rem;color: #475569;cursor: pointer;user-select: none;}
-.checkbox-container input {margin-right: 0.5rem;accent-color: #0284c7;width: 1rem;height: 1rem;}
+        /* Checkbox Option */
+        .form-options { margin: 1rem 0 1.5rem 0; }
+        .checkbox-container { display: flex; align-items: center; font-size: 0.875rem; color: #475569; cursor: pointer; user-select: none; }
+        .checkbox-container input { margin-right: 0.5rem; accent-color: #0284c7; width: 1rem; height: 1rem; }
 
-/* Primary Action Button */
-.skymover-btn-primary {width: 100%;padding: 0.75rem 1rem;background-color: #0284c7;color: #ffffff;font-weight: 600;font-size: 0.95rem;border: none;border-radius: 8px;cursor: pointer;transition: background-color 0.2s, transform 0.1s;}
-.skymover-btn-primary:hover {background-color: #0369a1;}
-.skymover-btn-primary:active {transform: scale(0.98);}
+        /* Primary Action Button */
+        .skymover-btn-primary { width: 100%; padding: 0.75rem 1rem; background-color: #0284c7; color: #ffffff; font-weight: 600; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        .skymover-btn-primary:hover { background-color: #0369a1; }
+        .skymover-btn-primary:active { transform: scale(0.98); }
 
-/* Footer */
-.modal-footer {margin-top: 1.5rem;text-align: center;font-size: 0.8125rem;color: #64748b;border-top: 1px solid #f1f5f9;padding-top: 1.25rem;}
-.modal-footer a {color: #0284c7;text-decoration: none;font-weight: 500;}
-.modal-footer a:hover {text-decoration: underline;}
+        /* Footer */
+        .modal-footer { margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 1.25rem; }
+        .modal-footer a { color: #0284c7; text-decoration: none; font-weight: 500; }
+        .modal-footer a:hover { text-decoration: underline; }
 
-/* Keyframes for smooth animations */
-@keyframes fadeIn {from { opacity: 0; }to { opacity: 1; }}
-@keyframes slideUp {from { transform: translateY(20px); opacity: 0; }to { transform: translateY(0); opacity: 1; }}
+        /* Keyframes for smooth animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
@@ -102,6 +102,9 @@
             <button onclick="toggleLanguage()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
                 <i class="fa-solid fa-globe text-sky-400"></i>
                 <span id="langLabel">Chinese/English</span>
+            </button>
+            <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
+                <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
             </button>
             <button onclick="switchView('landing')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
                 <i class="fa-solid fa-house mr-1"></i> Hub Portal
@@ -348,7 +351,7 @@
                             <div><label class="font-bold text-slate-800 mb-1 block">Container Size *</label><select name="size" required class="p-2 border rounded-lg w-full bg-white text-slate-900"><option value="">Select size</option><option>20FT</option><option>40FT</option><option>40HC</option><option>45FT</option></select></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Container Type</label><select name="type" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>Dry</option><option>Reefer</option><option>Open Top</option><option>Flat Rack</option><option>Other</option></select></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Shipping Line *</label><select name="line" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>TS LINE</option><option>EVERGREEN</option><option>SINO TRANS</option><option>ASL</option><option>COSCO</option><option>ONE</option><option>M-SC</option><option>HMM</option><option>MAERKS</option><option>CMA-CGM</option><option>WAN-HAI</option><option>OOCL</option><option>ZIM LINE</option><option>PIL</option><option>SITC</option></select></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Trucking Name *</label><select name="truckingName" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>VICTOR LAINE</option><option>SKYMOVER</option><option>GGS TRUCKING</option><option>RCLC</option></select></div>   
+                            <div><label class="font-bold text-slate-800 mb-1 block">Trucking Name *</label><select name="truckingName" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>VICTOR LAINE</option><option>SKYMOVER</option><option>GGS TRUCKING</option><option>RCLC</option></select></div>    
                             <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Driver Name</label><input name="driver" class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">EIR / Reference No.</label><input name="eir" class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
@@ -2472,7 +2475,6 @@
             c.gateOutDate = f.date;
             c.vanOutAmount = f.vanOutAmount || '0';
             c.totalAmount = document.getElementById('calcTotalAmount').value;
-            // Capture Gate-Out remarks on the container object as well
             c.gateOutRemarks = f.remarks;
 
             if(!yardDb.movements) yardDb.movements = [];
@@ -2626,7 +2628,65 @@
             csv([['Date','Category','Description','Amount (PHP)'], ...(yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount])], 'SKYMOVER_Yard_Expenses.csv');
         }
 
+        // --- MERGED LOGIN MODAL & DOM INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', () => {
+            const loginModal = document.getElementById('loginModal');
+            const closeLoginModal = document.getElementById('closeLoginModal');
+            const loginForm = document.getElementById('skymoverLoginForm');
+
+            // Example helper function to open the modal (attached to top nav "Sign In" button)
+            window.openSkymoverLogin = function() {
+                if(loginModal) {
+                    loginModal.style.display = 'flex';
+                    const emailInput = document.getElementById('loginEmail');
+                    if(emailInput) emailInput.focus();
+                }
+            };
+
+            // Helper function to close the modal
+            function closeSkymoverLogin() {
+                if(loginModal) loginModal.style.display = 'none';
+            }
+
+            // Event Listeners for Login Modal
+            if(closeLoginModal) {
+                closeLoginModal.addEventListener('click', closeSkymoverLogin);
+            }
+
+            if(loginModal) {
+                // Close modal when clicking outside the container box
+                loginModal.addEventListener('click', (event) => {
+                    if (event.target === loginModal) {
+                        closeSkymoverLogin();
+                    }
+                });
+            }
+
+            // Close modal on pressing ESC key
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && loginModal && loginModal.style.display === 'flex') {
+                    closeSkymoverLogin();
+                }
+            });
+
+            // Handle form submission logic
+            if(loginForm) {
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('loginEmail').value;
+                    const password = document.getElementById('loginPassword').value;
+                    const rememberMe = document.getElementById('rememberMe').checked;
+
+                    // Implement your authentication or Supabase sync login call here
+                    console.log('Authenticating Skymover user:', { email, rememberMe });
+                    
+                    // Mock success response
+                    alert('Login request submitted successfully!');
+                    closeSkymoverLogin();
+                });
+            }
+
+            // Existing DateTime defaults initialization
             document.querySelectorAll('input[type=datetime-local]').forEach(x => {
                 if(!x.value) {
                     let d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
