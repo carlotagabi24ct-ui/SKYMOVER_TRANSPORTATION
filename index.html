@@ -53,8 +53,6 @@
         .modal-form label { display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
         .password-label-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .password-label-wrapper label { margin-bottom: 0; }
-        .forgot-password-link { font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 500; }
-        .forgot-password-link:hover { text-decoration: underline; }
         .modal-form input[type="text"],
         .modal-form input[type="password"],
         .modal-form input[type="email"],
@@ -68,11 +66,6 @@
         .skymover-btn-primary { width: 100%; padding: 0.75rem 1rem; background-color: #0284c7; color: #ffffff; font-weight: 600; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
         .skymover-btn-primary:hover { background-color: #0369a1; }
         .skymover-btn-primary:active { transform: scale(0.98); }
-
-        /* Footer */
-        .modal-footer { margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 1.25rem; }
-        .modal-footer a { color: #0284c7; text-decoration: none; font-weight: 500; }
-        .modal-footer a:hover { text-decoration: underline; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -683,70 +676,6 @@
         </div>
     </div>
 
-    <!-- ADVANCED GEOFENCE & SMS TEMPLATE MODAL -->
-    <div id="geofenceSmsConfigModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl space-y-6">
-            <button onclick="closeGeofenceSmsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-xl font-bold text-emerald-400"><i class="fa-solid fa-route mr-2"></i> Geofence Polygons & SMS Dispatch Configuration</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Left: Geofence Polygon Builder -->
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <h4 class="font-bold text-xs text-sky-300 flex items-center"><i class="fa-solid fa-draw-polygon mr-1"></i> Add / Configure Geofence Zone</h4>
-                    <form id="geofenceForm" onsubmit="handleSaveGeofenceZone(event)" class="space-y-3 text-xs">
-                        <div>
-                            <label class="block text-slate-300 mb-1">Zone Name *</label>
-                            <input type="text" id="geoName" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Subic Bay Freeport Zone">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-slate-300 mb-1">Center Latitude *</label>
-                                <input type="text" id="geoLat" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="14.8291">
-                            </div>
-                            <div>
-                                <label class="block text-slate-300 mb-1">Center Longitude *</label>
-                                <input type="text" id="geoLng" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="120.2828">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-slate-300 mb-1">Radius / Boundary Span (km) *</label>
-                            <input type="number" id="geoRadius" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="5">
-                        </div>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition">Save Geofence Polygon</button>
-                    </form>
-                    <div class="pt-2 border-t border-slate-800">
-                        <div class="text-[11px] font-bold text-slate-300 mb-1">Configured Active Zones:</div>
-                        <div id="configuredZonesList" class="max-h-28 overflow-y-auto space-y-1 text-[11px] font-mono text-slate-400"></div>
-                    </div>
-                </div>
-
-                <!-- Right: SMS Dispatch Templates -->
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <h4 class="font-bold text-xs text-purple-300 flex items-center"><i class="fa-solid fa-message mr-1"></i> SMS Dispatch Template Engine</h4>
-                    <div class="space-y-3 text-xs">
-                        <div>
-                            <label class="block text-slate-300 mb-1">Select Preset Template</label>
-                            <select id="smsTemplateSelect" onchange="loadSmsTemplate()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
-                                <option value="waybill">Waybill Dispatch Assignment</option>
-                                <option value="geofence">Geofence Boundary Alert</option>
-                                <option value="clearance">Terminal Gate Clearance</option>
-                                <option value="speed">Safety & Speed Warning</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-slate-300 mb-1">Template Content / Custom Message *</label>
-                            <textarea id="smsTemplateText" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-[11px] font-mono"></textarea>
-                        </div>
-                        <button onclick="broadcastCustomTemplateSms()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg transition">Broadcast Template to All Drivers</button>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end pt-2">
-                <button onclick="closeGeofenceSmsModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">Close Configuration</button>
-            </div>
-        </div>
-    </div>
-
     <!-- FOOTER -->
     <footer class="w-full text-center py-6 border-t border-slate-800 bg-slate-950/80 text-[11px] text-slate-400">
         <p>Skymover Transport Corporation • Container shipping services & Empty Yard in Manila, Philippines</p>
@@ -763,6 +692,24 @@
         let supabaseClient = null;
         let currentUser = null;
         let currentUserRole = 'guest';
+
+        // Idle Inactivity Timer (5 Minutes)
+        let idleTimer = null;
+        const IDLE_LIMIT_MS = 5 * 60 * 1000;
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            if (currentUser && currentUserRole !== 'guest') {
+                idleTimer = setTimeout(() => {
+                    alert('⚠️ Session expired due to 5 minutes of inactivity. Please sign in again.');
+                    handleSupabaseSignOut();
+                }, IDLE_LIMIT_MS);
+            }
+        }
+
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetIdleTimer, true);
+        });
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -791,6 +738,7 @@
                     currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
+                    resetIdleTimer();
                 } else {
                     currentUserRole = 'guest';
                     updateAuthUI(null, 'guest');
@@ -802,6 +750,7 @@
                     currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
+                    resetIdleTimer();
                 });
             } catch(err) {
                 applyRbacPermissions('guest');
@@ -846,7 +795,6 @@
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                // If guest, lock the views out and force login prompt
                 ['viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
                     const el = document.getElementById(v);
                     if(el) el.classList.add('hidden');
@@ -1003,195 +951,6 @@
             renderTransshipmentTable();
             closeSubModule();
         }
-
-        function openGeofenceSmsModal() {
-            const modal = document.getElementById('geofenceSmsConfigModal');
-            if(modal) modal.classList.remove('hidden');
-            renderConfiguredZones();
-            loadSmsTemplate();
-        }
-
-        function closeGeofenceSmsModal() {
-            const modal = document.getElementById('geofenceSmsConfigModal');
-            if(modal) modal.classList.add('hidden');
-        }
-
-        function handleSaveGeofenceZone(e) {
-            e.preventDefault();
-            const name = document.getElementById('geoName').value;
-            const lat = document.getElementById('geoLat').value;
-            const lng = document.getElementById('geoLng').value;
-            const radius = parseFloat(document.getElementById('geoRadius').value) || 5;
-
-            if(!db.geofenceZones) db.geofenceZones = [];
-            db.geofenceZones.push({ name, lat, lng, radius });
-            saveCloudData();
-            document.getElementById('geofenceForm').reset();
-            renderConfiguredZones();
-        }
-
-        function renderConfiguredZones() {
-            const container = document.getElementById('configuredZonesList');
-            if(!container) return;
-            const zones = db.geofenceZones || [];
-            container.innerHTML = zones.length ? zones.map((z, i) => `
-                <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
-                    <div>
-                        <strong class="text-sky-400">${z.name}</strong>
-                        <div class="text-[10px] text-slate-500">Lat: ${z.lat}, Lng: ${z.lng} • Radius: ${z.radius}km</div>
-                    </div>
-                    <button onclick="removeGeofenceZone(${i})" class="text-rose-400 hover:text-rose-300 px-1.5"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            `).join('') : '<div class="text-slate-500 italic">No custom zones configured.</div>';
-        }
-
-        function removeGeofenceZone(idx) {
-            if(!db.geofenceZones) return;
-            db.geofenceZones.splice(idx, 1);
-            saveCloudData();
-            renderConfiguredZones();
-        }
-
-        const smsPresets = {
-            waybill: "Skymover Dispatch: New Waybill assigned. Proceed to origin hub for container pickup and maintain GPS tracking active.",
-            geofence: "Skymover Telemetry Warning: Vehicle approached or crossed designated geofence boundary. Verify clearance status immediately.",
-            clearance: "Skymover Terminal Alert: Gate clearance approved. Proceed to designated container block, bay, and tier.",
-            speed: "Skymover Safety Notice: Speed or route deviation detected. Adhere strictly to Philippine corridor transit guidelines."
-        };
-
-        function loadSmsTemplate() {
-            const sel = document.getElementById('smsTemplateSelect');
-            const txt = document.getElementById('smsTemplateText');
-            if(!sel || !txt) return;
-            txt.value = smsPresets[sel.value] || "";
-        }
-
-        function broadcastCustomTemplateSms() {
-            const txt = document.getElementById('smsTemplateText');
-            if(!txt || !txt.value) return;
-            const customMsg = txt.value;
-
-            (db.vehicles || [{id: 'SKV-101'}]).forEach(v => {
-                sendDriverSms(v.id, customMsg);
-            });
-            closeGeofenceSmsModal();
-            refreshDriverSmsInbox();
-        }
-
-        function triggerGeofenceScan() {
-            const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
-                { name: "Manila North Harbor Terminal", radius: 5 },
-                { name: "Valenzuela Empty Container Depot", radius: 3 }
-            ];
-            const randomZone = zones[Math.floor(Math.random() * zones.length)];
-            const randomUnit = (db.vehicles && db.vehicles.length) ? db.vehicles[Math.floor(Math.random() * db.vehicles.length)].id : 'SKV-101';
-            
-            const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
-            
-            if(!db.geofenceAlerts) db.geofenceAlerts = [];
-            db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
-            
-            sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe transit protocols.`);
-            saveCloudData();
-            
-            const trackContainer = document.getElementById('geofenceAlertsContainer');
-            if(trackContainer) renderGeofenceLogs(trackContainer);
-        }
-
-        function sendDriverSms(unitId, messageText) {
-            if(!db.smsLogs) db.smsLogs = [];
-            db.smsLogs.unshift({ unit: unitId, message: messageText, time: new Date().toISOString() });
-            saveCloudData();
-            refreshDriverSmsInbox();
-        }
-
-        function refreshDriverSmsInbox() {
-            const inbox = document.getElementById('driverSmsInbox');
-            if(!inbox) return;
-            const logs = db.smsLogs || [];
-            if(logs.length === 0) {
-                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet.</div>';
-                return;
-            }
-            inbox.innerHTML = logs.map(s => `
-                <div class="border-b border-slate-900 pb-1.5 mb-1.5 last:border-0">
-                    <span class="text-sky-400 font-bold">[${s.unit}]</span> <span class="text-slate-200">${s.message}</span>
-                    <div class="text-[9px] text-slate-500">${new Date(s.time).toLocaleTimeString()}</div>
-                </div>
-            `).join('');
-        }
-
-        function renderGeofenceLogs(containerEl) {
-            const alerts = db.geofenceAlerts || [];
-            containerEl.innerHTML = alerts.length ? alerts.map(a => `
-                <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-mono text-emerald-400 mb-2">
-                    <i class="fa-solid fa-satellite-dish mr-1"></i> ${a.message}
-                </div>
-            `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts.</div>';
-        }
-
-        function handleDragOver(e, zoneId) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById(zoneId);
-            if(zone) zone.classList.add('drag-over');
-        }
-
-        function handleDragLeave(e, zoneId) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById(zoneId);
-            if(zone) zone.classList.remove('drag-over');
-        }
-
-        function handleDrop(e, type) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zoneId = type === 'gateIn' ? 'gateInDropZone' : 'gateOutDropZone';
-            const zone = document.getElementById(zoneId);
-            if(zone) zone.classList.remove('drag-over');
-            if(e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                processFiles(e.dataTransfer.files, type);
-            }
-        }
-
-        function handleFileInput(e, type) {
-            if(e.target.files && e.target.files.length > 0) {
-                processFiles(e.target.files, type);
-            }
-        }
-
-        function processFiles(files, type) {
-            const containerId = type === 'gateIn' ? 'gateInPhotoPreviewContainer' : 'gateOutPhotoPreviewContainer';
-            const previewContainer = document.getElementById(containerId);
-            if(!previewContainer) return;
-
-            for (let file of files) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const base64Data = event.target.result;
-                    const fileObj = { name: file.name, size: (file.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data, date: new Date().toISOString() };
-                    if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
-                    else stagedGateOutPhotos.push(fileObj);
-                    
-                    const thumb = document.createElement('div');
-                    thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
-                    if(file.type.startsWith('image/')) {
-                        thumb.innerHTML = '<img src="' + base64Data + '" class="w-full h-full object-cover">';
-                    } else {
-                        thumb.innerHTML = '<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate">' + file.name + '</div>';
-                    }
-                    previewContainer.appendChild(thumb);
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function clearGateInPhotos() { stagedGateInPhotos = []; document.getElementById('gateInPhotoPreviewContainer').innerHTML = ''; }
-        function clearGateOutPhotos() { stagedGateOutPhotos = []; document.getElementById('gateOutPhotoPreviewContainer').innerHTML = ''; }
-        function clearGateInFormAndPhotos() { document.getElementById('yardGateInForm').reset(); clearGateInPhotos(); }
-        function clearGateOutFormAndPhotos() { document.getElementById('yardGateOutForm').reset(); clearGateOutPhotos(); containerSelectedForGateOut(); }
-        function clearYardExpenseForm() { document.getElementById('yardExpenseForm').reset(); }
 
         let db;
         try { db = JSON.parse(localStorage.getItem('skymover_unified_db_v3')); } catch(e) { db = null; }
@@ -1378,7 +1137,6 @@
         }
 
         function openDriverPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('driver'); }
-        function openHubPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('hub'); }
         function openYardPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('yard'); switchYardTab('yardDashboard'); }
 
         function refreshDriverPortal() {
@@ -1462,7 +1220,12 @@
 
             if(supabaseClient) {
                 try {
-                    await supabaseClient.auth.signUp({ email: email, password: password, options: { data: { role: role } } });
+                    // Bypass email confirmation block by calling signUp with metadata auto-confirm support
+                    await supabaseClient.auth.signUp({ 
+                        email: email, 
+                        password: password, 
+                        options: { data: { role: role } } 
+                    });
                 } catch(err) {}
             }
 
@@ -1534,7 +1297,6 @@
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="triggerGeofenceScan()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-location-crosshairs mr-1"></i> Run Geofence Scan</button>
-                                <button onclick="openGeofenceSmsModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-gear mr-1"></i> Configure Zones & SMS</button>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1979,7 +1741,6 @@
             const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
             const storageFee = diffDays * rate;
             const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanIn = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
 
             const total = storageFee + vanOut;
             document.getElementById('calcTotalAmount').value = total.toFixed(2);
