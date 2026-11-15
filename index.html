@@ -779,7 +779,10 @@
         }
 
         async function checkActiveAuthSession() {
-            if(!supabaseClient) return;
+            if(!supabaseClient) {
+                window.openSkymoverLogin();
+                return;
+            }
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if(session && session.user) {
@@ -791,6 +794,7 @@
                     currentUserRole = 'guest';
                     updateAuthUI(null, 'guest');
                     applyRbacPermissions('guest');
+                    window.openSkymoverLogin();
                 }
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
@@ -800,6 +804,7 @@
                 });
             } catch(err) {
                 applyRbacPermissions('guest');
+                window.openSkymoverLogin();
             }
         }
 
@@ -836,10 +841,13 @@
                 switchView('driver');
             } else if (role === 'dispatcher') {
                 if(resetBtn) resetBtn.style.display = 'none';
+                switchView('landing');
             } else if (role === 'admin') {
                 if(resetBtn) resetBtn.style.display = 'inline-block';
+                switchView('landing');
             } else {
-                // Guest
+                // Guest / Unauthenticated
+                window.openSkymoverLogin();
             }
         }
 
@@ -864,7 +872,6 @@
                     currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
-                    alert('Successfully signed in as ' + currentUser.email + ' (' + currentUserRole.toUpperCase() + ' role)');
                     closeSkymoverLogin();
                 }
             } catch(err) {
@@ -882,8 +889,7 @@
                 currentUserRole = 'guest';
                 updateAuthUI(null, 'guest');
                 applyRbacPermissions('guest');
-                switchView('landing');
-                alert('Successfully signed out.');
+                window.openSkymoverLogin();
             } catch(err) {
                 alert('Sign out error: ' + err.message);
             }
