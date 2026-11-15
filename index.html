@@ -751,7 +751,6 @@
             try {
                 const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).single();
                 if(error) {
-                    // Table or row not yet provisioned in Supabase, operating gracefully on local storage state
                     saveCloudData();
                     return;
                 }
@@ -762,7 +761,6 @@
                     renderTransshipmentTable();
                 }
             } catch(e) {
-                // Fallback active for offline or un-migrated database schema
                 saveCloudData();
             }
         }
@@ -2428,6 +2426,8 @@
             c.gateOutDate = f.date;
             c.vanOutAmount = f.vanOutAmount || '0';
             c.totalAmount = document.getElementById('calcTotalAmount').value;
+            // Capture Gate-Out remarks on the container object as well
+            c.gateOutRemarks = f.remarks;
 
             if(!yardDb.movements) yardDb.movements = [];
             if(!yardDb.revenues) yardDb.revenues = [];
@@ -2488,7 +2488,10 @@
         }
 
         function exportYardCSV() {
-            csv([['Container No','Size','Type','Shipping Line','Condition','Status','Trucking Name','Truck Plate No','Driver Name','EIR','Row','Van In Amount','Van Out Amount','Van In Status','Block','Bay','Tier','Gate-In Date','Gate-Out Date','Remarks','Photos Attached'], ...(yardDb.containers || []).map(c => [c.number, c.size, c.type, c.line, c.condition, c.status, c.truckingName, c.plate, c.driver, c.eir, c.row, c.vanInAmount, c.vanOutAmount, c.vanInStats, c.block, c.bay, c.tier, c.date, c.gateOutDate, c.remarks, c.photos ? c.photos.length : 0])], 'SKYMOVER_Yard_Inventory.csv');
+            csv([['Container No','Size','Type','Shipping Line','Condition','Status','Trucking Name','Truck Plate No','Driver Name','EIR','Row','Van In Amount','Van Out Amount','Van In Status','Block','Bay','Tier','Gate-In Date','Gate-Out Date','Gate-In Remarks','Gate-Out Remarks','Photos Attached'], ...(yardDb.containers || []).map(c => {
+                let gateOutMov = (yardDb.movements || []).find(m => m.number === c.number && m.kind === 'GATE-OUT');
+                return [c.number, c.size, c.type, c.line, c.condition, c.status, c.truckingName, c.plate, c.driver, c.eir, c.row, c.vanInAmount, c.vanOutAmount, c.vanInStats, c.block, c.bay, c.tier, c.date, c.gateOutDate, c.remarks || '', c.gateOutRemarks || (gateOutMov ? gateOutMov.remarks : '') || '', c.photos ? c.photos.length : 0];
+            })], 'SKYMOVER_Yard_Inventory.csv');
         }
 
         function exportYardMovements() {
@@ -2507,7 +2510,7 @@
                     block: c.block, bay: c.bay, tier: c.tier, gateInDate: c.date, gateOutDate: c.gateOutDate,
                     releaseCustomer: '—', gateOutEir: '—', storageFeeType: '—', storageRatePerDay: '—',
                     vanInAmount: c.vanInAmount, vanOutAmount: c.vanOutAmount, totalAmount: c.totalAmount, vanInStats: c.vanInStats,
-                    remarks: c.remarks, photosCount: c.photos ? c.photos.length : 0, photoNames: c.photos ? c.photos.map(p => p.name).join('; ') : ''
+                    gateInRemarks: c.remarks || '', gateOutRemarks: c.gateOutRemarks || '', photosCount: c.photos ? c.photos.length : 0, photoNames: c.photos ? c.photos.map(p => p.name).join('; ') : ''
                 };
             });
 
@@ -2519,11 +2522,12 @@
                         block: '—', bay: '—', tier: '—', gateInDate: m.kind === 'GATE-IN' ? m.date : '—', gateOutDate: m.kind === 'GATE-OUT' ? m.date : '—',
                         releaseCustomer: m.customer || '—', gateOutEir: m.kind === 'GATE-OUT' ? (m.eir || '—') : '—', storageFeeType: m.fee || '—', storageRatePerDay: m.storageamount || '—',
                         vanInAmount: m.vanInAmount || '0', vanOutAmount: m.vanOutAmount || '0', totalAmount: m.totalAmount || '0', vanInStats: m.vanInStats || '—',
-                        remarks: m.remarks || '', photosCount: m.photos ? m.photos.length : 0, photoNames: m.photos ? m.photos.map(p => p.name).join('; ') : ''
+                        gateInRemarks: m.kind === 'GATE-IN' ? (m.remarks || '') : '', gateOutRemarks: m.kind === 'GATE-OUT' ? (m.remarks || '') : '', photosCount: m.photos ? m.photos.length : 0, photoNames: m.photos ? m.photos.map(p => p.name).join('; ') : ''
                     };
                 } else {
                     if(m.kind === 'GATE-IN') {
                         if(!containerMap[m.number].gateInDate || containerMap[m.number].gateInDate === '—') containerMap[m.number].gateInDate = m.date;
+                        if(m.remarks) containerMap[m.number].gateInRemarks = m.remarks;
                     }
                     if(m.kind === 'GATE-OUT') {
                         if(!containerMap[m.number].gateOutDate || containerMap[m.number].gateOutDate === '—') containerMap[m.number].gateOutDate = m.date;
@@ -2531,6 +2535,7 @@
                         if(m.eir) containerMap[m.number].gateOutEir = m.eir;
                         if(m.fee) containerMap[m.number].storageFeeType = m.fee;
                         if(m.storageamount) containerMap[m.number].storageRatePerDay = m.storageamount;
+                        if(m.remarks) containerMap[m.number].gateOutRemarks = m.remarks;
                     }
                 }
             });
@@ -2541,7 +2546,7 @@
                 'Yard Location (Block/Bay/Tier)', 'Gate-In Date & Time', 'Gate-Out Date & Time',
                 'Release To / Customer', 'Gate-Out EIR / Reference', 'Storage Fee Type', 'Storage Amount Rate Per Day (₱)',
                 'Van In Amount (₱)', 'Van Out Amount (₱)', 'Total Amount Billing (₱)',
-                'Van In Payment Status', 'Storage Days', 'Attached Photos Count', 'Attachment File Names', 'Remarks'
+                'Van In Payment Status', 'Storage Days', 'Gate-In Remarks', 'Gate-Out Remarks', 'Attached Photos Count', 'Attachment File Names'
             ];
 
             let dataRows = Object.values(containerMap).map(item => {
@@ -2560,7 +2565,7 @@
                     item.gateInDate, item.gateOutDate,
                     item.releaseCustomer, item.gateOutEir, item.storageFeeType, item.storageRatePerDay,
                     item.vanInAmount || '0', item.vanOutAmount || '0', item.totalAmount || '0',
-                    item.vanInStats || '—', storageDays, item.photosCount, item.photoNames || 'None', item.remarks || ''
+                    item.vanInStats || '—', storageDays, item.gateInRemarks || '', item.gateOutRemarks || '', item.photosCount, item.photoNames || 'None'
                 ];
             });
 
