@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKYMOVER TRANSPORTATION • Unified Fleet, Hub & Yard Platform</title>
-    <!-- Tailwind CSS Play CDN (loaded cleanly without production warning parameters) -->
+    <title>SKYMOVER TRANSPORTATION • Unified Fleet, Hub & Yard Platform (RBAC Enabled)</title>
+    <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -92,7 +92,7 @@
             </div>
             <div>
                 <h1 class="font-extrabold text-sm tracking-wide text-white">SKYMOVER TRANSPORTATION</h1>
-                <p class="text-[10px] text-slate-400">Enterprise Fleet, Hub & Container Yard Platform</p>
+                <p class="text-[10px] text-slate-400">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -132,7 +132,7 @@
                         <i class="fa-solid fa-chart-pie"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white mb-1" data-i18n="card1Title">Management Backend</h3>
-                    <p class="text-xs text-slate-300 mb-4" data-i18n="card1Desc">Scheduling, Finance, and Reporting</p>
+                    <p class="text-xs text-slate-300 mb-4" data-i18n="card1Desc">Scheduling, Finance, and Reporting (Requires Admin/Manager Role)</p>
                     <span class="text-sky-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition">Open Dashboard →</span>
                 </div>
 
@@ -172,7 +172,7 @@
                     <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">GPS & Dispatch</button>
                     <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Expenses</button>
                     <button onclick="openSubModule('Data Backup')" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white">Backup / Restore</button>
-                    <button onclick="confirmResetAllDatabases()" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> Reset DB</button>
+                    <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> Reset DB</button>
                 </div>
             </div>
 
@@ -758,7 +758,7 @@
         <p class="mt-1">© 2026 SKYMOVER. All rights reserved.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION & REAL-TIME WEBSOCKET SYNC -->
+    <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION, REAL-TIME WEBSOCKET SYNC & RBAC -->
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
@@ -767,6 +767,7 @@
         let yardBarChartInstance = null;
         let supabaseClient = null;
         let currentUser = null;
+        let currentUserRole = 'guest'; // Roles: 'admin', 'dispatcher', 'driver', 'guest'
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -774,7 +775,7 @@
         function initSupabase() {
             try {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                updateSyncBadge('connected', 'Cloud DB & Auth Real-Time Live Sync Active');
+                updateSyncBadge('connected', 'Cloud DB & Auth RBAC Live Sync Active');
                 checkActiveAuthSession();
                 fetchCloudData();
                 subscribeToRealtimeChanges();
@@ -789,25 +790,38 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if(session && session.user) {
                     currentUser = session.user;
-                    updateAuthUI(currentUser);
+                    // Extract role from user_metadata (default to admin if not set)
+                    currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
+                    updateAuthUI(currentUser, currentUserRole);
+                    applyRbacPermissions(currentUserRole);
+                } else {
+                    currentUserRole = 'guest';
+                    updateAuthUI(null, 'guest');
+                    applyRbacPermissions('guest');
                 }
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
-                    updateAuthUI(currentUser);
+                    currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
+                    updateAuthUI(currentUser, currentUserRole);
+                    applyRbacPermissions(currentUserRole);
                 });
             } catch(err) {
-                // Auth session check bypassed for local state
+                applyRbacPermissions('guest');
             }
         }
 
-        function updateAuthUI(user) {
+        function updateAuthUI(user, role) {
             const authNavArea = document.getElementById('authNavArea');
             if(!authNavArea) return;
             if(user) {
+                const roleBadgeColor = role === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : (role === 'dispatcher' ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30');
                 authNavArea.innerHTML = `
                     <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
                         <i class="fa-solid fa-user-check text-emerald-400"></i>
-                        <span class="text-slate-200 font-semibold truncate max-w-[120px]">${user.email}</span>
+                        <div class="flex flex-col">
+                            <span class="text-slate-200 font-semibold truncate max-w-[110px]">${user.email}</span>
+                            <span class="text-[9px] uppercase font-bold px-1 rounded border ${roleBadgeColor} w-max mt-0.5">${role}</span>
+                        </div>
                         <button onclick="handleSupabaseSignOut()" class="text-rose-400 hover:text-rose-300 ml-2 font-bold" title="Sign Out">
                             <i class="fa-solid fa-right-from-bracket"></i>
                         </button>
@@ -819,6 +833,24 @@
                         <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
                     </button>
                 `;
+            }
+        }
+
+        function applyRbacPermissions(role) {
+            const resetBtn = document.getElementById('resetDbBtn');
+            
+            if (role === 'driver') {
+                // Drivers can only access Driver's Portal
+                switchView('driver');
+            } else if (role === 'dispatcher') {
+                // Dispatchers can access Yard and Hub, but restricted from sensitive admin backend resets
+                if(resetBtn) resetBtn.style.display = 'none';
+            } else if (role === 'admin') {
+                // Full access
+                if(resetBtn) resetBtn.style.display = 'inline-block';
+            } else {
+                // Guest / Unauthenticated
+                // Default landing portal available
             }
         }
 
@@ -840,8 +872,10 @@
                     alert('Authentication Error: ' + error.message);
                 } else if(data && data.user) {
                     currentUser = data.user;
-                    updateAuthUI(currentUser);
-                    alert('Successfully signed in as ' + currentUser.email);
+                    currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
+                    updateAuthUI(currentUser, currentUserRole);
+                    applyRbacPermissions(currentUserRole);
+                    alert('Successfully signed in as ' + currentUser.email + ' (' + currentUserRole.toUpperCase() + ' role)');
                     closeSkymoverLogin();
                 }
             } catch(err) {
@@ -856,7 +890,10 @@
             try {
                 await supabaseClient.auth.signOut();
                 currentUser = null;
-                updateAuthUI(null);
+                currentUserRole = 'guest';
+                updateAuthUI(null, 'guest');
+                applyRbacPermissions('guest');
+                switchView('landing');
                 alert('Successfully signed out.');
             } catch(err) {
                 alert('Sign out error: ' + err.message);
@@ -937,6 +974,11 @@
         }
 
         async function confirmResetAllDatabases() {
+            if(currentUserRole !== 'admin') {
+                alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
+                return;
+            }
+
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
             if(pwd !== 'Skymover_Transportation_2026') {
                 if(pwd !== null) console.log('Incorrect password. Reset cancelled.');
@@ -1278,7 +1320,7 @@
                 mainTitle: "SKYMOVER TRANSPORTATION",
                 mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform",
                 card1Title: "Management Backend",
-                card1Desc: "Scheduling, Finance, and Reporting",
+                card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Manager Role)",
                 card2Title: "Driver's side",
                 card2Desc: "Waybill, Photo, Navigation",
                 newDriverReg: "New driver registration →",
@@ -1311,6 +1353,12 @@
         }
 
         function switchView(viewName) {
+            // RBAC Enforcement on View Switching
+            if (viewName === 'backend' && currentUserRole === 'driver') {
+                alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
+                return;
+            }
+
             const landing = document.getElementById('viewLanding');
             const backend = document.getElementById('viewBackend');
             const driver = document.getElementById('viewDriver');
@@ -1340,7 +1388,14 @@
             }
         }
 
-        function openBackendModule(mod) { switchView('backend'); }
+        function openBackendModule(mod) { 
+            if(currentUserRole === 'driver') {
+                alert('⛔ RBAC Access Restricted: Driver role cannot open Management Backend.');
+                return;
+            }
+            switchView('backend'); 
+        }
+
         function openDriverPortal() { switchView('driver'); }
         function openHubPortal() { switchView('hub'); }
         function openYardPortal() { 
@@ -1512,6 +1567,11 @@
         }
 
         function openSubModule(title) {
+            if(currentUserRole === 'driver') {
+                alert('⛔ RBAC Access Denied: Drivers are not permitted to open backend sub-modules.');
+                return;
+            }
+
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
@@ -1573,6 +1633,11 @@
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip ID</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total Cost</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Data Backup') {
+                if(currentUserRole !== 'admin') {
+                    alert('⛔ RBAC Access Denied: Administrator role required for enterprise backups.');
+                    closeSubModule();
+                    return;
+                }
                 content.innerHTML = `
                     <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup & Restore</h3>
                     <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your entire Skymover Unified Fleet and Yard database, or restore from a previously exported backup file.</p>
