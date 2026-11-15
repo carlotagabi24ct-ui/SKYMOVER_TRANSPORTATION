@@ -719,7 +719,7 @@
         // PASSWORD-PROTECTED RESET DATABASE FUNCTION
         async function confirmResetAllDatabases() {
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records to 0:');
-            if(pwd !== 'skymover2026') {
+            if(pwd !== 'Skymover_Transportation_2026') {
                 if(pwd !== null) alert('❌ Incorrect password. Reset cancelled.');
                 return;
             }
@@ -1395,11 +1395,14 @@
                         <p class="text-xs text-slate-300">Complete merged details of Gate-In inputs with actual photo previews and Gate-Out releases with proofs.</p>
                     </div>
                     <div class="flex gap-2">
+                        <button onclick="downloadExtractionReportPDF()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+                        </button>
                         <button onclick="exportFullDetailedReportCSV()" class="bg-purple-600 text-white text-xs font-semibold px-4 py-2 rounded-xl">Export Merged CSV</button>
                         <button onclick="window.print()" class="bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-xl">Print Report</button>
                     </div>
                 </div>
-                <div class="space-y-6 text-xs text-slate-900 bg-white p-4 rounded-xl shadow">
+                <div id="extractionReportPdfContent" class="space-y-6 text-xs text-slate-900 bg-white p-4 rounded-xl shadow">
                     <div>
                         <h4 class="font-bold text-sm text-sky-900 mb-3 border-b pb-1">1. Gate-In Inputs & Attached Actual Photos / Documents (${gateInMovements.length} Records)</h4>
                         ${gateInHtml}
@@ -1410,6 +1413,21 @@
                     </div>
                 </div>
             `;
+        }
+
+        function downloadExtractionReportPDF() {
+            const element = document.getElementById('extractionReportPdfContent');
+            if(!element) return alert('Report content not found.');
+
+            const opt = {
+                margin:       10,
+                filename:     'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0, 10) + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(element).set(opt).save();
         }
 
         function renderTransshipmentTable() {
