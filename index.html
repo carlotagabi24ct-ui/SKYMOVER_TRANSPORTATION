@@ -846,6 +846,12 @@
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
+                // If guest, lock the views out and force login prompt
+                ['viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
+                    const el = document.getElementById(v);
+                    if(el) el.classList.add('hidden');
+                });
+                document.getElementById('viewLanding').classList.add('hidden');
                 window.openSkymoverLogin();
             }
         }
@@ -877,6 +883,11 @@
         }
 
         function closeSkymoverLogin() {
+            if (!currentUser || currentUserRole === 'guest') {
+                alert('Authentication required. Please sign in to access SkyMover Transportation platforms.');
+                window.openSkymoverLogin();
+                return;
+            }
             const loginModal = document.getElementById('loginModal');
             if(loginModal) loginModal.style.display = 'none';
         }
@@ -1336,6 +1347,10 @@
         }
 
         function switchView(viewName) {
+            if (!currentUser || currentUserRole === 'guest') {
+                window.openSkymoverLogin();
+                return;
+            }
             if (viewName === 'backend' && currentUserRole === 'driver') {
                 alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
                 return;
@@ -1354,6 +1369,7 @@
         }
 
         function openBackendModule(mod) {
+            if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
             if(currentUserRole === 'driver') {
                 alert('⛔ RBAC Access Restricted: Drivers cannot open backend modules.');
                 return;
@@ -1361,9 +1377,9 @@
             switchView('backend');
         }
 
-        function openDriverPortal() { switchView('driver'); }
-        function openHubPortal() { switchView('hub'); }
-        function openYardPortal() { switchView('yard'); switchYardTab('yardDashboard'); }
+        function openDriverPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('driver'); }
+        function openHubPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('hub'); }
+        function openYardPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('yard'); switchYardTab('yardDashboard'); }
 
         function refreshDriverPortal() {
             const infoContainer = document.getElementById('driverActiveTripInfo');
@@ -1565,6 +1581,7 @@
         }
 
         function openSubModule(title) {
+            if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
             if(currentUserRole === 'driver') {
                 alert('⛔ RBAC Access Denied: Drivers are not permitted to open backend sub-modules.');
                 return;
@@ -2256,7 +2273,7 @@
             const loginModal = document.getElementById('loginModal');
             window.openSkymoverLogin = function() { if(loginModal) loginModal.style.display = 'flex'; };
             document.getElementById('closeLoginModal')?.addEventListener('click', () => { 
-                loginModal.style.display = 'none'; 
+                closeSkymoverLogin(); 
             });
             document.getElementById('skymoverLoginForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();
