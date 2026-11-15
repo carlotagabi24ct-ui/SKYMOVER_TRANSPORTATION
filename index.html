@@ -87,14 +87,14 @@
                 <i class="fa-solid fa-truck-ramp-box text-white text-lg"></i>
             </div>
             <div>
-                <h1 class="font-extrabold text-sm tracking-wide text-white">SKYMOVER TRANSPORTATION</h1>
-                <p class="text-[10px] text-slate-400">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
+                <h1 class="font-extrabold text-sm tracking-wide text-white" data-i18n="topNavTitle">SKYMOVER TRANSPORTATION</h1>
+                <p class="text-[10px] text-slate-400" data-i18n="topNavSubtitle">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
             <div id="syncStatusBadge" class="hidden sm:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-[11px]">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" id="syncDot"></span>
-                <span id="syncText" class="text-slate-300 font-medium">Connecting to Cloud DB...</span>
+                <span id="syncText" class="text-slate-300 font-medium" data-i18n="syncConnecting">Connecting to Cloud DB...</span>
             </div>
             <button onclick="toggleLanguage()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
                 <i class="fa-solid fa-globe text-sky-400"></i>
@@ -102,11 +102,11 @@
             </button>
             <div id="authNavArea">
                 <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
-                    <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
+                    <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> <span data-i18n="signInBtn">Sign In</span>
                 </button>
             </div>
             <button onclick="switchView('landing')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
-                <i class="fa-solid fa-house mr-1"></i> Hub Portal
+                <i class="fa-solid fa-house mr-1"></i> <span data-i18n="hubPortalBtn">Hub Portal</span>
             </button>
         </div>
     </header>
@@ -128,7 +128,7 @@
                     </div>
                     <h3 class="text-lg font-bold text-white mb-1" data-i18n="card1Title">Management Backend</h3>
                     <p class="text-xs text-slate-300 mb-4" data-i18n="card1Desc">Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)</p>
-                    <span class="text-sky-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition">Open Dashboard →</span>
+                    <span class="text-sky-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition" data-i18n="card1Link">Open Dashboard →</span>
                 </div>
 
                 <div onclick="openDriverPortal()" class="glass-card border border-slate-800 hover:border-purple-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-purple-500/10">
@@ -146,7 +146,7 @@
                     </div>
                     <h3 class="text-lg font-bold text-white mb-1" data-i18n="card3Title">Transshipment Hub</h3>
                     <p class="text-xs text-slate-300 mb-4" data-i18n="card3Desc">Waybill, Photograph, Commission & Terminal Acceptance</p>
-                    <span class="text-emerald-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition">Open Empty Yard →</span>
+                    <span class="text-emerald-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition" data-i18n="card3Link">Open Empty Yard →</span>
                 </div>
             </div>
         </section>
@@ -155,20 +155,20 @@
         <section id="viewBackend" class="hidden space-y-6">
             <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                 <div>
-                    <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-gauge-high text-sky-400 mr-2"></i> Management Backend & Analytics</h2>
-                    <p class="text-xs text-slate-300">Centralized operations, vehicle masterlist, fuel logs, and real-time cloud data synchronization.</p>
+                    <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-gauge-high text-sky-400 mr-2"></i> <span data-i18n="backendHeading">Management Backend & Analytics</span></h2>
+                    <p class="text-xs text-slate-300" data-i18n="backendSub">Centralized operations, vehicle masterlist, fuel logs, and real-time cloud data synchronization.</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="openSubModule('Dashboard')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Dashboard</button>
-                    <button onclick="openSubModule('Vehicle Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Vehicles</button>
-                    <button onclick="openSubModule('Driver Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Drivers</button>
-                    <button onclick="openSubModule('User Management')" class="bg-sky-700 hover:bg-sky-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-user-shield mr-1"></i> RBAC Users</button>
-                    <button onclick="openSubModule('Fuel Monitoring')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Fuel</button>
-                    <button onclick="openSubModule('Maintenance')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Maintenance</button>
-                    <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">GPS & Dispatch</button>
-                    <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Expenses</button>
-                    <button onclick="openSubModule('Data Backup')" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white">Backup / Restore</button>
-                    <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> Reset DB</button>
+                    <button onclick="openSubModule('Dashboard')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDashboard">Dashboard</button>
+                    <button onclick="openSubModule('Vehicle Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnVehicles">Vehicles</button>
+                    <button onclick="openSubModule('Driver Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDrivers">Drivers</button>
+                    <button onclick="openSubModule('User Management')" class="bg-sky-700 hover:bg-sky-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-user-shield mr-1"></i> <span data-i18n="btnRbac">RBAC Users</span></button>
+                    <button onclick="openSubModule('Fuel Monitoring')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnFuel">Fuel</button>
+                    <button onclick="openSubModule('Maintenance')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnMaint">Maintenance</button>
+                    <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnGps">GPS & Dispatch</button>
+                    <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnExpenses">Expenses</button>
+                    <button onclick="openSubModule('Data Backup')" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white" data-i18n="btnBackup">Backup / Restore</button>
+                    <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> <span data-i18n="btnReset">Reset DB</span></button>
                 </div>
             </div>
 
@@ -187,28 +187,28 @@
             <div class="glass-card border border-slate-800 p-6 rounded-2xl">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-id-card text-purple-400 mr-2"></i> Driver's Portal & Waybill Mobile View</h2>
-                        <p class="text-xs text-slate-300">Mobile waybill dispatch, active route navigation, and proof-of-delivery photo uploads.</p>
+                        <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-id-card text-purple-400 mr-2"></i> <span data-i18n="driverPortalHeading">Driver's Portal & Waybill Mobile View</span></h2>
+                        <p class="text-xs text-slate-300" data-i18n="driverPortalSub">Mobile waybill dispatch, active route navigation, and proof-of-delivery photo uploads.</p>
                     </div>
-                    <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Register New Driver</button>
+                    <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold" data-i18n="regNewDriverBtn">Register New Driver</button>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-                    <h3 class="font-bold text-sm text-purple-300">Active Assigned Trip & Driver SMS Feed</h3>
+                    <h3 class="font-bold text-sm text-purple-300" data-i18n="activeTripHeading">Active Assigned Trip & Driver SMS Feed</h3>
                     <div id="driverActiveTripInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono text-slate-200"></div>
                     
                     <div class="border-t border-slate-800 pt-4">
-                        <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> Driver SMS Notification Inbox</h4>
+                        <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> <span data-i18n="smsInboxHeading">Driver SMS Notification Inbox</span></h4>
                         <div id="driverSmsInbox" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono space-y-2 max-h-36 overflow-y-auto text-slate-300">
-                            <div class="text-slate-500 italic">No SMS notifications received yet.</div>
+                            <div class="text-slate-500 italic" data-i18n="noSmsText">No SMS notifications received yet.</div>
                         </div>
                     </div>
 
                     <div class="pt-2">
-                        <label class="block text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-camera mr-1"></i> Upload Proof of Delivery / Waybill Photo</label>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-camera mr-1"></i> <span data-i18n="uploadProofLabel">Upload Proof of Delivery / Waybill Photo</span></label>
                         <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" class="w-full text-xs bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200">
                     </div>
-                    <button onclick="submitDriverProofOfDelivery()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition">Submit Proof of Delivery</button>
-                    <div id="uploadSuccessMsg" class="hidden text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i> Photo successfully uploaded and synced to cloud database!</div>
+                    <button onclick="submitDriverProofOfDelivery()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition" data-i18n="submitProofBtn">Submit Proof of Delivery</button>
+                    <div id="uploadSuccessMsg" class="hidden text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i> <span data-i18n="uploadSuccessText">Photo successfully uploaded and synced to cloud database!</span></div>
                 </div>
             </div>
         </section>
@@ -218,21 +218,21 @@
             <div class="glass-card border border-slate-800 p-6 rounded-2xl">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-ship text-emerald-400 mr-2"></i> Transshipment Hub & Terminal Acceptance</h2>
-                        <p class="text-xs text-slate-300">Accept or reject container transshipment orders and sync commissions with fleet dispatch.</p>
+                        <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-ship text-emerald-400 mr-2"></i> <span data-i18n="hubHeading">Transshipment Hub & Terminal Acceptance</span></h2>
+                        <p class="text-xs text-slate-300" data-i18n="hubSub">Accept or reject container transshipment orders and sync commissions with fleet dispatch.</p>
                     </div>
-                    <button onclick="openNewTransshipmentModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ Post New Order</button>
+                    <button onclick="openNewTransshipmentModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold" data-i18n="postOrderBtn">+ Post New Order</button>
                 </div>
                 <div class="overflow-x-auto bg-slate-900 border border-slate-800 rounded-xl">
                     <table class="w-full text-left text-xs text-slate-200">
                         <thead class="bg-slate-950 text-slate-200 border-b border-slate-800">
                             <tr>
-                                <th class="p-3">Order ID</th>
-                                <th class="p-3">Origin Hub</th>
-                                <th class="p-3">Container No.</th>
-                                <th class="p-3">Commission</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3 text-right">Actions</th>
+                                <th class="p-3" data-i18n="tblOrderId">Order ID</th>
+                                <th class="p-3" data-i18n="tblOrigin">Origin Hub</th>
+                                <th class="p-3" data-i18n="tblContainer">Container No.</th>
+                                <th class="p-3" data-i18n="tblCommission">Commission</th>
+                                <th class="p-3" data-i18n="tblStatus">Status</th>
+                                <th class="p-3 text-right" data-i18n="tblActions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="transshipmentTableBody" class="divide-y divide-slate-800"></tbody>
@@ -245,28 +245,28 @@
         <section id="viewYard" class="hidden space-y-6">
             <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                 <div>
-                    <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-warehouse text-amber-500 mr-2"></i> Skymover Empty Container Yard</h2>
-                    <p class="text-xs text-slate-300">Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.</p>
+                    <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-warehouse text-amber-500 mr-2"></i> <span data-i18n="yardHeading">Skymover Empty Container Yard</span></h2>
+                    <p class="text-xs text-slate-300" data-i18n="yardSub">Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
-                    <button onclick="switchYardTab('yardDashboard')" id="yBtn1" class="btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white">Dashboard</button>
-                    <button onclick="switchYardTab('yardInventory')" id="yBtn2" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Inventory</button>
-                    <button onclick="switchYardTab('yardGateIn')" id="yBtn3" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">+ Gate-In</button>
-                    <button onclick="switchYardTab('yardGateOut')" id="yBtn4" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Gate-Out</button>
-                    <button onclick="switchYardTab('yardRevenue')" id="yBtn5" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Revenue</button>
-                    <button onclick="switchYardTab('yardExpenses')" id="yBtn6" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Expenses</button>
-                    <button onclick="switchYardTab('yardReports')" id="yBtn7" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Reports</button>
-                    <button onclick="switchYardTab('yardBackup')" id="yBtn8" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200">Cloud Sync & Backup</button>
+                    <button onclick="switchYardTab('yardDashboard')" id="yBtn1" class="btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white" data-i18n="yTabDash">Dashboard</button>
+                    <button onclick="switchYardTab('yardInventory')" id="yBtn2" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabInv">Inventory</button>
+                    <button onclick="switchYardTab('yardGateIn')" id="yBtn3" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabGateIn">+ Gate-In</button>
+                    <button onclick="switchYardTab('yardGateOut')" id="yBtn4" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabGateOut">Gate-Out</button>
+                    <button onclick="switchYardTab('yardRevenue')" id="yBtn5" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabRev">Revenue</button>
+                    <button onclick="switchYardTab('yardExpenses')" id="yBtn6" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabExp">Expenses</button>
+                    <button onclick="switchYardTab('yardReports')" id="yBtn7" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabRep">Reports</button>
+                    <button onclick="switchYardTab('yardBackup')" id="yBtn8" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabSync">Cloud Sync & Backup</button>
                 </div>
             </div>
 
             <!-- Yard Tab 1: Dashboard -->
             <div id="yardDashboard" class="yard-tab space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700">TOTAL CONTAINERS ON-HAND</div><div class="text-3xl font-extrabold text-slate-900 my-1" id="yardTotal">0</div></div>
-                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700">AVAILABLE & GOOD</div><div class="text-3xl font-extrabold text-emerald-700 my-1" id="yardAvailable">0</div></div>
-                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700">RESERVED</div><div class="text-3xl font-extrabold text-amber-700 my-1" id="yardReserved">0</div></div>
-                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700">DAMAGED / HOLD</div><div class="text-3xl font-extrabold text-rose-700 my-1" id="yardDamaged">0</div></div>
+                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700" data-i18n="statTotal">TOTAL CONTAINERS ON-HAND</div><div class="text-3xl font-extrabold text-slate-900 my-1" id="yardTotal">0</div></div>
+                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700" data-i18n="statAvail">AVAILABLE & GOOD</div><div class="text-3xl font-extrabold text-emerald-700 my-1" id="yardAvailable">0</div></div>
+                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700" data-i18n="statRes">RESERVED</div><div class="text-3xl font-extrabold text-amber-700 my-1" id="yardReserved">0</div></div>
+                    <div class="card bg-white text-slate-900 p-5 rounded-2xl shadow border"><div class="text-xs font-semibold text-slate-700" data-i18n="statDam">DAMAGED / HOLD</div><div class="text-3xl font-extrabold text-rose-700 my-1" id="yardDamaged">0</div></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -823,7 +823,7 @@
             } else {
                 authNavArea.innerHTML = `
                     <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
-                        <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> Sign In
+                        <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> <span data-i18n="signInBtn">Sign In</span>
                     </button>
                 `;
             }
@@ -1198,8 +1198,130 @@
 
         let currentLang = 'en';
         const translations = {
-            en: { mainTitle: "SKYMOVER TRANSPORTATION", mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform", card1Title: "Management Backend", card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)", card2Title: "Driver's side", card2Desc: "Waybill, Photo, Navigation", newDriverReg: "New driver registration →", card3Title: "Transshipment Hub", card3Desc: "Waybill, Photograph, Commission & Terminal Acceptance" },
-            zh: { mainTitle: "SKYMOVER 运输物流", mainSubtitle: "菲律宾集装箱车队及空箱场站智能管理平台", card1Title: "管理后台", card1Desc: "调度、财务与报表", card2Title: "司机端", card2Desc: "运单、照片、导航", newDriverReg: "新司机注册 →", card3Title: "转运与二手枢纽", card3Desc: "运单、照片、佣金与航运终端验收" }
+            en: { 
+                topNavTitle: "SKYMOVER TRANSPORTATION", 
+                topNavSubtitle: "Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)", 
+                syncConnecting: "Connecting to Cloud DB...",
+                signInBtn: "Sign In",
+                hubPortalBtn: "Hub Portal",
+                mainTitle: "SKYMOVER TRANSPORTATION", 
+                mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform", 
+                card1Title: "Management Backend", 
+                card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)", 
+                card1Link: "Open Dashboard →",
+                card2Title: "Driver's side", 
+                card2Desc: "Waybill, Photo, Navigation", 
+                newDriverReg: "New driver registration →", 
+                card3Title: "Transshipment Hub", 
+                card3Desc: "Waybill, Photograph, Commission & Terminal Acceptance",
+                card3Link: "Open Empty Yard →",
+                backendHeading: "Management Backend & Analytics",
+                backendSub: "Centralized operations, vehicle masterlist, fuel logs, and real-time cloud data synchronization.",
+                btnDashboard: "Dashboard",
+                btnVehicles: "Vehicles",
+                btnDrivers: "Drivers",
+                btnRbac: "RBAC Users",
+                btnFuel: "Fuel",
+                btnMaint: "Maintenance",
+                btnGps: "GPS & Dispatch",
+                btnExpenses: "Expenses",
+                btnBackup: "Backup / Restore",
+                btnReset: "Reset DB",
+                driverPortalHeading: "Driver's Portal & Waybill Mobile View",
+                driverPortalSub: "Mobile waybill dispatch, active route navigation, and proof-of-delivery photo uploads.",
+                regNewDriverBtn: "Register New Driver",
+                activeTripHeading: "Active Assigned Trip & Driver SMS Feed",
+                smsInboxHeading: "Driver SMS Notification Inbox",
+                noSmsText: "No SMS notifications received yet.",
+                uploadProofLabel: "Upload Proof of Delivery / Waybill Photo",
+                submitProofBtn: "Submit Proof of Delivery",
+                uploadSuccessText: "Photo successfully uploaded and synced to cloud database!",
+                hubHeading: "Transshipment Hub & Terminal Acceptance",
+                hubSub: "Accept or reject container transshipment orders and sync commissions with fleet dispatch.",
+                postOrderBtn: "+ Post New Order",
+                tblOrderId: "Order ID",
+                tblOrigin: "Origin Hub",
+                tblContainer: "Container No.",
+                tblCommission: "Commission",
+                tblStatus: "Status",
+                tblActions: "Actions",
+                yardHeading: "Skymover Empty Container Yard",
+                yardSub: "Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.",
+                yTabDash: "Dashboard",
+                yTabInv: "Inventory",
+                yTabGateIn: "+ Gate-In",
+                yTabGateOut: "Gate-Out",
+                yTabRev: "Revenue",
+                yTabExp: "Expenses",
+                yTabRep: "Reports",
+                yTabSync: "Cloud Sync & Backup",
+                statTotal: "TOTAL CONTAINERS ON-HAND",
+                statAvail: "AVAILABLE & GOOD",
+                statRes: "RESERVED",
+                statDam: "DAMAGED / HOLD"
+            },
+            zh: { 
+                topNavTitle: "SKYMOVER 运输物流", 
+                topNavSubtitle: "企业车队、枢纽与场站平台 (已启用RBAC)", 
+                syncConnecting: "正在连接云数据库...",
+                signInBtn: "登录",
+                hubPortalBtn: "枢纽门户",
+                mainTitle: "SKYMOVER 运输物流", 
+                mainSubtitle: "菲律宾集装箱车队及空箱场站智能管理平台", 
+                card1Title: "管理后台", 
+                card1Desc: "调度、财务与报表 (需管理员/调度员权限)", 
+                card1Link: "打开仪表盘 →",
+                card2Title: "司机端", 
+                card2Desc: "运单、照片、导航", 
+                newDriverReg: "新司机注册 →", 
+                card3Title: "转运与二手枢纽", 
+                card3Desc: "运单、照片、佣金与航运终端验收",
+                card3Link: "打开空箱场站 →",
+                backendHeading: "管理后台与数据分析",
+                backendSub: "集中化运营、车辆名册、燃油日志及实时云数据同步。",
+                btnDashboard: "仪表盘",
+                btnVehicles: "车辆",
+                btnDrivers: "司机",
+                btnRbac: "RBAC 用户",
+                btnFuel: "燃油",
+                btnMaint: "维护",
+                btnGps: "GPS 与调度",
+                btnExpenses: "费用",
+                btnBackup: "备份 / 恢复",
+                btnReset: "重置数据库",
+                driverPortalHeading: "司机端门户与运单移动视图",
+                driverPortalSub: "移动运单调度、活动路线导航及送达证明照片上传。",
+                regNewDriverBtn: "注册新司机",
+                activeTripHeading: "当前指派行程与司机短信动态",
+                smsInboxHeading: "司机短信通知收件箱",
+                noSmsText: "暂未收到短信通知。",
+                uploadProofLabel: "上传送达证明 / 运单照片",
+                submitProofBtn: "提交送达证明",
+                uploadSuccessText: "照片已成功上传并同步至云数据库！",
+                hubHeading: "转运枢纽与终端验收",
+                hubSub: "接受或拒绝集装箱转运订单，并与车队调度同步佣金。",
+                postOrderBtn: "+ 发布新订单",
+                tblOrderId: "订单编号",
+                tblOrigin: "始发枢纽",
+                tblContainer: "箱号",
+                tblCommission: "佣金",
+                tblStatus: "状态",
+                tblActions: "操作",
+                yardHeading: "Skymover 空箱场站",
+                yardSub: "实时场站库存、进门/出门计费、多币种收入分析及照片审计。",
+                yTabDash: "仪表盘",
+                yTabInv: "库存",
+                yTabGateIn: "+ 进门 (Gate-In)",
+                yTabGateOut: "出门 (Gate-Out)",
+                yTabRev: "收入",
+                yTabExp: "费用",
+                yTabRep: "报表",
+                yTabSync: "云同步与备份",
+                statTotal: "在场总箱数",
+                statAvail: "可用且完好",
+                statRes: "已预定",
+                statDam: "受损 / 扣留"
+            }
         };
 
         function toggleLanguage() {
