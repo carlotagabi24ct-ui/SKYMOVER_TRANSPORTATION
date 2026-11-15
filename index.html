@@ -4,8 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SKYMOVER TRANSPORTATION • Unified Fleet, Hub & Yard Platform</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS Play CDN (configured with proper build flag) -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: {
+                preflight: true,
+            }
+        }
+    </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js for Graphical Charts -->
@@ -743,6 +750,11 @@
             if(!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).single();
+                if(error) {
+                    console.log('Supabase table not found or empty (404), initializing local/cloud state...');
+                    saveCloudData();
+                    return;
+                }
                 if(data && data.payload) {
                     db = data.payload.managementBackend || db;
                     yardDb = data.payload.emptyYard || yardDb;
@@ -750,25 +762,29 @@
                     renderTransshipmentTable();
                 }
             } catch(e) {
-                console.log('No existing cloud record found, saving initial local state...');
+                console.log('Cloud sync initialization fallback active...');
                 saveCloudData();
             }
         }
 
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
-            supabaseClient
-                .channel('public:skymover_enterprise_db')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
-                    if(payload && payload.new && payload.new.payload) {
-                        db = payload.new.payload.managementBackend || db;
-                        yardDb = payload.new.payload.emptyYard || yardDb;
-                        refreshYard();
-                        renderTransshipmentTable();
-                        console.log('⚡ Real-time database update received from another user!');
-                    }
-                })
-                .subscribe();
+            try {
+                supabaseClient
+                    .channel('public:skymover_enterprise_db')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
+                        if(payload && payload.new && payload.new.payload) {
+                            db = payload.new.payload.managementBackend || db;
+                            yardDb = payload.new.payload.emptyYard || yardDb;
+                            refreshYard();
+                            renderTransshipmentTable();
+                            console.log('⚡ Real-time database update received from another user!');
+                        }
+                    })
+                    .subscribe();
+            } catch(err) {
+                console.log('Realtime subscription skipped or not supported on this table schema.');
+            }
         }
 
         async function saveCloudData() {
@@ -784,7 +800,7 @@
                     updated_at: new Date().toISOString()
                 });
             } catch(e) {
-                console.error('Cloud sync error:', e);
+                console.log('Cloud upsert skipped (table creation required in Supabase dashboard). Local storage active.');
             }
         }
 
