@@ -112,7 +112,7 @@
                     <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">GPS & Dispatch</button>
                     <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white">Expenses</button>
                     <button onclick="openSubModule('Data Backup')" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white">Backup / Restore</button>
-                    <button onclick="confirmResetAllDatabases()" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> Reset DB (0 Records)</button>
+                    <button onclick="confirmResetAllDatabases()" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> Reset DB</button>
                 </div>
             </div>
 
@@ -556,7 +556,7 @@
                     <div class="flex flex-wrap gap-2">
                         <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-semibold" onclick="backupUnifiedEnterpriseData()">Download Unified Backup</button>
                         <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center">Restore Unified Backup<input type="file" id="unifiedRestoreFile" accept=".json,application/json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
-                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-lg text-xs font-bold" onclick="confirmResetAllDatabases()">Reset All Records (0)</button>
+                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-lg text-xs font-bold" onclick="confirmResetAllDatabases()">Reset All Records</button>
                     </div>
                 </div>
             </div>
@@ -789,7 +789,7 @@
         }
 
         async function confirmResetAllDatabases() {
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records to 0:');
+            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
             if(pwd !== 'Skymover_Transportation_2026') {
                 if(pwd !== null) alert('❌ Incorrect password. Reset cancelled.');
                 return;
@@ -838,7 +838,7 @@
             renderTransshipmentTable();
             closeSubModule();
 
-            alert('✅ All database records have been successfully reset to 0 and synced across all users in real-time!');
+            alert('✅ All database records have been successfully reset and synced across all users in real-time!');
         }
 
         // ==========================================
@@ -941,7 +941,9 @@
             sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe speed and follow terminal protocols.`);
             
             saveCloudData();
-            alert('📡 GPS Geofence Scan Completed!\n\n' + alertMsg);
+            alert('📡 GPS Geofence Scan Completed!
+
+' + alertMsg);
             
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) {
@@ -966,7 +968,7 @@
             if(!inbox) return;
             const logs = db.smsLogs || [];
             if(logs.length === 0) {
-                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet. (0 records)</div>';
+                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet.</div>';
                 return;
             }
             inbox.innerHTML = logs.map(s => `
@@ -983,7 +985,7 @@
                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-mono text-emerald-400 mb-2">
                     <i class="fa-solid fa-satellite-dish mr-1"></i> ${a.message}
                 </div>
-            `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts (0 records). Click "Run Geofence Scan" to test telemetry.</div>';
+            `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts. Click "Run Geofence Scan" to test telemetry.</div>';
         }
 
         function handleDragOver(e, zoneId) {
@@ -1212,10 +1214,10 @@
             let activeContainer = (yardDb.containers || []).find(c => c.status !== 'Released') || { number: '—', size: '—' };
             
             infoContainer.innerHTML = `
-                <div><span class="text-slate-400">Waybill ID:</span> <strong class="text-white">${activeTrans ? activeTrans.id : 'No Active Waybill (0)'}</strong></div>
+                <div><span class="text-slate-400">Waybill ID:</span> <strong class="text-white">${activeTrans ? activeTrans.id : 'No Active Waybill'}</strong></div>
                 <div><span class="text-slate-400">Origin / Route:</span> <strong class="text-white">${activeTrans ? activeTrans.origin : 'Standby / Unassigned'}</strong></div>
                 <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '—'})</strong></div>
-                <div><span class="text-slate-400">Status:</span> <span class="text-slate-400 font-bold">Standby (0 active trips)</span></div>
+                <div><span class="text-slate-400">Status:</span> <span class="text-emerald-400 font-bold">Standby & Ready</span></div>
             `;
             refreshDriverSmsInbox();
         }
@@ -1275,7 +1277,7 @@
                             </button>
                         </div>
                         <div class="w-full lg:w-1/2 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-200 h-48 overflow-y-auto" id="aiOutputLog">
-                            [LogiBRAIN Unified DB Ready] Connected to Yard Stock, Fleet Masterlist, and Hub Transshipments (0 active records)... Click 'Generate AI Fleet & Yard Report' to run simulation.
+                            [LogiBRAIN Unified DB Ready] Connected to Yard Stock, Fleet Masterlist, and Hub Transshipments... Click 'Generate AI Fleet & Yard Report' to run simulation.
                         </div>
                     </div>
                 `;
@@ -1328,7 +1330,7 @@
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                                 <h4 class="font-bold text-xs text-amber-300 mb-3"><i class="fa-solid fa-bell mr-1"></i> Geofence Event Alert History</h4>
                                 <div id="geofenceAlertsContainer" class="max-h-36 overflow-y-auto space-y-2">
-                                    <div class="text-slate-500 italic text-xs">No active geofence boundary alerts (0 records). Click "Run Geofence Scan" to test telemetry.</div>
+                                    <div class="text-slate-500 italic text-xs">No active geofence boundary alerts. Click "Run Geofence Scan" to test telemetry.</div>
                                 </div>
                             </div>
                         </div>
@@ -1342,9 +1344,9 @@
         function runAiAnalysis() {
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
-            log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB (0 records)...\\n";
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + (db.vehicles || []).length + " trucks.\\n"; }, 400);
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified at baseline 0."; }, 900);
+            log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB...\n";
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + (db.vehicles || []).length + " trucks.\n"; }, 400);
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified successfully."; }, 900);
         }
 
         function handlePhotoUpload(e) {
@@ -1394,37 +1396,37 @@
                     </div>
                 `;
             } else if (title === 'Vehicle Management') {
-                let rows = vehicles.length ? vehicles.map(v => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + v.driver + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No vehicles registered (0 records).</td></tr>';
+                let rows = vehicles.length ? vehicles.map(v => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + v.driver + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No vehicles registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-truck text-blue-400 mr-2"></i> Vehicle Masterlist</h3><button onclick="addVehiclePrompt()" class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ Add Vehicle</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Status</th><th class="p-3">Assigned Driver</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Driver Management') {
-                let rows = drivers.length ? drivers.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No drivers registered (0 records).</td></tr>';
+                let rows = drivers.length ? drivers.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-users text-indigo-400 mr-2"></i> Driver Management</h3><button onclick="openNewDriverRegistrationModal()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ Register New Driver</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Status</th><th class="p-3">Rating</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Fuel Monitoring') {
-                let rows = fuelLogs.length ? fuelLogs.map(f => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + f.unit + '</td><td class="p-3">' + f.liters + '</td><td class="p-3 font-bold text-emerald-700">' + f.cost + '</td><td class="p-3">' + f.station + '</td><td class="p-3">' + f.date + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No fuel logs (0 records).</td></tr>';
+                let rows = fuelLogs.length ? fuelLogs.map(f => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + f.unit + '</td><td class="p-3">' + f.liters + '</td><td class="p-3 font-bold text-emerald-700">' + f.cost + '</td><td class="p-3">' + f.station + '</td><td class="p-3">' + f.date + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No fuel logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Fuel Monitoring</h3><button onclick="addFuelPrompt()" class="bg-amber-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ Log Fuel Fill</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Volume</th><th class="p-3">Cost</th><th class="p-3">Station</th><th class="p-3">Date</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Maintenance') {
-                let rows = maintenanceLogs.length ? maintenanceLogs.map(m => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + m.unit + '</td><td class="p-3">' + m.issue + '</td><td class="p-3 font-bold text-rose-700">' + m.cost + '</td><td class="p-3 font-bold text-slate-900">' + m.status + '</td><td class="p-3">' + m.date + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No maintenance logs (0 records).</td></tr>';
+                let rows = maintenanceLogs.length ? maintenanceLogs.map(m => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + m.unit + '</td><td class="p-3">' + m.issue + '</td><td class="p-3 font-bold text-rose-700">' + m.cost + '</td><td class="p-3 font-bold text-slate-900">' + m.status + '</td><td class="p-3">' + m.date + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No maintenance logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Fleet Maintenance</h3><button onclick="addMaintenancePrompt()" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ Schedule Maintenance</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Issue</th><th class="p-3">Cost</th><th class="p-3">Status</th><th class="p-3">Date</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'GPS & Dispatch') {
-                let rows = dispatchLogs.length ? dispatchLogs.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + d.unit + '</td><td class="p-3">' + d.route + '</td><td class="p-3">' + d.driver + '</td><td class="p-3 text-emerald-700 font-bold">' + d.status + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No active dispatches (0 records).</td></tr>';
+                let rows = dispatchLogs.length ? dispatchLogs.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + d.unit + '</td><td class="p-3">' + d.route + '</td><td class="p-3">' + d.driver + '</td><td class="p-3 text-emerald-700 font-bold">' + d.status + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No active dispatches.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> GPS & Dispatch</h3><button onclick="addDispatchPrompt()" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ New Dispatch</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Route</th><th class="p-3">Driver</th><th class="p-3">Status</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Fleet Expenses') {
-                let rows = expenseLogs.length ? expenseLogs.map(e => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold text-sky-800">' + e.trip + '</td><td class="p-3">' + e.fuel + '</td><td class="p-3">' + e.tolls + '</td><td class="p-3">' + e.maintenance + '</td><td class="p-3 font-extrabold text-emerald-700">' + e.total + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No fleet expenses (0 records).</td></tr>';
+                let rows = expenseLogs.length ? expenseLogs.map(e => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold text-sky-800">' + e.trip + '</td><td class="p-3">' + e.fuel + '</td><td class="p-3">' + e.tolls + '</td><td class="p-3">' + e.maintenance + '</td><td class="p-3 font-extrabold text-emerald-700">' + e.total + '</td></tr>').join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No fleet expenses.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Fleet Expenses</h3><button onclick="addExpensePrompt()" class="bg-teal-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">+ Log Trip Expense</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip ID</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total Cost</th></tr>` + rows + `</table></div>
@@ -1583,7 +1585,7 @@
                         `).join('') : '<span class="text-slate-500 italic text-[11px]">No photo attachments for this Gate-In entry.</span>'}
                     </div>
                 </div>
-            `).join('') : '<div class="text-slate-500 p-2">No Gate-In records found (0 records).</div>';
+            `).join('') : '<div class="text-slate-500 p-2">No Gate-In records found.</div>';
 
             let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => `
                 <div class="border rounded-xl p-4 bg-slate-50 mb-3 text-slate-900 shadow-sm">
@@ -1610,7 +1612,7 @@
                         `).join('') : '<span class="text-slate-500 italic text-[11px]">No photo attachments for this Gate-Out release.</span>'}
                     </div>
                 </div>
-            `).join('') : '<div class="text-slate-500 p-2">No Gate-Out records found (0 records).</div>';
+            `).join('') : '<div class="text-slate-500 p-2">No Gate-Out records found.</div>';
 
             content.innerHTML = `
                 <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4 text-white">
@@ -1672,7 +1674,7 @@
                         ` : '<span class="text-emerald-400 font-bold text-[11px]"><i class="fa-solid fa-check mr-1"></i> Accepted & Synced</span>'}
                     </td>
                 </tr>
-            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No transshipment orders found (0 records).</td></tr>';
+            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No transshipment orders found.</td></tr>';
         }
 
         function openNewTransshipmentModal() {
@@ -1788,7 +1790,7 @@
             let r = (yardDb.movements || []).slice(-8).reverse();
             const yrb = document.getElementById('yardRecentBody');
             if(yrb) {
-                yrb.innerHTML = r.length ? r.map(m => `<tr class="font-medium text-slate-900"><td class="p-3">${stamp(m.date)}</td><td class="p-3 font-bold">${m.kind}</td><td class="p-3 font-mono font-bold">${m.number}</td><td class="p-3">${m.plate}</td><td class="p-3">${m.eir||'—'}</td><td class="p-3 font-bold">₱${m.vanInAmount || m.totalAmount || 0}</td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No movements recorded yet (0 records).</td></tr>';
+                yrb.innerHTML = r.length ? r.map(m => `<tr class="font-medium text-slate-900"><td class="p-3">${stamp(m.date)}</td><td class="p-3 font-bold">${m.kind}</td><td class="p-3 font-mono font-bold">${m.number}</td><td class="p-3">${m.plate}</td><td class="p-3">${m.eir||'—'}</td><td class="p-3 font-bold">₱${m.vanInAmount || m.totalAmount || 0}</td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No movements recorded yet.</td></tr>';
             }
 
             renderYardInventory();
@@ -1917,7 +1919,7 @@
                             <button class="text-sky-700 font-bold hover:underline mr-2" onclick="editYardStatus('${c.id}')">Status</button>
                         </td>
                     </tr>
-                `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No containers found (0 records).</td></tr>';
+                `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No containers found.</td></tr>';
             }
         }
 
@@ -2084,7 +2086,7 @@
                             <td class="p-3 text-right font-mono font-extrabold ${net >= 0 ? 'text-blue-800' : 'text-rose-700'}">₱${net.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                         </tr>
                     `;
-                }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No monthly financial records (0 records).</td></tr>';
+                }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No monthly financial records.</td></tr>';
             }
 
             tbody.innerHTML = revs.length ? revs.slice().reverse().map(r => `
@@ -2095,7 +2097,7 @@
                     <td class="p-3 font-semibold">${r.eir || '—'}</td>
                     <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
-            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for this date range (0 records).</td></tr>';
+            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for this date range.</td></tr>';
 
             renderMonthlyTrendChart(sortedMonths, monthlyMap);
         }
@@ -2287,7 +2289,7 @@
                     <td class="p-3 font-semibold text-slate-800">${e.description}</td>
                     <td class="p-3 text-right font-extrabold text-rose-700">₱${Number(e.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
-            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No expense records found (0 records).</td></tr>';
+            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No expense records found.</td></tr>';
         }
 
         function handleYardExpenseSubmit(e) {
@@ -2324,7 +2326,7 @@
                 lineRows.innerHTML = lines.length ? lines.map(l => {
                     let x = a.filter(c => c.line === l);
                     return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold text-slate-900">' + l + '</td><td class="p-3 font-semibold">' + x.length + '</td><td class="p-3 font-semibold text-emerald-700">' + x.filter(c => c.status==='Available'&&c.condition==='Good').length + '</td><td class="p-3 font-semibold text-amber-700">' + x.filter(c => c.status==='Reserved').length + '</td><td class="p-3 font-semibold text-rose-700">' + x.filter(c => ['Damaged','For Inspection'].includes(c.condition)||c.status==='Hold').length + '</td></tr>';
-                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No stock records (0 records).</td></tr>';
+                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No stock records.</td></tr>';
             }
 
             const moveRows = document.getElementById('yardMovementRows');
@@ -2340,7 +2342,7 @@
                         <td class="p-3 font-extrabold text-emerald-700">${m.totalAmount ? '₱' + m.totalAmount : '—'}</td>
                         <td class="p-3 font-semibold">${m.eir||'—'}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement history (0 records).</td></tr>';
+                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement history.</td></tr>';
             }
         }
 
@@ -2409,7 +2411,9 @@
             const totalAmountStr = document.getElementById('calcTotalAmount').value.replace(/,/g, '');
             const totalAmountNum = parseFloat(totalAmountStr) || 0;
 
-            if(!confirm('Confirm gate-out for ' + c.number + '?\nStorage Days: ' + storageDays + '\nTotal Billing Amount: ₱' + document.getElementById('calcTotalAmount').value)) return;
+            if(!confirm('Confirm gate-out for ' + c.number + '?
+Storage Days: ' + storageDays + '
+Total Billing Amount: ₱' + document.getElementById('calcTotalAmount').value)) return;
             
             if(c.vanInStats === 'UNPAID') {
                 c.vanInStats = 'PAID';
