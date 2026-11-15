@@ -350,7 +350,7 @@
                             <div><label class="font-bold text-slate-800 mb-1 block">Container Size *</label><select name="size" required class="p-2 border rounded-lg w-full bg-white text-slate-900"><option value="">Select size</option><option>20FT</option><option>40FT</option><option>40HC</option><option>45FT</option></select></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Container Type</label><select name="type" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>Dry</option><option>Reefer</option><option>Open Top</option><option>Flat Rack</option><option>Other</option></select></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Shipping Line *</label><select name="line" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>TS LINE</option><option>EVERGREEN</option><option>SINO TRANS</option><option>ASL</option><option>COSCO</option><option>ONE</option><option>M-SC</option><option>HMM</option><option>MAERKS</option><option>CMA-CGM</option><option>WAN-HAI</option><option>OOCL</option><option>ZIM LINE</option><option>PIL</option><option>SITC</option></select></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Trucking Name *</label><select name="truckingName" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>VICTOR LAINE</option><option>SKYMOVER</option><option>GGS TRUCKING</option><option>RCLC</option></select></div>   
+                            <div><label class="font-bold text-slate-800 mb-1 block">Trucking Name *</label><select name="truckingName" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>VICTOR LAINE</option><option>SKYMOVER</option><option>GGS TRUCKING</option><option>RCLC</option></select></div> 
                             <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Driver Name</label><input name="driver" class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">EIR / Reference No.</label><input name="eir" class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
@@ -1395,7 +1395,7 @@
             document.getElementById('driverRegForm').reset();
         }
 
-        // --- NEW USER PROVISIONING (ADMIN & DISPATCHER CONTROLS) ---
+        // --- NEW USER PROVISIONING & DELETE USER FUNCTION ---
         function openNewUserRegistrationModal() {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
@@ -1457,6 +1457,23 @@
 
             alert(`Successfully registered user ${email} with role [${role.toUpperCase()}].`);
             openSubModule('User Management');
+        }
+
+        function deleteSystemUser(index) {
+            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
+                alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
+                return;
+            }
+            const users = db.systemUsers || [];
+            if(users[index]) {
+                const targetEmail = users[index].email;
+                if(confirm(`Are you sure you want to delete user account: ${targetEmail}?`)) {
+                    db.systemUsers.splice(index, 1);
+                    saveCloudData();
+                    alert(`Successfully deleted user ${targetEmail}.`);
+                    openSubModule('User Management');
+                }
+            }
         }
 
         function switchAiTab(tab) {
@@ -1596,13 +1613,16 @@
                 `;
             } else if (title === 'User Management') {
                 let users = db.systemUsers || [];
-                let userRows = users.length ? users.map(u => `
+                let userRows = users.length ? users.map((u, index) => `
                     <tr class="border-b font-medium text-slate-900">
                         <td class="p-3 font-bold">${u.email}</td>
                         <td class="p-3 uppercase"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-900' : (u.role === 'dispatcher' ? 'bg-sky-100 text-sky-900' : 'bg-purple-100 text-purple-900')}">${u.role}</span></td>
                         <td class="p-3">${new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteSystemUser(${index})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Delete</button>
+                        </td>
                     </tr>
-                `).join('') : '<tr><td colspan="3" class="p-4 text-center text-slate-500 font-medium">No custom users provisioned yet.</td></tr>';
+                `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No custom users provisioned yet.</td></tr>';
                 
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
@@ -1614,7 +1634,7 @@
                     </div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3">
                         <table class="w-full text-left text-xs">
-                            <tr class="border-b text-slate-800 font-bold"><th class="p-3">User Email</th><th class="p-3">Assigned Role</th><th class="p-3">Date Provisioned</th></tr>
+                            <tr class="border-b text-slate-800 font-bold"><th class="p-3">User Email</th><th class="p-3">Assigned Role</th><th class="p-3">Date Provisioned</th><th class="p-3 text-right">Actions</th></tr>
                             ${userRows}
                         </table>
                     </div>
