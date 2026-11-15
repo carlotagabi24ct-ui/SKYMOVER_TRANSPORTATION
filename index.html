@@ -64,11 +64,6 @@
         .modal-form input[type="email"]:focus,
         .modal-form select:focus { border-color: #0284c7; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
 
-        /* Checkbox Option */
-        .form-options { margin: 1rem 0 1.5rem 0; }
-        .checkbox-container { display: flex; align-items: center; font-size: 0.875rem; color: #475569; cursor: pointer; user-select: none; }
-        .checkbox-container input { margin-right: 0.5rem; accent-color: #0284c7; width: 1rem; height: 1rem; }
-
         /* Primary Action Button */
         .skymover-btn-primary { width: 100%; padding: 0.75rem 1rem; background-color: #0284c7; color: #ffffff; font-weight: 600; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
         .skymover-btn-primary:hover { background-color: #0369a1; }
@@ -132,7 +127,7 @@
                         <i class="fa-solid fa-chart-pie"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white mb-1" data-i18n="card1Title">Management Backend</h3>
-                    <p class="text-xs text-slate-300 mb-4" data-i18n="card1Desc">Scheduling, Finance, and Reporting (Requires Admin/Manager Role)</p>
+                    <p class="text-xs text-slate-300 mb-4" data-i18n="card1Desc">Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)</p>
                     <span class="text-sky-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition">Open Dashboard →</span>
                 </div>
 
@@ -1203,7 +1198,7 @@
 
         let currentLang = 'en';
         const translations = {
-            en: { mainTitle: "SKYMOVER TRANSPORTATION", mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform", card1Title: "Management Backend", card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Manager Role)", card2Title: "Driver's side", card2Desc: "Waybill, Photo, Navigation", newDriverReg: "New driver registration →", card3Title: "Transshipment Hub", card3Desc: "Waybill, Photograph, Commission & Terminal Acceptance" },
+            en: { mainTitle: "SKYMOVER TRANSPORTATION", mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform", card1Title: "Management Backend", card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)", card2Title: "Driver's side", card2Desc: "Waybill, Photo, Navigation", newDriverReg: "New driver registration →", card3Title: "Transshipment Hub", card3Desc: "Waybill, Photograph, Commission & Terminal Acceptance" },
             zh: { mainTitle: "SKYMOVER 运输物流", mainSubtitle: "菲律宾集装箱车队及空箱场站智能管理平台", card1Title: "管理后台", card1Desc: "调度、财务与报表", card2Title: "司机端", card2Desc: "运单、照片、导航", newDriverReg: "新司机注册 →", card3Title: "转运与二手枢纽", card3Desc: "运单、照片、佣金与航运终端验收" }
         };
 
@@ -1234,7 +1229,14 @@
             else if (viewName === 'yard') { document.getElementById('viewYard').classList.remove('hidden'); switchYardTab('yardDashboard'); }
         }
 
-        function openBackendModule(mod) { if(currentUserRole === 'driver') { alert('⛔ RBAC Access Restricted'); return; } switchView('backend'); }
+        function openBackendModule(mod) {
+            if(currentUserRole === 'driver') {
+                alert('⛔ RBAC Access Restricted: Drivers cannot open backend modules.');
+                return;
+            }
+            switchView('backend');
+        }
+
         function openDriverPortal() { switchView('driver'); }
         function openHubPortal() { switchView('hub'); }
         function openYardPortal() { switchView('yard'); switchYardTab('yardDashboard'); }
@@ -1271,10 +1273,10 @@
             document.getElementById('driverRegForm').reset();
         }
 
-        // --- NEW USER PROVISIONING (ADMIN ACCESS RIGHTS) ---
+        // --- NEW USER PROVISIONING (ADMIN & DISPATCHER CONTROLS) ---
         function openNewUserRegistrationModal() {
-            if(currentUserRole !== 'admin') {
-                alert('⛔ RBAC Restricted: Only administrators can provision new users.');
+            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
+                alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
                 return;
             }
             const modal = document.getElementById('subModuleModal');
