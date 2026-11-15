@@ -762,7 +762,7 @@
         let yardBarChartInstance = null;
         let supabaseClient = null;
         let currentUser = null;
-        let currentUserRole = 'guest';
+        let currentUserRole = 'dispatcher'; // Default set to Dispatcher view per user role
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -806,26 +806,27 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if(session && session.user) {
                     currentUser = session.user;
-                    currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
+                    currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'dispatcher';
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
                 } else {
-                    currentUserRole = 'guest';
-                    updateAuthUI(null, 'guest');
-                    applyRbacPermissions('guest');
-                    window.openSkymoverLogin();
+                    currentUserRole = 'dispatcher';
+                    updateAuthUI(null, 'dispatcher');
+                    applyRbacPermissions('dispatcher');
+                    // Automatically open to Landing / Dispatcher portal
+                    switchView('landing');
                 }
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
-                    currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
+                    currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'dispatcher' : 'dispatcher');
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
                 });
             } catch(err) {
-                applyRbacPermissions('guest');
-                window.openSkymoverLogin();
+                applyRbacPermissions('dispatcher');
+                switchView('landing');
             }
         }
 
@@ -848,9 +849,10 @@
                 `;
             } else {
                 authNavArea.innerHTML = `
-                    <button onclick="window.openSkymoverLogin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-200">
-                        <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> <span data-i18n="signInBtn">Sign In</span>
-                    </button>
+                    <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+                        <i class="fa-solid fa-user-tie text-sky-400"></i>
+                        <span class="text-slate-200 font-semibold">Dispatcher Mode</span>
+                    </div>
                 `;
             }
         }
@@ -860,18 +862,14 @@
             if (role === 'driver') {
                 switchView('driver');
             } else if (role === 'dispatcher') {
-                if(resetBtn) resetBtn.style.display = 'none';
+                // Dispatcher can view all functions and analytics as requested
+                if(resetBtn) resetDbBtn.style.display = 'inline-block';
                 switchView('landing');
             } else if (role === 'admin') {
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                ['viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
-                    const el = document.getElementById(v);
-                    if(el) el.classList.add('hidden');
-                });
-                document.getElementById('viewLanding').classList.add('hidden');
-                window.openSkymoverLogin();
+                switchView('landing');
             }
         }
 
@@ -889,7 +887,7 @@
                     alert('Authentication Error: ' + error.message);
                 } else if(data && data.user) {
                     currentUser = data.user;
-                    currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
+                    currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'dispatcher';
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     closeSkymoverLogin();
@@ -902,11 +900,6 @@
         }
 
         function closeSkymoverLogin() {
-            if (!currentUser || currentUserRole === 'guest') {
-                alert('Authentication required. Please sign in to access SkyMover Transportation platforms.');
-                window.openSkymoverLogin();
-                return;
-            }
             const loginModal = document.getElementById('loginModal');
             if(loginModal) loginModal.style.display = 'none';
         }
@@ -916,10 +909,9 @@
             try {
                 await supabaseClient.auth.signOut();
                 currentUser = null;
-                currentUserRole = 'guest';
-                updateAuthUI(null, 'guest');
-                applyRbacPermissions('guest');
-                window.openSkymoverLogin();
+                currentUserRole = 'dispatcher';
+                updateAuthUI(null, 'dispatcher');
+                applyRbacPermissions('dispatcher');
             } catch(err) {
                 alert('Sign out error: ' + err.message);
             }
@@ -996,11 +988,7 @@
         }
 
         async function confirmResetAllDatabases() {
-            if(currentUserRole !== 'admin') {
-                alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
-                return;
-            }
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
+            const pwd = prompt('🔒 Enter Password to Reset Records:');
             if(pwd !== 'Skymover_Transportation_2026') return;
 
             db = { vehicles: [], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [], geofenceZones: [], systemUsers: [] };
@@ -1240,7 +1228,7 @@
                 mainTitle: "SKYMOVER TRANSPORTATION", 
                 mainSubtitle: "Philippine Container Fleet & Empty Container Yard Management Platform", 
                 card1Title: "Management Backend", 
-                card1Desc: "Scheduling, Finance, and Reporting (Requires Admin/Dispatcher Role)", 
+                card1Desc: "Scheduling, Finance, and Reporting (Dispatcher View)", 
                 card1Link: "Open Dashboard →",
                 card2Title: "Driver's side", 
                 card2Desc: "Waybill, Photo, Navigation", 
@@ -1302,7 +1290,7 @@
                 mainTitle: "SKYMOVER 运输物流", 
                 mainSubtitle: "菲律宾集装箱车队及空箱场站智能管理平台", 
                 card1Title: "管理后台", 
-                card1Desc: "调度、财务与报表 (需管理员/调度员权限)", 
+                card1Desc: "调度、财务与报表", 
                 card1Link: "打开仪表盘 →",
                 card2Title: "司机端", 
                 card2Desc: "运单、照片、导航", 
@@ -1367,15 +1355,6 @@
         }
 
         function switchView(viewName) {
-            if (!currentUser || currentUserRole === 'guest') {
-                window.openSkymoverLogin();
-                return;
-            }
-            if (viewName === 'backend' && currentUserRole === 'driver') {
-                alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
-                return;
-            }
-
             ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
                 const el = document.getElementById(v);
                 if(el) el.classList.add('hidden');
@@ -1388,18 +1367,10 @@
             else if (viewName === 'yard') { document.getElementById('viewYard').classList.remove('hidden'); switchYardTab('yardDashboard'); }
         }
 
-        function openBackendModule(mod) {
-            if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
-            if(currentUserRole === 'driver') {
-                alert('⛔ RBAC Access Restricted: Drivers cannot open backend modules.');
-                return;
-            }
-            switchView('backend');
-        }
-
-        function openDriverPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('driver'); }
-        function openHubPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('hub'); }
-        function openYardPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('yard'); switchYardTab('yardDashboard'); }
+        function openBackendModule(mod) { switchView('backend'); }
+        function openDriverPortal() { switchView('driver'); }
+        function openHubPortal() { switchView('hub'); }
+        function openYardPortal() { switchView('yard'); switchYardTab('yardDashboard'); }
 
         function refreshDriverPortal() {
             const infoContainer = document.getElementById('driverActiveTripInfo');
@@ -1434,10 +1405,6 @@
         }
 
         function openNewUserRegistrationModal() {
-            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
-                alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
-                return;
-            }
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
@@ -1457,8 +1424,8 @@
                     <div>
                         <label class="block text-slate-300 mb-1 font-semibold">Assigned Role & Access Rights *</label>
                         <select id="newUserRole" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-bold">
-                            <option value="admin">Admin (Full System Access & User Provisioning)</option>
                             <option value="dispatcher">Dispatcher (Yard, Hub & Fleet Analytics)</option>
+                            <option value="admin">Admin (Full System Access & User Provisioning)</option>
                             <option value="driver">Driver (Mobile Waybill & Upload Portal Only)</option>
                         </select>
                     </div>
@@ -1470,7 +1437,6 @@
             `;
         }
 
-        // 3. RBAC EMAIL CONFIRMATION BYPASS & USER PROVISIONING
         async function handleNewUserSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('newUserEmail').value;
@@ -1483,7 +1449,6 @@
 
             if(supabaseClient) {
                 try {
-                    // Sign up the user with metadata pre-configured
                     await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
@@ -1495,15 +1460,11 @@
                 } catch(err) {}
             }
 
-            alert(`Successfully registered user ${email} with role [${role.toUpperCase()}]. Note: If email confirmation is required by Supabase settings, sign in using admin privileges or disable email verification in your Supabase Auth Providers dashboard.`);
+            alert(`Successfully registered user ${email} with role [${role.toUpperCase()}].`);
             openSubModule('User Management');
         }
 
         function deleteSystemUser(index) {
-            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
-                alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
-                return;
-            }
             const users = db.systemUsers || [];
             if(users[index]) {
                 const targetEmail = users[index].email;
@@ -1610,12 +1571,6 @@
         }
 
         function openSubModule(title) {
-            if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
-            if(currentUserRole === 'driver') {
-                alert('⛔ RBAC Access Denied: Drivers are not permitted to open backend sub-modules.');
-                return;
-            }
-
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
@@ -1705,7 +1660,6 @@
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip ID</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total Cost</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Data Backup') {
-                if(currentUserRole !== 'admin') { alert('⛔ RBAC Access Denied'); closeSubModule(); return; }
                 content.innerHTML = `
                     <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup & Restore</h3>
                     <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your entire Skymover Unified Fleet and Yard database.</p>
@@ -2314,7 +2268,7 @@
     </script>
 
     <!-- Login Modal Overlay -->
-    <div id="loginModal" class="skymover-modal-overlay" style="display: flex;">
+    <div id="loginModal" class="skymover-modal-overlay" style="display: none;">
         <div class="skymover-modal-container">
             <button type="button" class="modal-close-btn" id="closeLoginModal">&times;</button>
             <div class="modal-header">
