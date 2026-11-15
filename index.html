@@ -384,6 +384,7 @@
                 </div>
             </div>
 
+            <!-- Yard Tab 4: Gate-Out -->
             <div id="yardGateOut" class="yard-tab hidden">
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border border-slate-200">
                     <h3 class="font-bold text-base text-slate-900 mb-4">Container Gate-Out / Release</h3>
@@ -761,7 +762,7 @@
         let yardBarChartInstance = null;
         let supabaseClient = null;
         let currentUser = null;
-        let currentUserRole = 'guest'; // Roles: 'admin', 'dispatcher', 'driver', 'guest'
+        let currentUserRole = 'guest';
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -836,7 +837,6 @@
 
         function applyRbacPermissions(role) {
             const resetBtn = document.getElementById('resetDbBtn');
-            
             if (role === 'driver') {
                 switchView('driver');
             } else if (role === 'dispatcher') {
@@ -846,7 +846,6 @@
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                // Guest / Unauthenticated: Force login modal open and keep background views hidden
                 window.openSkymoverLogin();
             }
         }
@@ -860,11 +859,7 @@
             if(submitBtn) { submitBtn.textContent = 'Authenticating...'; submitBtn.disabled = true; }
 
             try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
                 if(error) {
                     alert('Authentication Error: ' + error.message);
                 } else if(data && data.user) {
@@ -974,14 +969,10 @@
                 alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
                 return;
             }
-
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
             if(pwd !== 'Skymover_Transportation_2026') return;
 
-            db = {
-                vehicles: [], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [], geofenceZones: [], systemUsers: []
-            };
-
+            db = { vehicles: [], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [], geofenceZones: [], systemUsers: [] };
             yardDb = { containers: [], movements: [], revenues: [], expenses: [] };
 
             saveDB();
@@ -1406,7 +1397,6 @@
             document.getElementById('driverRegForm').reset();
         }
 
-        // --- NEW USER PROVISIONING & DELETE USER FUNCTION ---
         function openNewUserRegistrationModal() {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
@@ -1456,14 +1446,8 @@
 
             if(supabaseClient) {
                 try {
-                    await supabaseClient.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: { data: { role: role } }
-                    });
-                } catch(err) {
-                    console.log('Auth signup sync note:', err.message);
-                }
+                    await supabaseClient.auth.signUp({ email: email, password: password, options: { data: { role: role } } });
+                } catch(err) {}
             }
 
             alert(`Successfully registered user ${email} with role [${role.toUpperCase()}].`);
@@ -1960,12 +1944,35 @@
             }
         }
 
-        function recalculateTotals() {}
+        function recalculateTotals() {
+            const cId = document.getElementById('yardOutContainer').value;
+            const c = yardDb.containers.find(x => x.id === cId);
+            if(!c) return;
+
+            const gateInTime = new Date(c.date || Date.now());
+            const gateOutVal = document.getElementById('calcGateOutDate').value;
+            const gateOutTime = gateOutVal ? new Date(gateOutVal) : new Date();
+
+            let diffTime = Math.abs(gateOutTime - gateInTime);
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if(diffDays < 1) diffDays = 1;
+
+            document.getElementById('calcStorageDays').value = diffDays;
+
+            const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
+            const storageFee = diffDays * rate;
+            const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
+            const vanIn = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
+
+            const total = storageFee + vanOut;
+            document.getElementById('calcTotalAmount').value = total.toFixed(2);
+        }
 
         function renderYardRevenue() {
             const tbody = document.getElementById('revenueTableBody');
             if(!tbody) return;
-            tbody.innerHTML = (yardDb.revenues || []).length ? yardDb.revenues.map(r => `
+            const revs = yardDb.revenues || [];
+            tbody.innerHTML = revs.length ? revs.map(r => `
                 <tr class="border-b font-medium text-slate-900">
                     <td class="p-3">${stamp(r.date)}</td>
                     <td class="p-3 font-bold text-emerald-800">${r.source}</td>
@@ -1974,32 +1981,281 @@
                     <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString()}</td>
                 </tr>
             `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found.</td></tr>';
+            
+            const totalRev = revs.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
+            const totalExp = (yardDb.expenses || []).reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            const netIncome = totalRev - totalExp;
+
+            if(document.getElementById('totalRevenueDisplay')) document.getElementById('totalRevenueDisplay').textContent = '₱' + totalRev.toLocaleString();
+            if(document.getElementById('totalExpenseDisplayRev')) document.getElementById('totalExpenseDisplayRev').textContent = '₱' + totalExp.toLocaleString();
+            if(document.getElementById('netTotalIncomeDisplay')) document.getElementById('netTotalIncomeDisplay').textContent = '₱' + netIncome.toLocaleString();
+            if(document.getElementById('dashTotalRev')) document.getElementById('dashTotalRev').textContent = '₱' + totalRev.toLocaleString();
         }
 
-        function renderMonthlyTrendChart() {}
-        function clearDateFilter() { renderYardRevenue(); }
-        function downloadMonthlyStatementPDF() {}
-        function exportChartAsImage() {}
-        function renderYardExpenses() {}
-        function handleYardExpenseSubmit(e) { e.preventDefault(); }
-        function renderYardReports() {}
-        function handleYardGateIn(e) { e.preventDefault(); }
-        function handleYardGateOut(e) { e.preventDefault(); }
-        function editYardStatus(id) {}
+        function clearDateFilter() {
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            renderYardRevenue();
+        }
+
+        function downloadMonthlyStatementPDF() {
+            const element = document.getElementById('yardRevenue');
+            if(!element) return;
+            html2pdf().from(element).save('SKYMOVER_Monthly_Financial_Statement.pdf');
+        }
+
+        function exportChartAsImage() {
+            const chartCanvas = document.getElementById('monthlyTrendChart');
+            if(!chartCanvas) return;
+            const link = document.createElement('a');
+            link.download = 'Skymover_Revenue_Trend_Chart.png';
+            link.href = chartCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function renderYardExpenses() {
+            const tbody = document.getElementById('expenseTableBody');
+            if(!tbody) return;
+            const exps = yardDb.expenses || [];
+            tbody.innerHTML = exps.length ? exps.map(e => `
+                <tr class="border-b font-medium text-slate-900">
+                    <td class="p-3">${stamp(e.date)}</td>
+                    <td class="p-3 font-bold text-rose-800">${e.category}</td>
+                    <td class="p-3 font-semibold">${e.description}</td>
+                    <td class="p-3 text-right font-extrabold text-rose-700">₱${Number(e.amount || 0).toLocaleString()}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No expense records found.</td></tr>';
+
+            const totalExp = exps.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            if(document.getElementById('totalExpenseDisplay')) document.getElementById('totalExpenseDisplay').textContent = '₱' + totalExp.toLocaleString();
+        }
+
+        function handleYardExpenseSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const expense = {
+                category: formData.get('category'),
+                description: formData.get('description'),
+                amount: parseFloat(formData.get('amount')) || 0,
+                date: formData.get('date') || new Date().toISOString()
+            };
+
+            if(!yardDb.expenses) yardDb.expenses = [];
+            yardDb.expenses.unshift(expense);
+            saveYardDB();
+            form.reset();
+            renderYardExpenses();
+            alert('Yard operating expense successfully recorded!');
+        }
+
+        function renderYardReports() {
+            const containers = yardDb.containers || [];
+            if(document.getElementById('yardRptGateIn')) document.getElementById('yardRptGateIn').textContent = containers.length;
+            if(document.getElementById('yardRptGateOut')) document.getElementById('yardRptGateOut').textContent = containers.filter(c => c.status === 'Released').length;
+            
+            const lines = [...new Set(containers.map(c => c.line))];
+            if(document.getElementById('yardRptLines')) document.getElementById('yardRptLines').textContent = lines.length;
+            if(document.getElementById('yardRptMoves')) document.getElementById('yardRptMoves').textContent = (yardDb.movements || []).length;
+
+            const lineRows = document.getElementById('yardLineRows');
+            if(lineRows) {
+                lineRows.innerHTML = lines.length ? lines.map(l => {
+                    const lineContainers = containers.filter(c => c.line === l && c.status !== 'Released');
+                    const avail = lineContainers.filter(c => c.status === 'Available').length;
+                    const res = lineContainers.filter(c => c.status === 'Reserved').length;
+                    const dam = lineContainers.filter(c => c.condition === 'Damaged' || c.status === 'Hold').length;
+                    return `
+                        <tr class="border-b font-medium text-slate-900">
+                            <td class="p-3 font-bold">${l}</td>
+                            <td class="p-3">${lineContainers.length}</td>
+                            <td class="p-3 text-emerald-700 font-bold">${avail}</td>
+                            <td class="p-3 text-amber-700 font-bold">${res}</td>
+                            <td class="p-3 text-rose-700 font-bold">${dam}</td>
+                        </tr>
+                    `;
+                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No shipping lines recorded.</td></tr>';
+            }
+
+            const moveRows = document.getElementById('yardMovementRows');
+            if(moveRows) {
+                const moves = yardDb.movements || [];
+                moveRows.innerHTML = moves.length ? moves.map(m => `
+                    <tr class="border-b font-medium text-slate-900">
+                        <td class="p-3">${stamp(m.date)}</td>
+                        <td class="p-3 font-bold">${m.kind}</td>
+                        <td class="p-3 font-mono font-bold">${m.number}</td>
+                        <td class="p-3">${m.plate || '—'}</td>
+                        <td class="p-3">${m.storageDays || '0'} days</td>
+                        <td class="p-3 font-mono">In: ₱${m.vanInAmount || 0}<br>Out: ₱${m.vanOutAmount || 0}</td>
+                        <td class="p-3 font-extrabold text-emerald-700">₱${m.totalAmount || 0}</td>
+                        <td class="p-3">${m.eir || '—'}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement records found.</td></tr>';
+            }
+        }
+
+        function handleYardGateIn(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const containerNumber = formData.get('number').toUpperCase();
+
+            const newContainer = {
+                id: 'CNT-' + Math.floor(100000 + Math.random() * 900000),
+                number: containerNumber,
+                size: formData.get('size'),
+                type: formData.get('type'),
+                line: formData.get('line'),
+                truckingName: formData.get('truckingName'),
+                plate: formData.get('plate'),
+                driver: formData.get('driver'),
+                eir: formData.get('eir'),
+                condition: formData.get('condition'),
+                status: formData.get('status'),
+                block: formData.get('block'),
+                bay: formData.get('bay'),
+                row: formData.get('row'),
+                tier: formData.get('tier'),
+                date: formData.get('date'),
+                vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
+                vanInStats: formData.get('vanInStats'),
+                remarks: formData.get('remarks'),
+                photos: stagedGateInPhotos
+            };
+
+            if(!yardDb.containers) yardDb.containers = [];
+            yardDb.containers.push(newContainer);
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift({ kind: 'GATE-IN', number: containerNumber, date: newContainer.date, plate: newContainer.plate, truckingName: newContainer.truckingName, eir: newContainer.eir });
+
+            if(newContainer.vanInStats === 'PAID' && newContainer.vanInAmount > 0) {
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift({ date: newContainer.date, source: 'Van-In Fee', container: containerNumber, eir: newContainer.eir, amount: newContainer.vanInAmount });
+            }
+
+            saveYardDB();
+            clearGateInFormAndPhotos();
+            alert('Container Gate-In successfully recorded and synced to cloud database!');
+            switchYardTab('yardInventory');
+        }
+
+        function handleYardGateOut(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const containerId = formData.get('container');
+
+            const container = (yardDb.containers || []).find(c => c.id === containerId);
+            if(!container) {
+                alert('Please select a valid container from the yard.');
+                return;
+            }
+
+            container.status = 'Released';
+            container.gateOutDate = formData.get('date');
+            container.vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
+
+            const totalAmount = parseFloat(document.getElementById('calcTotalAmount').value) || 0;
+            const storageDays = parseInt(document.getElementById('calcStorageDays').value) || 0;
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift({
+                kind: 'GATE-OUT',
+                number: container.number,
+                date: container.gateOutDate,
+                plate: formData.get('plate'),
+                storageDays: storageDays,
+                vanInAmount: container.vanInAmount || 0,
+                vanOutAmount: container.vanOutAmount,
+                totalAmount: totalAmount,
+                eir: formData.get('eir')
+            });
+
+            if(totalAmount > 0) {
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift({
+                    date: container.gateOutDate,
+                    source: 'Gate-Out & Storage Fee',
+                    container: container.number,
+                    eir: formData.get('eir'),
+                    amount: totalAmount
+                });
+            }
+
+            saveYardDB();
+            clearGateOutFormAndPhotos();
+            alert('Container Gate-Out and billing successfully processed!');
+            switchYardTab('yardRevenue');
+        }
+
+        function editYardStatus(id) {
+            const container = (yardDb.containers || []).find(c => c.id === id);
+            if(!container) return;
+            const newStatus = prompt(`Update status for container ${container.number} (Available, Reserved, Hold, Released):`, container.status);
+            if(newStatus) {
+                container.status = newStatus;
+                saveYardDB();
+                refreshYard();
+            }
+        }
+
         function blobDownload(blob, name) { let a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = name; a.click(); URL.revokeObjectURL(u); }
         function csv(rows, name) { blobDownload(new Blob(['\ufeff' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}), name); }
-        function exportYardCSV() { csv([['Container No'], ['TEST']], 'inventory.csv'); }
-        function exportYardMovements() {}
-        function exportRevenueCSV() {}
-        function exportExpensesCSV() {}
-        function backupUnifiedEnterpriseData() {}
-        function restoreUnifiedEnterpriseData(e) {}
+        
+        function exportYardCSV() {
+            const data = (yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, yardLoc(c)]);
+            csv([['Container No', 'Size', 'Shipping Line', 'Status', 'Location'], ...data], 'skymover_yard_inventory.csv');
+        }
+
+        function exportYardMovements() {
+            const data = (yardDb.movements || []).map(m => [m.kind, m.number, m.date, m.plate, m.eir]);
+            csv([['Movement', 'Container No', 'Date', 'Plate', 'EIR'], ...data], 'skymover_yard_movements.csv');
+        }
+
+        function exportRevenueCSV() {
+            const data = (yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.amount]);
+            csv([['Date', 'Source', 'Container No', 'Amount'], ...data], 'skymover_yard_revenue.csv');
+        }
+
+        function exportExpensesCSV() {
+            const data = (yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount]);
+            csv([['Date', 'Category', 'Description', 'Amount'], ...data], 'skymover_yard_expenses.csv');
+        }
+
+        function backupUnifiedEnterpriseData() {
+            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Full_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
+        }
+
+        function restoreUnifiedEnterpriseData(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.managementBackend && parsed.emptyYard) {
+                        db = parsed.managementBackend;
+                        yardDb = parsed.emptyYard;
+                        saveCloudData();
+                        alert('Unified enterprise backup successfully restored!');
+                        window.location.reload();
+                    } else {
+                        alert('Invalid backup file structure.');
+                    }
+                } catch(err) {
+                    alert('Error parsing backup file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             const loginModal = document.getElementById('loginModal');
             window.openSkymoverLogin = function() { if(loginModal) loginModal.style.display = 'flex'; };
             document.getElementById('closeLoginModal')?.addEventListener('click', () => { 
-                // When closed without logging in, ensure it stays hidden but restricted
                 loginModal.style.display = 'none'; 
             });
             document.getElementById('skymoverLoginForm')?.addEventListener('submit', (e) => {
