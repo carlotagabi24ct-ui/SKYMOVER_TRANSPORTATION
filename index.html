@@ -1464,7 +1464,7 @@
         }
 
         // ==========================================
-        // STEP 2: JAVASCRIPT FETCH & RENDER FUNCTION
+        // STEP 1 & 2: AUDIT LOGS MODAL & CSV EXPORT
         // ==========================================
         async function loadAuditLogsModal() {
             if (!supabaseClient) return;
@@ -1503,7 +1503,10 @@
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-clock-rotate-left text-amber-400 mr-2"></i> System Audit Trail</h3>
                         <p class="text-xs text-slate-300">Live tracking of administrative and operational modifications across Skymover.</p>
                     </div>
-                    <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                    <div class="flex gap-2">
+                        <button onclick="exportAuditLogsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Export CSV</button>
+                        <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3 shadow-inner">
                     <table class="w-full text-left text-xs">
@@ -1518,6 +1521,32 @@
                     </table>
                 </div>
             `;
+        }
+
+        async function exportAuditLogsCSV() {
+            if (!supabaseClient) return;
+            const { data: logs, error } = await supabaseClient
+                .from('v_audit_logs')
+                .select('*')
+                .order('changed_at', { ascending: false });
+
+            if (error) {
+                alert('Error exporting audit logs: ' + error.message);
+                return;
+            }
+
+            const csvRows = [
+                ['Timestamp', 'User Email', 'User Role', 'Action', 'Table Name', 'New Data Payload'],
+                ...(logs || []).map(l => [
+                    l.changed_at,
+                    l.user_email || 'System',
+                    l.user_role || 'API',
+                    l.action,
+                    l.table_name,
+                    `"${JSON.stringify(l.new_data || {}).replace(/"/g, '""')}"`
+                ])
+            ];
+            csv(csvRows, 'skymover_audit_trail_logs.csv');
         }
 
         function openNewUserRegistrationModal() {
