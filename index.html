@@ -197,8 +197,14 @@
                     <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold" data-i18n="regNewDriverBtn">Register New Driver</button>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-                    <h3 class="font-bold text-sm text-purple-300" data-i18n="activeTripHeading">Active Assigned Trip & Driver SMS Feed</h3>
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-purple-300" data-i18n="activeTripHeading">Active Assigned Trip & Driver GPS Location</h3>
+                        <button onclick="fetchDriverLiveLocation()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow">
+                            <i class="fa-solid fa-location-crosshairs mr-1"></i> Get Actual GPS Position
+                        </button>
+                    </div>
                     <div id="driverActiveTripInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono text-slate-200"></div>
+                    <div id="driverGeoStatus" class="text-[11px] font-mono text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 hidden"></div>
                     
                     <div class="border-t border-slate-800 pt-4">
                         <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> <span data-i18n="smsInboxHeading">Driver SMS Notification Inbox</span></h4>
@@ -657,9 +663,9 @@
         </div>
     </div>
 
-    <!-- NEW DRIVER REGISTRATION MODAL -->
+    <!-- NEW DRIVER REGISTRATION MODAL WITH FILE ATTACHMENTS -->
     <div id="driverRegModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-md rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
+        <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeNewDriverRegistrationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <h3 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-user-plus text-purple-400 mr-2"></i> New Driver Registration</h3>
             <form id="driverRegForm" onsubmit="handleNewDriverSubmit(event)" class="space-y-3 text-xs">
@@ -679,21 +685,31 @@
                     <label class="block text-slate-300 mb-1 font-semibold">Assigned Unit / Truck</label>
                     <input type="text" id="regDriverUnit" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101">
                 </div>
+                <div>
+                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-purple-400"></i> Attach Driver License / Photo ID</label>
+                    <input type="file" id="regDriverFile" accept="image/*,application/pdf" onchange="handleDriverFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
+                    <div id="regDriverFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition">Register Driver</button>
-                    <button type="button" onclick="document.getElementById('driverRegForm').reset()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Clear</button>
+                    <button type="button" onclick="document.getElementById('driverRegForm').reset(); stagedDriverAttachments=[]; document.getElementById('regDriverFilePreview').innerHTML='';" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Clear</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL (Vehicles, Fuel, Maintenance, GPS & Dispatch, Expenses) -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL (Vehicles, Fuel, Maintenance, GPS & Dispatch, Expenses) WITH ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-md rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
+        <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <h3 id="backendModalTitle" class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-plus text-sky-400 mr-2"></i> Add Entry</h3>
             <form id="backendEntryForm" onsubmit="handleBackendEntrySubmit(event)" class="space-y-3 text-xs">
                 <div id="backendModalFields"></div>
+                <div class="pt-2">
+                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt</label>
+                    <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleBackendFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
+                    <div id="backendEntryFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-lg transition">Save Entry</button>
                     <button type="button" onclick="closeBackendEntryModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Cancel</button>
@@ -776,6 +792,8 @@
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
+        let stagedDriverAttachments = [];
+        let stagedBackendAttachments = [];
         let trendChartInstance = null;
         let yardPieChartInstance = null;
         let yardBarChartInstance = null;
@@ -1184,10 +1202,46 @@
         }
 
         // ==========================================
-        // FEATURE: AUTOMATED LEAFLET.JS MAP VISUAL PLOTTING
+        // FEATURE: AUTOMATED LEAFLET.JS MAP VISUAL PLOTTING & GEOLOCATION
         // ==========================================
         let skymoverLeafletMap = null;
         let skymoverMapMarkersLayer = null;
+
+        function fetchDriverLiveLocation() {
+            const statusDiv = document.getElementById('driverGeoStatus');
+            if (navigator.geolocation) {
+                if(statusDiv) {
+                    statusDiv.classList.remove('hidden');
+                    statusDiv.textContent = '📡 Acquiring GPS position from UI browser...';
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lng = position.coords.longitude.toFixed(4);
+                        if(statusDiv) {
+                            statusDiv.innerHTML = `✅ <b>Actual UI GPS Position Acquired:</b> Latitude ${lat}, Longitude ${lng} (Accuracy: ±${Math.round(position.coords.accuracy)}m)`;
+                        }
+                        if(!db.geofenceAlerts) db.geofenceAlerts = [];
+                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS] Active unit positioned at [Lat: ${lat}, Lng: ${lng}] via UI Geolocation API.`, time: new Date().toISOString() });
+                        saveCloudData();
+                    },
+                    (error) => {
+                        // Fallback Manila Coordinates if denied/unavailable
+                        const fallbackLat = 14.7011;
+                        const fallbackLng = 120.9830;
+                        if(statusDiv) {
+                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt or signal unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}]`;
+                        }
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            } else {
+                if(statusDiv) {
+                    statusDiv.classList.remove('hidden');
+                    statusDiv.textContent = '❌ Geolocation is not supported by this browser interface.';
+                }
+            }
+        }
 
         function plotAutomatedMapCoordinates() {
             const vehicles = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'SKV-101' }, { id: 'SKV-102' }];
@@ -1201,7 +1255,6 @@
             const activeUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
             const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
             
-            // Add slight GPS drift simulation
             const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
             const jitterLng = Number((targetCorridor.lng + (Math.random() - 0.5) * 0.01).toFixed(4));
 
@@ -1216,7 +1269,6 @@
                 renderGeofenceLogs(trackContainer);
             }
 
-            // Render/Update Leaflet.js Visual Map Container & Markers
             let mapContainer = document.getElementById('skymoverVisualMapContainer');
             if (!mapContainer) {
                 const aiContainer = document.getElementById('aiContainer');
@@ -1250,7 +1302,6 @@
                         skymoverMapMarkersLayer.clearLayers();
                     }
 
-                    // Plot all sample locations + active unit marker
                     sampleCorridors.forEach(c => {
                         const marker = L.marker([c.lat, c.lng]);
                         marker.bindPopup(`<b>Hub/Terminal:</b> ${c.name}<br>Lat: ${c.lat}, Lng: ${c.lng}`);
@@ -1356,6 +1407,41 @@
                         thumb.innerHTML = '<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate">' + file.name + '</div>';
                     }
                     previewContainer.appendChild(thumb);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ==========================================
+        // NEW ATTACHMENT HANDLERS FOR DRIVERS & BACKEND
+        // ==========================================
+        function handleDriverFileAttach(e) {
+            const files = e.target.files;
+            const preview = document.getElementById('regDriverFilePreview');
+            if(!preview) return;
+            stagedDriverAttachments = [];
+            preview.innerHTML = '';
+            for(let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    stagedDriverAttachments.push({ name: file.name, dataUrl: evt.target.result });
+                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-purple-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${file.name}</span>`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleBackendFileAttach(e) {
+            const files = e.target.files;
+            const preview = document.getElementById('backendEntryFilePreview');
+            if(!preview) return;
+            stagedBackendAttachments = [];
+            preview.innerHTML = '';
+            for(let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    stagedBackendAttachments.push({ name: file.name, dataUrl: evt.target.result });
+                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${file.name}</span>`;
                 };
                 reader.readAsDataURL(file);
             }
@@ -1583,10 +1669,13 @@
             const truck = document.getElementById('regDriverUnit').value || 'Unassigned';
 
             if(!db.drivers) db.drivers = [];
-            db.drivers.push({ name, license, phone, truck, status: 'Available', rating: '5.0 ★' });
+            db.drivers.push({ name, license, phone, truck, status: 'Available', rating: '5.0 ★', attachments: stagedDriverAttachments });
             saveCloudData();
             closeNewDriverRegistrationModal();
             document.getElementById('driverRegForm').reset();
+            stagedDriverAttachments = [];
+            document.getElementById('regDriverFilePreview').innerHTML = '';
+            alert('New driver successfully registered with attached documentation!');
         }
 
         // ==========================================
@@ -1999,16 +2088,19 @@
         }
 
         // ==========================================
-        // UNIFIED BACKEND ENTRY MODAL LOGIC
+        // UNIFIED BACKEND ENTRY MODAL LOGIC WITH ATTACHMENTS
         // ==========================================
         function openBackendEntryModal(type) {
             currentBackendModuleType = type;
+            stagedBackendAttachments = [];
             const modal = document.getElementById('backendEntryModal');
             const titleEl = document.getElementById('backendModalTitle');
             const fieldsContainer = document.getElementById('backendModalFields');
+            const filePreview = document.getElementById('backendEntryFilePreview');
             if(!modal || !titleEl || !fieldsContainer) return;
 
             modal.classList.remove('hidden');
+            if(filePreview) filePreview.innerHTML = '';
             let html = '';
 
             if (type === 'Vehicle') {
@@ -2063,31 +2155,31 @@
 
             if (currentBackendModuleType === 'Vehicle') {
                 if(!db.vehicles) db.vehicles = [];
-                db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned' });
+                db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned', attachments: stagedBackendAttachments });
                 saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Vehicle Management');
             } else if (currentBackendModuleType === 'Fuel') {
                 if(!db.fuelLogs) db.fuelLogs = [];
-                db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10) });
+                db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
                 saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fuel Monitoring');
             } else if (currentBackendModuleType === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
-                db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10) });
+                db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
                 saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Maintenance');
             } else if (currentBackendModuleType === 'Dispatch') {
                 if(!db.dispatchLogs) db.dispatchLogs = [];
-                db.dispatchLogs.push({ unit: val1, route: val2, driver: val3, status: 'In Transit' });
+                db.dispatchLogs.push({ unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments });
                 saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('GPS & Dispatch');
             } else if (currentBackendModuleType === 'Expense') {
                 if(!db.expenseLogs) db.expenseLogs = [];
-                db.expenseLogs.push({ trip: val1, fuel: val2 || '₱0', tolls: '₱0', maintenance: '₱0', total: val3 });
+                db.expenseLogs.push({ trip: val1, fuel: val2 || '₱0', tolls: '₱0', maintenance: '₱0', total: val3, attachments: stagedBackendAttachments });
                 saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fleet Expenses');
@@ -2304,9 +2396,9 @@
             const plateInput = document.getElementById('gateOutPlate');
             const driverInput = document.getElementById('gateOutDriver');
             const remarksInput = document.getElementById('gateOutRemarks');
-                if(plateInput && c.plate) plateInput.value = c.plate;
-                if(driverInput && c.driver) driverInput.value = c.driver;
-                if(remarksInput && c.remarks) remarksInput.value = c.remarks;
+                if(plateInput && c && c.plate) plateInput.value = c.plate;
+                if(driverInput && c && c.driver) driverInput.value = c.driver;
+                if(remarksInput && c && c.remarks) remarksInput.value = c.remarks;
             if(c) {
                 document.getElementById('calcGateInDisplay').value = c.date || '';
                 document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
