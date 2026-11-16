@@ -395,8 +395,8 @@
                                 <select name="container" id="yardOutContainer" required class="p-2 border rounded-lg w-full bg-white text-slate-900 font-bold" onchange="containerSelectedForGateOut()"><option value="">Select container in yard</option></select>
                             </div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Release To / Customer *</label><input name="customer" required class="p-2 border rounded-lg w-full bg-white text-slate-900" placeholder="e.g. Acme Logistics Corp"></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" id="gateOutPlate" required class="p-2 border rounded-lg w-full bg-white text-slate-900" placeholder="Reflected from Gate-In"></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Driver Name</label><input name="driver" id="gateOutDriver" class="p-2 border rounded-lg w-full bg-white text-slate-900" placeholder="Reflected from Gate-In"></div>
+                            <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" id="gateOutPlate" required readonly class="p-2 border rounded-lg w-full bg-slate-100 text-slate-900 font-bold" placeholder="Reflected from Gate-In"></div>
+                            <div><label class="font-bold text-slate-800 mb-1 block">Driver Name</label><input name="driver" id="gateOutDriver" readonly class="p-2 border rounded-lg w-full bg-slate-100 text-slate-900 font-bold" placeholder="Reflected from Gate-In"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out EIR / Reference *</label><input name="eir" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             
                             <div><label class="font-bold text-slate-800 mb-1 block">Van In Amount (₱)</label><input type="number" id="calcVanInAmount" name="vanInAmount" readonly class="p-2 border rounded-lg w-full bg-slate-100 font-bold text-slate-900" value="0"></div>
