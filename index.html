@@ -1468,12 +1468,11 @@
         }
 
         // ==========================================
-        // STEP 1 & 2: AUDIT LOGS MODAL & CSV EXPORT
+        // AUDIT LOGS MODAL & CSV EXPORT
         // ==========================================
         async function loadAuditLogsModal() {
             if (!supabaseClient) return;
 
-            // Fetch logs from the secure SQL view
             const { data: logs, error } = await supabaseClient
                 .from('v_audit_logs')
                 .select('*')
@@ -1485,7 +1484,6 @@
                 return;
             }
 
-            // Open your sub-module modal and render the table
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if (!modal || !content) return;
@@ -1592,27 +1590,58 @@
             `;
         }
 
+        // ==========================================
+        // UPDATED USER PROVISIONING FUNCTION
+        // ==========================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
-            const email = document.getElementById('newUserEmail').value;
-            const password = document.getElementById('newUserPassword').value;
-            const role = document.getElementById('newUserRole').value;
+            const emailInput = document.getElementById('newUserEmail');
+            const passwordInput = document.getElementById('newUserPassword');
+            const roleSelect = document.getElementById('newUserRole');
 
-            if(!db.systemUsers) db.systemUsers = [];
-            db.systemUsers.push({ email, role, createdAt: new Date().toISOString() });
-            saveCloudData();
+            if (!emailInput || !passwordInput || !roleSelect) return;
 
-            if(supabaseClient) {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const role = roleSelect.value;
+
+            if (!email || !password) {
+                alert('Please fill in both email and temporary password.');
+                return;
+            }
+
+            // Initialize system users array if not present
+            if (!db.systemUsers) db.systemUsers = [];
+
+            // Prevent duplicate local entries
+            const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+            const newUserRecord = { email, role, createdAt: new Date().toISOString() };
+
+            if (existingIndex >= 0) {
+                db.systemUsers[existingIndex] = newUserRecord;
+            } else {
+                db.systemUsers.push(newUserRecord);
+            }
+
+            // Sync update to cloud database payload
+            await saveCloudData();
+
+            // Secure Supabase Authentication Provisioning Pipeline
+            if (supabaseClient) {
                 try {
                     const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
 
-                    await supabaseClient.auth.signUp({ 
+                    const { data, error } = await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
                         options: { 
-                            data: { role: role }
+                            data: { role: role } 
                         } 
                     });
+
+                    if (error) {
+                        console.warn("Supabase Auth Registration Notice:", error.message);
+                    }
 
                     if (currentSession) {
                         await supabaseClient.auth.setSession({
@@ -1621,11 +1650,11 @@
                         });
                     }
                 } catch(err) {
-                    console.log("Supabase signup note:", err);
+                    console.error("Supabase user provisioning exception:", err);
                 }
             }
 
-            alert(`Successfully registered user ${email} with role [${role.toUpperCase()}].`);
+            alert(`Successfully provisioned user account for ${email} with role [${role.toUpperCase()}].`);
             openSubModule('User Management');
         }
 
