@@ -1614,8 +1614,8 @@
 
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
-                    if(optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = '<img src="' + storageUrl + '" class="w-full h-full object-cover">';
+                    if (optimizedFile.type.startsWith('image/')) {
+                        thumb.innerHTML = `<img src="${storageUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=Error';">`;
                     } else {
                         thumb.innerHTML = '<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate">' + optimizedFile.name + '</div>';
                     }
