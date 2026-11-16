@@ -897,16 +897,25 @@
                 switchYardTab('yardRevenue');
             } else if (role === 'dispatcher') {
                 if(resetBtn) resetBtn.style.display = 'none';
-                switchView('landing');
+                restoreLastActiveViewOrLanding();
             } else if (role === 'admin') {
                 if(resetBtn) resetBtn.style.display = 'inline-block';
-                switchView('landing');
+                restoreLastActiveViewOrLanding();
             } else {
                 ['viewBackend', 'viewDriver', 'viewHub', 'viewYard', 'viewLanding'].forEach(v => {
                     const el = document.getElementById(v);
                     if(el) el.classList.add('hidden');
                 });
                 window.openSkymoverLogin();
+            }
+        }
+
+        function restoreLastActiveViewOrLanding() {
+            const lastView = sessionStorage.getItem('skymover_active_view');
+            if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
+                switchView(lastView);
+            } else {
+                switchView('landing');
             }
         }
 
@@ -952,6 +961,7 @@
                 await supabaseClient.auth.signOut();
                 currentUser = null;
                 currentUserRole = 'guest';
+                sessionStorage.removeItem('skymover_active_view');
                 updateAuthUI(null, 'guest');
                 applyRbacPermissions('guest');
                 window.openSkymoverLogin();
@@ -1416,6 +1426,8 @@
                 alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
                 return;
             }
+
+            sessionStorage.setItem('skymover_active_view', viewName);
 
             ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
                 const el = document.getElementById(v);
