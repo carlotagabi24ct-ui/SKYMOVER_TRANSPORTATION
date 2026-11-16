@@ -105,7 +105,7 @@
                     <i class="fa-solid fa-right-to-bracket mr-1 text-sky-400"></i> <span data-i18n="signInBtn">Sign In</span>
                 </button>
             </div>
-            <button onclick="switchView('landing')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
+            <button onclick="switchView('landing')" id="navHubPortalBtn" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
                 <i class="fa-solid fa-house mr-1"></i> <span data-i18n="hubPortalBtn">Hub Portal</span>
             </button>
         </div>
@@ -121,8 +121,8 @@
                 <p class="text-xs sm:text-sm text-slate-300" data-i18n="mainSubtitle">Philippine Container Fleet & Empty Container Yard Management Platform</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-                <div onclick="openBackendModule('Dashboard')" class="glass-card border border-slate-800 hover:border-sky-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-sky-500/10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4" id="portalCardsGrid">
+                <div id="cardBackend" onclick="openBackendModule('Dashboard')" class="glass-card border border-slate-800 hover:border-sky-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-sky-500/10">
                     <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-xl mb-4 group-hover:scale-110 transition">
                         <i class="fa-solid fa-chart-pie"></i>
                     </div>
@@ -131,7 +131,7 @@
                     <span class="text-sky-400 text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-1 transition" data-i18n="card1Link">Open Dashboard →</span>
                 </div>
 
-                <div onclick="openDriverPortal()" class="glass-card border border-slate-800 hover:border-purple-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-purple-500/10">
+                <div id="cardDriver" onclick="openDriverPortal()" class="glass-card border border-slate-800 hover:border-purple-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-purple-500/10">
                     <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl mb-4 group-hover:scale-110 transition">
                         <i class="fa-solid fa-id-card"></i>
                     </div>
@@ -140,7 +140,7 @@
                     <button onclick="event.stopPropagation(); openNewDriverRegistrationModal();" class="text-purple-400 text-xs font-semibold inline-flex items-center gap-1 hover:underline" data-i18n="newDriverReg">New driver registration →</button>
                 </div>
 
-                <div onclick="openYardPortal()" class="glass-card border border-slate-800 hover:border-emerald-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-emerald-500/10">
+                <div id="cardYard" onclick="openYardPortal()" class="glass-card border border-slate-800 hover:border-emerald-500/50 p-6 rounded-2xl cursor-pointer transition group shadow-xl hover:shadow-emerald-500/10">
                     <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl mb-4 group-hover:scale-110 transition">
                         <i class="fa-solid fa-ship"></i>
                     </div>
@@ -158,11 +158,11 @@
                     <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-gauge-high text-sky-400 mr-2"></i> <span data-i18n="backendHeading">Management Backend & Analytics</span></h2>
                     <p class="text-xs text-slate-300" data-i18n="backendSub">Centralized operations, vehicle masterlist, fuel logs, and real-time cloud data synchronization.</p>
                 </div>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap gap-2" id="backendSubNavBtns">
                     <button onclick="openSubModule('Dashboard')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDashboard">Dashboard</button>
                     <button onclick="openSubModule('Vehicle Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnVehicles">Vehicles</button>
                     <button onclick="openSubModule('Driver Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDrivers">Drivers</button>
-                    <button onclick="openSubModule('User Management')" class="bg-sky-700 hover:bg-sky-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-user-shield mr-1"></i> <span data-i18n="btnRbac">RBAC Users</span></button>
+                    <button onclick="openSubModule('User Management')" id="rbacUsersNavBtn" class="bg-sky-700 hover:bg-sky-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-user-shield mr-1"></i> <span data-i18n="btnRbac">RBAC Users</span></button>
                     <button onclick="openSubModule('Fuel Monitoring')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnFuel">Fuel</button>
                     <button onclick="openSubModule('Maintenance')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnMaint">Maintenance</button>
                     <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnGps">GPS & Dispatch</button>
@@ -248,7 +248,7 @@
                     <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-warehouse text-amber-500 mr-2"></i> <span data-i18n="yardHeading">Skymover Empty Container Yard</span></h2>
                     <p class="text-xs text-slate-300" data-i18n="yardSub">Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.</p>
                 </div>
-                <div class="flex flex-wrap gap-2 text-xs">
+                <div class="flex flex-wrap gap-2 text-xs" id="yardTabButtonsArea">
                     <button onclick="switchYardTab('yardDashboard')" id="yBtn1" class="btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white" data-i18n="yTabDash">Dashboard</button>
                     <button onclick="switchYardTab('yardInventory')" id="yBtn2" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabInv">Inventory</button>
                     <button onclick="switchYardTab('yardGateIn')" id="yBtn3" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabGateIn">+ Gate-In</button>
@@ -392,7 +392,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
                                 <label class="font-bold text-slate-800 mb-1 block">Container Number *</label>
-                                <select name="container" id="yardOutContainer" required class="p-2 border rounded-lg w-full bg-white text-slate-900 font-bold" onchange="containerSelectedForGateOut()"><option value="">Select container in yard</option></select>                                
+                                <select name="container" id="yardOutContainer" required class="p-2 border rounded-lg w-full bg-white text-slate-900 font-bold" onchange="containerSelectedForGateOut()"><option value="">Select container in yard</option></select>                        
                             </div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Release To / Customer *</label><input name="customer" required class="p-2 border rounded-lg w-full bg-white text-slate-900" placeholder="e.g. Acme Logistics Corp"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" id="gateOutPlate" required readonly class="p-2 border rounded-lg w-full bg-slate-100 text-slate-900 font-bold" placeholder="Reflected from Gate-In"></div>
@@ -855,29 +855,59 @@
             }
         }
 
+        // ==========================================
+        // NEW FEATURE: ROLE-BASED UI VIEW LIMITING (RBAC)
+        // ==========================================
         function applyRbacPermissions(role) {
             const resetBtn = document.getElementById('resetDbBtn');
+            const cardBackend = document.getElementById('cardBackend');
+            const cardDriver = document.getElementById('cardDriver');
+            const cardYard = document.getElementById('cardYard');
+            const navHubPortalBtn = document.getElementById('navHubPortalBtn');
+            const rbacUsersNavBtn = document.getElementById('rbacUsersNavBtn');
+
+            // Reset visibility of portal landing cards
+            if(cardBackend) cardBackend.style.display = 'block';
+            if(cardDriver) cardDriver.style.display = 'block';
+            if(cardYard) cardYard.style.display = 'block';
+            if(navHubPortalBtn) navHubPortalBtn.style.display = 'inline-block';
+            if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'inline-block';
+
             if (role === 'driver') {
+                // Drivers only see driver's portal
+                if(cardBackend) cardBackend.style.display = 'none';
+                if(cardYard) cardYard.style.display = 'none';
+                if(navHubPortalBtn) navHubPortalBtn.style.display = 'none';
                 switchView('driver');
             } else if (role === 'yard_manager') {
+                // Yard managers see yard & transshipment hub
+                if(cardBackend) cardBackend.style.display = 'none';
+                if(cardDriver) cardDriver.style.display = 'none';
+                if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('yard');
             } else if (role === 'accounting_reports') {
+                // Accounting views yard revenue & financial tabs only
+                if(cardBackend) cardBackend.style.display = 'none';
+                if(cardDriver) cardDriver.style.display = 'none';
+                if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('yard');
                 switchYardTab('yardRevenue');
             } else if (role === 'dispatcher') {
+                // Dispatchers have access to hub & fleet analytics
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('landing');
             } else if (role === 'admin') {
+                // Admin has full unrestrictive access
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                ['viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
+                // Guest / Unauthenticated
+                ['viewBackend', 'viewDriver', 'viewHub', 'viewYard', 'viewLanding'].forEach(v => {
                     const el = document.getElementById(v);
                     if(el) el.classList.add('hidden');
                 });
-                document.getElementById('viewLanding').classList.add('hidden');
                 window.openSkymoverLogin();
             }
         }
@@ -1492,7 +1522,6 @@
 
             if(supabaseClient) {
                 try {
-                    // Sign up the user with metadata pre-configured
                     await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
