@@ -833,13 +833,13 @@
             const authNavArea = document.getElementById('authNavArea');
             if(!authNavArea) return;
             if(user) {
-                const roleBadgeColor = role === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : (role === 'dispatcher' ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30');
+                const roleBadgeColor = role === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : (role === 'dispatcher' ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' : (role === 'yard_manager' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : (role === 'accounting_reports' ? 'bg-teal-500/20 text-teal-300 border-teal-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30')));
                 authNavArea.innerHTML = `
                     <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
                         <i class="fa-solid fa-user-check text-emerald-400"></i>
                         <div class="flex flex-col">
                             <span class="text-slate-200 font-semibold truncate max-w-[110px]">${user.email}</span>
-                            <span class="text-[9px] uppercase font-bold px-1 rounded border ${roleBadgeColor} w-max mt-0.5">${role}</span>
+                            <span class="text-[9px] uppercase font-bold px-1 rounded border ${roleBadgeColor} w-max mt-0.5">${role.replace('_', ' ')}</span>
                         </div>
                         <button onclick="handleSupabaseSignOut()" class="text-rose-400 hover:text-rose-300 ml-2 font-bold" title="Sign Out">
                             <i class="fa-solid fa-right-from-bracket"></i>
@@ -859,6 +859,13 @@
             const resetBtn = document.getElementById('resetDbBtn');
             if (role === 'driver') {
                 switchView('driver');
+            } else if (role === 'yard_manager') {
+                if(resetBtn) resetBtn.style.display = 'none';
+                switchView('yard');
+            } else if (role === 'accounting_reports') {
+                if(resetBtn) resetBtn.style.display = 'none';
+                switchView('yard');
+                switchYardTab('yardRevenue');
             } else if (role === 'dispatcher') {
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('landing');
@@ -1459,6 +1466,8 @@
                         <select id="newUserRole" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-bold">
                             <option value="admin">Admin (Full System Access & User Provisioning)</option>
                             <option value="dispatcher">Dispatcher (Yard, Hub & Fleet Analytics)</option>
+                            <option value="yard_manager">Yard Manager (Empty Container Yard & Gate Operations)</option>
+                            <option value="accounting_reports">Accounting Reports (Financial Statements & Revenue Tracking)</option>
                             <option value="driver">Driver (Mobile Waybill & Upload Portal Only)</option>
                         </select>
                     </div>
@@ -1657,7 +1666,7 @@
                 let userRows = users.length ? users.map((u, index) => `
                     <tr class="border-b font-medium text-slate-900">
                         <td class="p-3 font-bold">${u.email}</td>
-                        <td class="p-3 uppercase"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-900' : (u.role === 'dispatcher' ? 'bg-sky-100 text-sky-900' : 'bg-purple-100 text-purple-900')}">${u.role}</span></td>
+                        <td class="p-3 uppercase"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-900' : (u.role === 'dispatcher' ? 'bg-sky-100 text-sky-900' : (u.role === 'yard_manager' ? 'bg-amber-100 text-amber-900' : (u.role === 'accounting_reports' ? 'bg-teal-100 text-teal-900' : 'bg-purple-100 text-purple-900')))}">${u.role.replace('_', ' ')}</span></td>
                         <td class="p-3">${new Date(u.createdAt).toLocaleDateString()}</td>
                         <td class="p-3 text-right">
                             <button onclick="deleteSystemUser(${index})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Delete</button>
