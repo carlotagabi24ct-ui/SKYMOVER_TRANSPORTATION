@@ -1306,6 +1306,8 @@
                 if(!db.geofenceAlerts) db.geofenceAlerts = [];
                 db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
                 saveCloudData();
+                const trackContainer = document.getElementById('geofenceAlertsContainer');
+                if(trackContainer) renderGeofenceLogs(trackContainer);
                 return;
             }
 
@@ -1363,7 +1365,18 @@
         }
 
         function plotAutomatedMapCoordinates() {
-            const vehicles = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'SKV-101' }, { id: 'SKV-102' }];
+            const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
+            
+            if (registeredUnits.length === 0) {
+                const alertMsg = `[GPS PLOT] Scan executed: No registered active units found in fleet masterlist.`;
+                if(!db.geofenceAlerts) db.geofenceAlerts = [];
+                db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
+                saveCloudData();
+                const trackContainer = document.getElementById('geofenceAlertsContainer');
+                if(trackContainer) renderGeofenceLogs(trackContainer);
+                return;
+            }
+
             const sampleCorridors = [
                 { name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667 },
                 { name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830 },
@@ -1371,7 +1384,7 @@
                 { name: "Batangas Port Container Terminal", lat: 13.7565, lng: 121.0583 }
             ];
 
-            const activeUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
+            const activeUnit = registeredUnits[Math.floor(Math.random() * registeredUnits.length)].id;
             const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
             
             const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
