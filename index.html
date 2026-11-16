@@ -1593,67 +1593,74 @@
         // ==========================================
         // CORRECTED & OPTIMIZED USER PROVISIONING FUNCTION
         // ==========================================
-        async function handleNewUserSubmit(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('newUserEmail');
-            const passwordInput = document.getElementById('newUserPassword');
-            const roleSelect = document.getElementById('newUserRole');
+async function handleNewUserSubmit(e) {
+    e.preventDefault();
+    const emailInput = document.getElementById('newUserEmail');
+    const passwordInput = document.getElementById('newUserPassword');
+    const roleSelect = document.getElementById('newUserRole');
 
-            if (!emailInput || !passwordInput || !roleSelect) return;
+    if (!emailInput || !passwordInput || !roleSelect) return;
 
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            const role = roleSelect.value;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const role = roleSelect.value;
 
-            if (!email || !password) {
-                alert('Please fill in both email and temporary password.');
-                return;
-            }
+    if (!email || !password) {
+        alert('Please fill in both email and temporary password.');
+        return;
+    }
 
-            if (!db.systemUsers) db.systemUsers = [];
+    if (!db.systemUsers) db.systemUsers = [];
 
-            const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-            const newUserRecord = { email, role, createdAt: new Date().toISOString() };
+    const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    const newUserRecord = { email, role, createdAt: new Date().toISOString() };
 
-            if (existingIndex >= 0) {
-                db.systemUsers[existingIndex] = newUserRecord;
+    if (existingIndex >= 0) {
+        db.systemUsers[existingIndex] = newUserRecord;
+    } else {
+        db.systemUsers.push(newUserRecord);
+    }
+
+    // 1. Save user mapping to the cloud database JSON payload
+    await saveCloudData();
+
+    if (supabaseClient) {
+        try {
+            // 2. Capture the active admin session before calling signUp
+            const { data: { session: adminSession } } = await supabaseClient.auth.getSession();
+
+            // 3. Register the new user in Supabase Auth
+            const { error } = await supabaseClient.auth.signUp({ 
+                email: email, 
+                password: password, 
+                options: { 
+                    data: { role: role } 
+                } 
+            });
+
+            if (error) {
+                alert("Auth Notice: " + error.message);
             } else {
-                db.systemUsers.push(newUserRecord);
+                alert(`User account for ${email} successfully registered.`);
             }
 
-            await saveCloudData();
-
-            if (supabaseClient) {
-                try {
-                    const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
-
-                    const { error } = await supabaseClient.auth.signUp({ 
-                        email: email, 
-                        password: password, 
-                        options: { 
-                            data: { role: role } 
-                        } 
-                    });
-
-                    if (error) {
-                        console.warn("Supabase Auth Registration Notice:", error.message);
-                    }
-
-                    if (currentSession) {
-                        await supabaseClient.auth.setSession({
-                            access_token: currentSession.access_token,
-                            refresh_token: currentSession.refresh_token
-                        });
-                    }
-                } catch(err) {
-                    console.error("Supabase user provisioning exception:", err);
-                }
+            // 4. Restore the original admin session token so you stay logged in
+            if (adminSession) {
+                await supabaseClient.auth.setSession({
+                    access_token: adminSession.access_token,
+                    refresh_token: adminSession.refresh_token
+                });
             }
-
-            alert(`Successfully provisioned user account for ${email} with role [${role.toUpperCase()}].`);
-            openSubModule('User Management');
+        } catch(err) {
+            console.error("Provisioning exception:", err);
         }
+    }
 
+    // Verification step: Check that the modal closes and the user list refreshes
+    closeSubModule();
+    openSubModule('User Management');
+}
+        
         function deleteSystemUser(index) {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
