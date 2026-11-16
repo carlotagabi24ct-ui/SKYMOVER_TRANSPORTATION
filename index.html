@@ -21,6 +21,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Supabase JS Client for Real-Time Multi-User Cloud DB & Auth Sync -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Leaflet.js CSS & JS for Visual Map Marker Rendering -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -1181,23 +1184,26 @@
         }
 
         // ==========================================
-        // NEW FEATURE: AUTOMATED MAP COORDINATES PLOTTING
+        // FEATURE: AUTOMATED LEAFLET.JS MAP VISUAL PLOTTING
         // ==========================================
+        let skymoverLeafletMap = null;
+        let skymoverMapMarkersLayer = null;
+
         function plotAutomatedMapCoordinates() {
             const vehicles = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'SKV-101' }, { id: 'SKV-102' }];
             const sampleCorridors = [
-                { name: "Manila North Harbor Terminal", lat: "14.6333", lng: "120.9667" },
-                { name: "Valenzuela Empty Container Depot", lat: "14.7011", lng: "120.9830" },
-                { name: "Subic Bay Freeport Zone", lat: "14.8291", lng: "120.2828" },
-                { name: "Batangas Port Container Terminal", lat: "13.7565", lng: "121.0583" }
+                { name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667 },
+                { name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830 },
+                { name: "Subic Bay Freeport Zone", lat: 14.8291, lng: 120.2828 },
+                { name: "Batangas Port Container Terminal", lat: 13.7565, lng: 121.0583 }
             ];
 
             const activeUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
             const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
             
             // Add slight GPS drift simulation
-            const jitterLat = (parseFloat(targetCorridor.lat) + (Math.random() - 0.5) * 0.01).toFixed(4);
-            const jitterLng = (parseFloat(targetCorridor.lng) + (Math.random() - 0.5) * 0.01).toFixed(4);
+            const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
+            const jitterLng = Number((targetCorridor.lng + (Math.random() - 0.5) * 0.01).toFixed(4));
 
             const plotMsg = `[GPS PLOT] Unit ${activeUnit} successfully plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] near ${targetCorridor.name} (${new Date().toLocaleTimeString()})`;
             
@@ -1208,9 +1214,62 @@
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) {
                 renderGeofenceLogs(trackContainer);
-            } else {
-                alert(plotMsg);
             }
+
+            // Render/Update Leaflet.js Visual Map Container & Markers
+            let mapContainer = document.getElementById('skymoverVisualMapContainer');
+            if (!mapContainer) {
+                const aiContainer = document.getElementById('aiContainer');
+                if (aiContainer) {
+                    const mapWrapper = document.createElement('div');
+                    mapWrapper.className = 'mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3';
+                    mapWrapper.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-xs text-sky-300 flex items-center"><i class="fa-solid fa-map-marked-alt mr-2"></i> Live Fleet & Terminal Map Rendering (Leaflet.js)</h4>
+                            <span class="text-[10px] bg-sky-950 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">Auto-Plotted Markers Active</span>
+                        </div>
+                        <div id="skymoverVisualMapContainer" class="w-full h-80 rounded-xl border border-slate-700 z-10"></div>
+                    `;
+                    aiContainer.appendChild(mapWrapper);
+                }
+            }
+
+            setTimeout(() => {
+                const mapEl = document.getElementById('skymoverVisualMapContainer');
+                if (mapEl) {
+                    if (!skymoverLeafletMap) {
+                        skymoverLeafletMap = L.map('skymoverVisualMapContainer').setView([14.65, 121.00], 10);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 19
+                        }).addTo(skymoverLeafletMap);
+                        skymoverMapMarkersLayer = L.layerGroup().addTo(skymoverLeafletMap);
+                    }
+
+                    if (skymoverMapMarkersLayer) {
+                        skymoverMapMarkersLayer.clearLayers();
+                    }
+
+                    // Plot all sample locations + active unit marker
+                    sampleCorridors.forEach(c => {
+                        const marker = L.marker([c.lat, c.lng]);
+                        marker.bindPopup(`<b>Hub/Terminal:</b> ${c.name}<br>Lat: ${c.lat}, Lng: ${c.lng}`);
+                        skymoverMapMarkersLayer.addLayer(marker);
+                    });
+
+                    const activeMarker = L.marker([jitterLat, jitterLng], {
+                        icon: L.divIcon({
+                            className: 'custom-fleet-marker',
+                            html: '<div style="background-color: #0284c7; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🚛 ' + activeUnit + '</div>'
+                        })
+                    });
+                    activeMarker.bindPopup(`<b>Active Fleet Unit:</b> ${activeUnit}<br><b>Location:</b> ${targetCorridor.name}<br><b>Coordinates:</b> ${jitterLat}, ${jitterLng}<br><b>Time:</b> ${new Date().toLocaleTimeString()}`);
+                    skymoverMapMarkersLayer.addLayer(activeMarker);
+
+                    skymoverLeafletMap.setView([jitterLat, jitterLng], 12);
+                    skymoverLeafletMap.invalidateSize();
+                }
+            }, 150);
         }
 
         function sendDriverSms(unitId, messageText) {
@@ -2117,7 +2176,6 @@
             if(!db.transshipments) db.transshipments = [];
             db.transshipments.push({ id: 'TR-' + Math.floor(1000 + Math.random() * 9000), origin, container, commission, status: 'Pending Hub Review' });
             saveCloudData();
-            closeNewTransshipmentModal();
             renderTransshipmentTable();
             document.getElementById('transForm').reset();
         }
