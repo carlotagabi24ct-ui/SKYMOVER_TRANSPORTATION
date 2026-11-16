@@ -1985,40 +1985,19 @@
         let activeSelectedContainer = null;
 
         function containerSelectedForGateOut() {
-            const selId = document.getElementById('yardOutContainer').value;
-            const c = yardDb.containers.find(x => x.id === selId);
-            activeSelectedContainer = c || null;
-            if(c) {
-                document.getElementById('calcGateInDisplay').value = c.date || '';
-                document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
-                
-                const plateInput = document.getElementById('gateOutPlate');
-                const driverInput = document.getElementById('gateOutDriver');
-                const remarksInput = document.getElementById('gateOutRemarks');
-                
+            const c = yardDb.containers.find(x => x.id === document.getElementById('yardOutContainer').value);
+            const plateInput = document.getElementById('gateOutPlate');
+            const driverInput = document.getElementById('gateOutDriver');
+            const remarksInput = document.getElementById('gateOutRemarks');
                 if(plateInput && c.plate) plateInput.value = c.plate;
                 if(driverInput && c.driver) driverInput.value = c.driver;
                 if(remarksInput && c.remarks) remarksInput.value = c.remarks;
-
-                recalculateTotals();
-            } else {
-                document.getElementById('calcGateInDisplay').value = '';
-                document.getElementById('calcVanInAmount').value = 0;
-                document.getElementById('calcStorageDays').value = 0;
-                document.getElementById('calcTotalAmount').value = '0.00';
-                
-                const plateInput = document.getElementById('gateOutPlate');
-                const driverInput = document.getElementById('gateOutDriver');
-                const remarksInput = document.getElementById('gateOutRemarks');
-                if(plateInput) plateInput.value = '';
-                if(driverInput) driverInput.value = '';
-                if(remarksInput) remarksInput.value = '';
-
-                const notice = document.getElementById('vanInDeductionNotice');
-                if(notice) notice.classList.add('hidden');
+            if(c) {
+                document.getElementById('calcGateInDisplay').value = c.date || '';
+                document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
             }
         }
-
+        
         function recalculateTotals() {
             const cId = document.getElementById('yardOutContainer').value;
             const c = yardDb.containers.find(x => x.id === cId);
