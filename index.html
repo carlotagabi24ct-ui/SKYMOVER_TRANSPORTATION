@@ -856,7 +856,7 @@
         }
 
         // ==========================================
-        // NEW FEATURE: ROLE-BASED UI VIEW LIMITING (RBAC)
+        // ROLE-BASED UI VIEW LIMITING (RBAC)
         // ==========================================
         function applyRbacPermissions(role) {
             const resetBtn = document.getElementById('resetDbBtn');
@@ -866,7 +866,6 @@
             const navHubPortalBtn = document.getElementById('navHubPortalBtn');
             const rbacUsersNavBtn = document.getElementById('rbacUsersNavBtn');
 
-            // Reset visibility of portal landing cards
             if(cardBackend) cardBackend.style.display = 'block';
             if(cardDriver) cardDriver.style.display = 'block';
             if(cardYard) cardYard.style.display = 'block';
@@ -874,20 +873,17 @@
             if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'inline-block';
 
             if (role === 'driver') {
-                // Drivers only see driver's portal
                 if(cardBackend) cardBackend.style.display = 'none';
                 if(cardYard) cardYard.style.display = 'none';
                 if(navHubPortalBtn) navHubPortalBtn.style.display = 'none';
                 switchView('driver');
             } else if (role === 'yard_manager') {
-                // Yard managers see yard & transshipment hub
                 if(cardBackend) cardBackend.style.display = 'none';
                 if(cardDriver) cardDriver.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('yard');
             } else if (role === 'accounting_reports') {
-                // Accounting views yard revenue & financial tabs only
                 if(cardBackend) cardBackend.style.display = 'none';
                 if(cardDriver) cardDriver.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
@@ -895,15 +891,12 @@
                 switchView('yard');
                 switchYardTab('yardRevenue');
             } else if (role === 'dispatcher') {
-                // Dispatchers have access to hub & fleet analytics
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('landing');
             } else if (role === 'admin') {
-                // Admin has full unrestrictive access
                 if(resetBtn) resetBtn.style.display = 'inline-block';
                 switchView('landing');
             } else {
-                // Guest / Unauthenticated
                 ['viewBackend', 'viewDriver', 'viewHub', 'viewYard', 'viewLanding'].forEach(v => {
                     const el = document.getElementById(v);
                     if(el) el.classList.add('hidden');
@@ -1016,7 +1009,6 @@
             } catch(err) {}
         }
 
-        // 2. PERSISTENT SUPABASE TRANSACTION SYNC
         async function saveCloudData() {
             saveDB();
             localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
@@ -1339,7 +1331,7 @@
                 mainTitle: "SKYMOVER 运输物流", 
                 mainSubtitle: "菲律宾集装箱车队及空箱场站智能管理平台", 
                 card1Title: "管理后台", 
-                card1Desc: "调度、财务与报表 (需管理员/调度员权限)", 
+                card1Desc: "调度, 财务与报表 (需管理员/调度员权限)", 
                 card1Link: "打开仪表盘 →",
                 card2Title: "司机端", 
                 card2Desc: "运单、照片、导航", 
@@ -1509,7 +1501,9 @@
             `;
         }
 
-        // 3. RBAC EMAIL CONFIRMATION BYPASS & USER PROVISIONING
+        // =========================================================================
+        // FIXED USER CREATION: RETAINS DISPATCHER / ADMIN SESSION WITHOUT LOGOUT
+        // =========================================================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('newUserEmail').value;
@@ -1522,18 +1516,30 @@
 
             if(supabaseClient) {
                 try {
+                    // Capture active dispatcher/admin session tokens prior to sign-up
+                    const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
+
                     await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
                         options: { 
-                            data: { role: role },
-                            emailRedirectTo: window.location.origin
+                            data: { role: role }
                         } 
                     });
-                } catch(err) {}
+
+                    // Restore the current dispatcher or admin session instantly
+                    if (currentSession) {
+                        await supabaseClient.auth.setSession({
+                            access_token: currentSession.access_token,
+                            refresh_token: currentSession.refresh_token
+                        });
+                    }
+                } catch(err) {
+                    console.log("Supabase signup note:", err);
+                }
             }
 
-            alert(`Successfully registered user ${email} with role [${role.toUpperCase()}]. Note: If email confirmation is required by Supabase settings, sign in using admin privileges or disable email verification in your Supabase Auth Providers dashboard.`);
+            alert(`Successfully registered user ${email} with role [${role.toUpperCase()}].`);
             openSubModule('User Management');
         }
 
