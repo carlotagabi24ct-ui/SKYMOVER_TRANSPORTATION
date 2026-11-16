@@ -1591,7 +1591,7 @@
         }
 
         // ==========================================
-        // CORRECTED & OPTIMIZED USER PROVISIONING FUNCTION
+        // CORRECTED & FIXED SUPABASE USER AUTHENTICATION & PROVISIONING FUNCTIONS
         // ==========================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
@@ -1612,8 +1612,8 @@
 
             if (!db.systemUsers) db.systemUsers = [];
 
-            const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
             const newUserRecord = { email, role, createdAt: new Date().toISOString() };
+            const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
 
             if (existingIndex >= 0) {
                 db.systemUsers[existingIndex] = newUserRecord;
@@ -1625,9 +1625,11 @@
 
             if (supabaseClient) {
                 try {
-                    const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
+                    // Save admin's current active session token so we don't accidentally lose authentication state
+                    const { data: sessionData } = await supabaseClient.auth.getSession();
+                    const currentSession = sessionData ? sessionData.session : null;
 
-                    // Using signUp to register user credentials into Supabase Auth
+                    // Register user into Supabase Auth with custom role metadata
                     const { data, error } = await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
@@ -1641,6 +1643,7 @@
                         return;
                     }
 
+                    // Restore administrator session so the admin stays logged in
                     if (currentSession) {
                         await supabaseClient.auth.setSession({
                             access_token: currentSession.access_token,
@@ -1652,12 +1655,12 @@
                 }
             }
 
-            alert(`Successfully provisioned user account for ${email} with role [${role.toUpperCase()}].`);
+            alert(`Successfully provisioned user account for ${email} with role [${role.toUpperCase()}]. Saved to cloud & authentication records.`);
             closeSubModule();
             openSubModule('User Management');
         }
         
-        function deleteSystemUser(index) {
+        async function deleteSystemUser(index) {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
                 return;
@@ -1667,8 +1670,8 @@
                 const targetEmail = users[index].email;
                 if(confirm(`Are you sure you want to delete user account: ${targetEmail}?`)) {
                     db.systemUsers.splice(index, 1);
-                    saveCloudData();
-                    alert(`Successfully deleted user ${targetEmail}.`);
+                    await saveCloudData();
+                    alert(`Successfully removed user ${targetEmail} from system records.`);
                     openSubModule('User Management');
                 }
             }
