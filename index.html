@@ -205,7 +205,7 @@
                     </div>
                     <div id="driverActiveTripInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono text-slate-200"></div>
                     <div id="driverGeoStatus" class="text-[11px] font-mono text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 hidden"></div>
-                    
+
                     <div class="border-t border-slate-800 pt-4">
                         <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> <span data-i18n="smsInboxHeading">Driver SMS Notification Inbox</span></h4>
                         <div id="driverSmsInbox" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono space-y-2 max-h-36 overflow-y-auto text-slate-300">
@@ -290,7 +290,7 @@
                         </div>
                         <div class="text-[11px] text-slate-500 text-center font-medium">Updates dynamically in real time</div>
                     </div>
-                    
+
                     <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border border-slate-200 flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-base text-slate-900 mb-1"><i class="fa-solid fa-chart-column text-sky-600 mr-2"></i> Yard Stock Count by Status</h3>
@@ -408,13 +408,13 @@
                             <div><label class="font-bold text-slate-800 mb-1 block">Truck Plate Number *</label><input name="plate" id="gateOutPlate" required readonly class="p-2 border rounded-lg w-full bg-slate-100 text-slate-900 font-bold" placeholder="Reflected from Gate-In"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Driver Name</label><input name="driver" id="gateOutDriver" readonly class="p-2 border rounded-lg w-full bg-slate-100 text-slate-900 font-bold" placeholder="Reflected from Gate-In"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out EIR / Reference *</label><input name="eir" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
-                            
+
                             <div><label class="font-bold text-slate-800 mb-1 block">Van In Amount (₱)</label><input type="number" id="calcVanInAmount" name="vanInAmount" readonly class="p-2 border rounded-lg w-full bg-slate-100 font-bold text-slate-900" value="0"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Van Out Amount (₱)</label><input type="number" id="calcVanOutAmount" name="vanOutAmount" placeholder="0.00" class="p-2 border rounded-lg w-full bg-white text-slate-900 font-bold" oninput="recalculateTotals()"></div>
-                            
+
                             <div><label class="font-bold text-slate-800 mb-1 block">Storage Fee Type</label><select name="fee" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>Dry Van</option><option>Reefer Van</option><option>Flat Rack</option><option>Open Top</option></select></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Storage Amount Rate per Day (₱)</label><select name="storageamount" id="calcStorageAmount" class="p-2 border rounded-lg w-full bg-white text-slate-900" onchange="recalculateTotals()"><option value="450">450</option><option value="500">500</option><option value="800">800</option><option value="1000">1000</option></select></div>
-                            
+
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-In Date & Time (Read-only)</label><input type="text" id="calcGateInDisplay" readonly class="p-2 border rounded-lg w-full bg-slate-100 font-mono text-slate-900 font-bold"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out Date & Time *</label><input name="date" id="calcGateOutDate" type="datetime-local" required class="p-2 border rounded-lg w-full bg-white text-slate-900" onchange="recalculateTotals()"></div>
 
@@ -723,7 +723,7 @@
         <div class="glass-card w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl space-y-6">
             <button onclick="closeGeofenceSmsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <h3 class="text-xl font-bold text-emerald-400"><i class="fa-solid fa-route mr-2"></i> Geofence Polygons & SMS Dispatch Configuration</h3>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Left: Geofence Polygon Builder -->
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
@@ -928,6 +928,13 @@
                 if(session && session.user) {
                     currentUser = session.user;
                     currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
+                    
+                    // AUTO-CLEAR GEOFENCE ALERT HISTORY UPON SUCCESSFUL LOGIN
+                    if(db && db.geofenceAlerts) {
+                        db.geofenceAlerts = [];
+                        saveCloudData();
+                    }
+
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
@@ -940,6 +947,14 @@
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
                     currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
+                    
+                    if (currentUser) {
+                        if(db && db.geofenceAlerts) {
+                            db.geofenceAlerts = [];
+                            saveCloudData();
+                        }
+                    }
+
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
@@ -1051,6 +1066,13 @@
                 } else if(data && data.user) {
                     currentUser = data.user;
                     currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
+                    
+                    // AUTO-CLEAR GEOFENCE ALERT HISTORY ON SUCCESSFUL LOGIN
+                    if(db && db.geofenceAlerts) {
+                        db.geofenceAlerts = [];
+                        saveCloudData();
+                    }
+
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     closeSkymoverLogin();
@@ -1156,9 +1178,6 @@
             } catch(e) {}
         }
 
-        // ==========================================
-        // 3. ENHANCED DATABASE RESET & ARRAY CLEARING FIX
-        // ==========================================
         async function confirmResetAllDatabases() {
             if(currentUserRole !== 'admin') {
                 alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
@@ -1167,7 +1186,6 @@
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
             if(pwd !== 'Skymover_Transportation_2026') return;
 
-            // Fully clear all arrays and logs
             db = { 
                 vehicles: [], 
                 drivers: [], 
@@ -1182,7 +1200,7 @@
                 geofenceZones: [], 
                 systemUsers: [] 
             };
-            
+
             yardDb = { 
                 containers: [], 
                 movements: [], 
@@ -1208,7 +1226,7 @@
             refreshYard();
             renderTransshipmentTable();
             closeSubModule();
-            
+
             if (currentBackendModuleType === 'Dashboard') {
                 openSubModule('Dashboard');
             }
@@ -1289,18 +1307,14 @@
             refreshDriverSmsInbox();
         }
 
-        // ==========================================
-        // 2. UPDATED GEOFENCE SCAN CHECKING REGISTERED UNITS
-        // ==========================================
         function triggerGeofenceScan() {
             const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
                 { name: "Manila North Harbor Terminal", radius: 5 },
                 { name: "Valenzuela Empty Container Depot", radius: 3 }
             ];
-            
-            // Check for actual registered vehicles/units in the system
+
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
-            
+
             if (registeredUnits.length === 0) {
                 const alertMsg = `[GEOFENCE SYSTEM] Scan executed: No registered active units found in fleet masterlist.`;
                 if(!db.geofenceAlerts) db.geofenceAlerts = [];
@@ -1313,15 +1327,15 @@
 
             const randomZone = zones[Math.floor(Math.random() * zones.length)];
             const randomUnit = registeredUnits[Math.floor(Math.random() * registeredUnits.length)].id;
-            
+
             const alertMsg = `[GEOFENCE ALERT] Registered unit ${randomUnit} crossed boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
-            
+
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
-            
+
             sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe transit protocols.`);
             saveCloudData();
-            
+
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) renderGeofenceLogs(trackContainer);
         }
@@ -1329,22 +1343,39 @@
         let skymoverLeafletMap = null;
         let skymoverMapMarkersLayer = null;
 
-        function fetchDriverLiveLocation() {
+        // ==========================================
+        // FETCH ACTUAL GPS POSITION & REVERSE GEOCODE ADDRESS
+        // ==========================================
+        async function fetchDriverLiveLocation() {
             const statusDiv = document.getElementById('driverGeoStatus');
             if (navigator.geolocation) {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
-                    statusDiv.textContent = '📡 Acquiring GPS position from browser...';
+                    statusDiv.textContent = '📡 Acquiring GPS position & resolving actual street address...';
                 }
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude.toFixed(4);
-                        const lng = position.coords.longitude.toFixed(4);
+                    async (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const latStr = lat.toFixed(4);
+                        const lngStr = lng.toFixed(4);
+                        
+                        let resolvedAddress = "Resolving street address...";
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                            const data = await res.json();
+                            if (data && data.display_name) {
+                                resolvedAddress = data.display_name;
+                            }
+                        } catch(err) {
+                            resolvedAddress = "Lat: " + latStr + ", Lng: " + lngStr;
+                        }
+
                         if(statusDiv) {
-                            statusDiv.innerHTML = `✅ <b>GPS Position Acquired:</b> Latitude ${lat}, Longitude ${lng} (Accuracy: ±${Math.round(position.coords.accuracy)}m)`;
+                            statusDiv.innerHTML = `✅ <b>GPS Position & Address Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
                         }
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
-                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS] Active unit positioned at [Lat: ${lat}, Lng: ${lng}] via Geolocation API.`, time: new Date().toISOString() });
+                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS & ADDRESS] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}].`, time: new Date().toISOString() });
                         saveCloudData();
                     },
                     (error) => {
@@ -1366,7 +1397,7 @@
 
         function plotAutomatedMapCoordinates() {
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
-            
+
             if (registeredUnits.length === 0) {
                 const alertMsg = `[GPS PLOT] Scan executed: No registered active units found in fleet masterlist.`;
                 if(!db.geofenceAlerts) db.geofenceAlerts = [];
@@ -1386,12 +1417,12 @@
 
             const activeUnit = registeredUnits[Math.floor(Math.random() * registeredUnits.length)].id;
             const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
-            
+
             const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
             const jitterLng = Number((targetCorridor.lng + (Math.random() - 0.5) * 0.01).toFixed(4));
 
             const plotMsg = `[GPS PLOT] Unit ${activeUnit} successfully plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] near ${targetCorridor.name} (${new Date().toLocaleTimeString()})`;
-            
+
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: plotMsg, time: new Date().toISOString() });
             saveCloudData();
@@ -1534,10 +1565,10 @@
                     const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
 
                     const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: storageUrl, date: new Date().toISOString() };
-                    
+
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
                     else stagedGateOutPhotos.push(fileObj);
-                    
+
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
                     if(optimizedFile.type.startsWith('image/')) {
@@ -1595,9 +1626,6 @@
         function clearGateOutFormAndPhotos() { document.getElementById('yardGateOutForm').reset(); clearGateOutPhotos(); containerSelectedForGateOut(); }
         function clearYardExpenseForm() { document.getElementById('yardExpenseForm').reset(); }
 
-        // ==========================================
-        // 1. CLEAR INITIAL HARDCODED SEED DATA FIX
-        // ==========================================
         let db;
         try { db = JSON.parse(localStorage.getItem('skymover_unified_db_v3')); } catch(e) { db = null; }
         if (!db || typeof db !== 'object') {
@@ -2019,7 +2047,7 @@
             closeSubModule();
             openSubModule('User Management');
         }
-        
+
         async function deleteSystemUser(index) {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
@@ -2192,7 +2220,7 @@
                         </td>
                     </tr>
                 `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No custom users provisioned yet. (Default admin session active)</td></tr>';
-                
+
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <div>
@@ -2421,7 +2449,7 @@
             const origin = document.getElementById('transOrigin').value;
             const container = document.getElementById('transContainer').value.toUpperCase();
             const commission = '₱' + Number(document.getElementById('transCommission').value).toLocaleString();
-            
+
             if(!db.transshipments) db.transshipments = [];
             db.transshipments.push({ id: 'TR-' + Math.floor(1000 + Math.random() * 9000), origin, container, commission, status: 'Pending Hub Review' });
             saveCloudData();
@@ -2447,7 +2475,7 @@
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(tabId);
             if(target) target.classList.remove('hidden');
-            
+
             ['yBtn1','yBtn2','yBtn3','yBtn4','yBtn5','yBtn6','yBtn7','yBtn8'].forEach((id, idx) => {
                 let btn = document.getElementById(id);
                 if(btn) {
@@ -2470,7 +2498,7 @@
             const ya = document.getElementById('yardAvailable');
             const yr = document.getElementById('yardReserved');
             const yd = document.getElementById('yardDamaged');
-            
+
             const countAvailable = a.filter(c => c.status === 'Available' && c.condition === 'Good').length;
             const countReserved = a.filter(c => c.status === 'Reserved').length;
             const countDamaged = a.filter(c => ['Damaged','For Inspection'].includes(c.condition) || c.status === 'Hold').length;
@@ -2559,7 +2587,7 @@
                 document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
             }
         }
-        
+
         function recalculateTotals() {
             const cId = document.getElementById('yardOutContainer').value;
             const c = yardDb.containers.find(x => x.id === cId);
@@ -2596,7 +2624,7 @@
                     <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString()}</td>
                 </tr>
             `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found.</td></tr>';
-            
+
             const totalRev = revs.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
             const totalExp = (yardDb.expenses || []).reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
             const netIncome = totalRev - totalExp;
@@ -2668,7 +2696,7 @@
             const containers = yardDb.containers || [];
             if(document.getElementById('yardRptGateIn')) document.getElementById('yardRptGateIn').textContent = containers.length;
             if(document.getElementById('yardRptGateOut')) document.getElementById('yardRptGateOut').textContent = containers.filter(c => c.status === 'Released').length;
-            
+
             const lines = [...new Set(containers.map(c => c.line))];
             if(document.getElementById('yardRptLines')) document.getElementById('yardRptLines').textContent = lines.length;
             if(document.getElementById('yardRptMoves')) document.getElementById('yardRptMoves').textContent = (yardDb.movements || []).length;
@@ -2819,7 +2847,7 @@
 
         function blobDownload(blob, name) { let a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = name; a.click(); URL.revokeObjectURL(u); }
         function csv(rows, name) { blobDownload(new Blob(['\ufeff' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}), name); }
-        
+
         function exportYardCSV() {
             const data = (yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, yardLoc(c)]);
             csv([['Container No', 'Size', 'Shipping Line', 'Status', 'Location'], ...data], 'skymover_yard_inventory.csv');
