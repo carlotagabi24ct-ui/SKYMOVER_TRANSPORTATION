@@ -2422,7 +2422,7 @@
         function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
 
         // ==========================================
-        // VISUAL EXTRACTION REPORT & PHOTO AUDIT (UPDATED)
+        // VISUAL EXTRACTION REPORT & PHOTO AUDIT (UPDATED WITH ROBUST THUMBNAILS)
         // ==========================================
         function openExtractionReport() {
             const modal = document.getElementById('subModuleModal');
@@ -2435,9 +2435,12 @@
 
             let gateInHtml = gateInContainers.length ? gateInContainers.map(c => {
                 const photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => {
-                const imgSrc = p.dataUrl || p.url || '';
-                return `
-                    <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center">${imgSrc ? `<img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=No+Preview';">` : '<span class="text-[9px] text-slate-400">No Image</span>'}</div>`;}).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-In entry.</span>';
+                    const imgSrc = p.dataUrl || p.url || '';
+                    return `
+                        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center">
+                            ${imgSrc ? `<img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=No+Preview';">` : '<span class="text-[9px] text-slate-400">No Image</span>'}
+                        </div>`;
+                }).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-In entry.</span>';
 
                 return `
                     <div class="border rounded-xl p-4 bg-white mb-4 text-slate-900 shadow-sm space-y-3">
@@ -2464,11 +2467,14 @@
 
             let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => {
                 const containerObj = (yardDb.containers || []).find(c => c.number === m.number && c.gateOutPhotos);
-                const proofsHtml = (containerObj && containerObj.gateOutPhotos && containerObj.gateOutPhotos.length) ? containerObj.gateOutPhotos.map(p => `
-                    <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white">
-                        <img src="${p.dataUrl}" class="w-full h-full object-cover">
-                    </div>
-                `).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-Out release.</span>';
+                const proofsHtml = (containerObj && containerObj.gateOutPhotos && containerObj.gateOutPhotos.length) ? containerObj.gateOutPhotos.map(p => {
+                    const imgSrc = p.dataUrl || p.url || '';
+                    return `
+                        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center">
+                            ${imgSrc ? `<img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=No+Preview';">` : '<span class="text-[9px] text-slate-400">No Image</span>'}
+                        </div>
+                    `;
+                }).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-Out release.</span>';
 
                 return `
                     <div class="border rounded-xl p-4 bg-white mb-4 text-slate-900 shadow-sm space-y-3">
