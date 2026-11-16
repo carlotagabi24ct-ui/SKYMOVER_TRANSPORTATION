@@ -1125,7 +1125,7 @@
             if(!txt || !txt.value) return;
             const customMsg = txt.value;
 
-            (db.vehicles || [{id: 'SKV-101'}]).forEach(v => {
+            (db.vehicles || []).forEach(v => {
                 sendDriverSms(v.id, customMsg);
             });
             closeGeofenceSmsModal();
@@ -1137,8 +1137,15 @@
                 { name: "Manila North Harbor Terminal", radius: 5 },
                 { name: "Valenzuela Empty Container Depot", radius: 3 }
             ];
+            
+            const vehicles = db.vehicles || [];
+            if (vehicles.length === 0) {
+                alert("⚠️ No active vehicles found in the database. Please register a vehicle or unit first before triggering a geofence scan.");
+                return;
+            }
+
             const randomZone = zones[Math.floor(Math.random() * zones.length)];
-            const randomUnit = (db.vehicles && db.vehicles.length) ? db.vehicles[Math.floor(Math.random() * db.vehicles.length)].id : 'SKV-101';
+            const randomUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
             
             const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
             
@@ -1590,9 +1597,6 @@
             `;
         }
 
-        // ==========================================
-        // CORRECTED & FIXED SUPABASE USER AUTHENTICATION & PROVISIONING FUNCTIONS
-        // ==========================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
             const emailInput = document.getElementById('newUserEmail');
@@ -1625,11 +1629,9 @@
 
             if (supabaseClient) {
                 try {
-                    // Save admin's current active session token so we don't accidentally lose authentication state
                     const { data: sessionData } = await supabaseClient.auth.getSession();
                     const currentSession = sessionData ? sessionData.session : null;
 
-                    // Register user into Supabase Auth with custom role metadata
                     const { data, error } = await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
@@ -1643,7 +1645,6 @@
                         return;
                     }
 
-                    // Restore administrator session so the admin stays logged in
                     if (currentSession) {
                         await supabaseClient.auth.setSession({
                             access_token: currentSession.access_token,
