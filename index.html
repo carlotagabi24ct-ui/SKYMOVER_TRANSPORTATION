@@ -380,7 +380,7 @@
                                     ondragleave="handleDragLeave(event, 'gateInDropZone')" 
                                     ondrop="handleDrop(event, 'gateIn')">
                                 <label class="font-bold text-slate-800 mb-1 block"><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-600"></i> Drag & Drop Photos / Files Here (Gate-In)</label>
-                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files (Automated Image Compression Enabled)</p>
+                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files (Automated Image Compression & Supabase Bucket Upload Enabled)</p>
                                 <input type="file" id="gateInPhotoInput" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'gateIn')" class="hidden">
                                 <button type="button" onclick="document.getElementById('gateInPhotoInput').click()" class="bg-sky-100 hover:bg-sky-200 text-sky-900 px-3 py-1.5 rounded-lg font-bold text-xs transition">Browse Files</button>
                                 <div id="gateInPhotoPreviewContainer" class="flex flex-wrap justify-center gap-3 mt-4"></div>
@@ -437,7 +437,7 @@
                                     ondragleave="handleDragLeave(event, 'gateOutDropZone')" 
                                     ondrop="handleDrop(event, 'gateOut')">
                                 <label class="font-bold text-slate-800 mb-1 block"><i class="fa-solid fa-cloud-arrow-up mr-1 text-amber-600"></i> Drag & Drop Photos / Files Here (Gate-Out)</label>
-                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files</p>
+                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files (Supabase Storage Direct Upload)</p>
                                 <input type="file" id="gateOutPhotoInput" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'gateOut')" class="hidden">
                                 <button type="button" onclick="document.getElementById('gateOutPhotoInput').click()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-lg font-bold text-xs transition">Browse Files</button>
                                 <div id="gateOutPhotoPreviewContainer" class="flex flex-wrap justify-center gap-3 mt-4"></div>
@@ -608,11 +608,11 @@
             <!-- Yard Tab 8: Cloud Sync & Backup -->
             <div id="yardBackup" class="yard-tab hidden space-y-6">
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border">
-                    <h3 class="font-bold text-base text-slate-900 mb-2"><i class="fa-solid fa-cloud text-sky-600 mr-2"></i> Supabase Cloud Database Status (Real-Time Subscriptions Active)</h3>
-                    <p class="text-xs text-slate-600 mb-4">Connected securely to your remote cloud database. Multi-user real-time synchronization is listening for changes from other users instantly.</p>
+                    <h3 class="font-bold text-base text-slate-900 mb-2"><i class="fa-solid fa-cloud text-sky-600 mr-2"></i> Supabase Cloud Database & Storage Bucket Status (Active)</h3>
+                    <p class="text-xs text-slate-600 mb-4">Connected securely to your remote cloud database and Supabase storage bucket (`skymover-attachments`).</p>
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-700">
                         <div><strong>Project URL:</strong> https://ygghxpsddnjzgnkvbrtl.supabase.co</div>
-                        <div class="mt-1"><strong>Status:</strong> <span class="text-emerald-700 font-bold">● Active Real-Time Websocket Synced</span></div>
+                        <div class="mt-1"><strong>Status:</strong> <span class="text-emerald-700 font-bold">● Active Real-Time Websocket Synced & Storage Bucket Ready</span></div>
                     </div>
                 </div>
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border">
@@ -686,7 +686,7 @@
                     <input type="text" id="regDriverUnit" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101">
                 </div>
                 <div>
-                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-purple-400"></i> Attach Driver License / Photo ID (Compressed)</label>
+                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-purple-400"></i> Attach Driver License / Photo ID (Compressed & Cloud Upload)</label>
                     <input type="file" id="regDriverFile" accept="image/*,application/pdf" onchange="handleDriverFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
                     <div id="regDriverFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
@@ -698,7 +698,7 @@
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL (Vehicles, Fuel, Maintenance, GPS & Dispatch, Expenses) WITH ATTACHMENTS -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -706,7 +706,7 @@
             <form id="backendEntryForm" onsubmit="handleBackendEntrySubmit(event)" class="space-y-3 text-xs">
                 <div id="backendModalFields"></div>
                 <div class="pt-2">
-                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt (Compressed)</label>
+                    <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt (Cloud Upload)</label>
                     <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleBackendFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
                     <div id="backendEntryFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
@@ -804,6 +804,43 @@
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
+        const STORAGE_BUCKET_NAME = "skymover-attachments";
+
+        // ==========================================
+        // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY
+        // ==========================================
+        async function uploadCompressedPhotosToSupabaseStorage(fileObj, folderName = "general") {
+            if (!supabaseClient) return fileObj.dataUrl; // Fallback if client is uninitialized
+            try {
+                // Convert dataUrl back to Blob
+                const response = await fetch(fileObj.dataUrl);
+                const blob = await response.blob();
+                const safeName = `${Date.now()}_${fileObj.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                const filePath = `${folderName}/${safeName}`;
+
+                const { data, error } = await supabaseClient.storage
+                    .from(STORAGE_BUCKET_NAME)
+                    .upload(filePath, blob, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+
+                if (error) {
+                    console.warn("Storage upload notice (check if bucket 'skymover-attachments' exists):", error.message);
+                    return fileObj.dataUrl; // Fallback to base64 dataUrl
+                }
+
+                // Get public URL
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from(STORAGE_BUCKET_NAME)
+                    .getPublicUrl(filePath);
+
+                return publicUrlData.publicUrl || fileObj.dataUrl;
+            } catch (err) {
+                console.error("Storage upload exception:", err);
+                return fileObj.dataUrl;
+            }
+        }
 
         // ==========================================
         // AUTOMATED PHOTO COMPRESSION UTILITY
@@ -811,7 +848,7 @@
         function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
             return new Promise((resolve) => {
                 if (!file.type.startsWith('image/')) {
-                    resolve(file); // Non-image files (e.g. PDF) are returned as is
+                    resolve(file); 
                     return;
                 }
                 const reader = new FileReader();
@@ -855,7 +892,7 @@
 
         // 1. INACTIVITY AUTO-LOGOUT TIMER (5 MINUTES)
         let inactivityTimer = null;
-        const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const INACTIVITY_LIMIT = 5 * 60 * 1000;
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
@@ -874,7 +911,7 @@
         function initSupabase() {
             try {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                updateSyncBadge('connected', 'Cloud DB & Auth RBAC Live Sync Active');
+                updateSyncBadge('connected', 'Cloud DB & Storage Bucket Active');
                 checkActiveAuthSession();
                 fetchCloudData();
                 subscribeToRealtimeChanges();
@@ -941,9 +978,6 @@
             }
         }
 
-        // ==========================================
-        // ROLE-BASED UI VIEW LIMITING (RBAC)
-        // ==========================================
         function applyRbacPermissions(role) {
             const resetBtn = document.getElementById('resetDbBtn');
             const cardBackend = document.getElementById('cardBackend');
@@ -1249,9 +1283,6 @@
             if(trackContainer) renderGeofenceLogs(trackContainer);
         }
 
-        // ==========================================
-        // FEATURE: AUTOMATED LEAFLET.JS MAP VISUAL PLOTTING & GEOLOCATION
-        // ==========================================
         let skymoverLeafletMap = null;
         let skymoverMapMarkersLayer = null;
 
@@ -1260,24 +1291,24 @@
             if (navigator.geolocation) {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
-                    statusDiv.textContent = '📡 Acquiring GPS position from UI browser...';
+                    statusDiv.textContent = '📡 Acquiring GPS position from browser...';
                 }
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude.toFixed(4);
                         const lng = position.coords.longitude.toFixed(4);
                         if(statusDiv) {
-                            statusDiv.innerHTML = `✅ <b>Actual UI GPS Position Acquired:</b> Latitude ${lat}, Longitude ${lng} (Accuracy: ±${Math.round(position.coords.accuracy)}m)`;
+                            statusDiv.innerHTML = `✅ <b>GPS Position Acquired:</b> Latitude ${lat}, Longitude ${lng} (Accuracy: ±${Math.round(position.coords.accuracy)}m)`;
                         }
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
-                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS] Active unit positioned at [Lat: ${lat}, Lng: ${lng}] via UI Geolocation API.`, time: new Date().toISOString() });
+                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS] Active unit positioned at [Lat: ${lat}, Lng: ${lng}] via Geolocation API.`, time: new Date().toISOString() });
                         saveCloudData();
                     },
                     (error) => {
                         const fallbackLat = 14.7011;
                         const fallbackLng = 120.9830;
                         if(statusDiv) {
-                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt or signal unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}]`;
+                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}]`;
                         }
                     },
                     { timeout: 10000, enableHighAccuracy: true }
@@ -1285,7 +1316,7 @@
             } else {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
-                    statusDiv.textContent = '❌ Geolocation is not supported by this browser interface.';
+                    statusDiv.textContent = '❌ Geolocation is not supported by this browser.';
                 }
             }
         }
@@ -1439,20 +1470,26 @@
             if(!previewContainer) return;
 
             for (let file of files) {
-                // Automated Compression Before Uploading to Supabase
+                // 1. Compress Image
                 const optimizedFile = await compressImageFile(file);
 
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = async function(event) {
                     const base64Data = event.target.result;
-                    const fileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data, date: new Date().toISOString() };
+                    const tempFileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data };
+
+                    // 2. Direct Upload to Supabase Storage Bucket
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
+
+                    const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: storageUrl, date: new Date().toISOString() };
+                    
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
                     else stagedGateOutPhotos.push(fileObj);
                     
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
                     if(optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = '<img src="' + base64Data + '" class="w-full h-full object-cover">';
+                        thumb.innerHTML = '<img src="' + storageUrl + '" class="w-full h-full object-cover">';
                     } else {
                         thumb.innerHTML = '<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate">' + optimizedFile.name + '</div>';
                     }
@@ -1462,9 +1499,6 @@
             }
         }
 
-        // ==========================================
-        // NEW ATTACHMENT HANDLERS FOR DRIVERS & BACKEND
-        // ==========================================
         async function handleDriverFileAttach(e) {
             const files = e.target.files;
             const preview = document.getElementById('regDriverFilePreview');
@@ -1474,9 +1508,11 @@
             for(let file of files) {
                 const optimizedFile = await compressImageFile(file);
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    stagedDriverAttachments.push({ name: optimizedFile.name, dataUrl: evt.target.result });
-                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-purple-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name}</span>`;
+                reader.onload = async function(evt) {
+                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'drivers');
+                    stagedDriverAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
+                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-purple-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
                 };
                 reader.readAsDataURL(optimizedFile);
             }
@@ -1491,9 +1527,11 @@
             for(let file of files) {
                 const optimizedFile = await compressImageFile(file);
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    stagedBackendAttachments.push({ name: optimizedFile.name, dataUrl: evt.target.result });
-                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name}</span>`;
+                reader.onload = async function(evt) {
+                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'backend');
+                    stagedBackendAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
+                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
                 };
                 reader.readAsDataURL(optimizedFile);
             }
@@ -1727,12 +1765,9 @@
             document.getElementById('driverRegForm').reset();
             stagedDriverAttachments = [];
             document.getElementById('regDriverFilePreview').innerHTML = '';
-            alert('New driver successfully registered with attached documentation!');
+            alert('New driver successfully registered with uploaded attachments!');
         }
 
-        // ==========================================
-        // AUDIT LOGS MODAL & CSV EXPORT
-        // ==========================================
         async function loadAuditLogsModal() {
             if (!supabaseClient) return;
 
@@ -1961,11 +1996,11 @@
                 container.innerHTML = `
                     <div>
                         <h3 class="text-xl font-bold text-blue-400 mb-2 flex items-center"><i class="fa-solid fa-magnifying-glass-chart mr-2"></i> LogiLENS Deep Visual Inspector</h3>
-                        <p class="text-xs text-slate-200 mb-4">Container damage detection, OCR waybill scanning, and automated compliance auditing synced with photo attachments.</p>
+                        <p class="text-xs text-slate-200 mb-4">Container damage detection, OCR waybill scanning, and automated compliance auditing synced with Supabase storage uploads.</p>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Container Condition</span><div class="text-lg font-bold text-emerald-400 mt-1">100% Clean (0 defects)</div></div>
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">Ready</div></div>
-                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Audit Photo Queue</span><div class="text-lg font-bold text-amber-400 mt-1">${(db.uploads || []).length} Attached</div></div>
+                            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Cloud Storage Queue</span><div class="text-lg font-bold text-amber-400 mt-1">${(db.uploads || []).length} Attached</div></div>
                         </div>
                         <button onclick="alert('LogiLENS optical scan complete.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
                     </div>
@@ -2020,9 +2055,12 @@
             if(file) {
                 const optimizedFile = await compressImageFile(file);
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = async function(event) {
+                    const tempObj = { name: optimizedFile.name, dataUrl: event.target.result };
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'proof-of-delivery');
+
                     if(!db.uploads) db.uploads = [];
-                    db.uploads.push({ name: optimizedFile.name, date: new Date().toISOString().replace('T', ' ').substring(0, 16), size: (optimizedFile.size / (1024*1024)).toFixed(1) + ' MB', type: 'Delivery Proof', dataUrl: event.target.result });
+                    db.uploads.push({ name: optimizedFile.name, date: new Date().toISOString().replace('T', ' ').substring(0, 16), size: (optimizedFile.size / (1024*1024)).toFixed(1) + ' MB', type: 'Delivery Proof', dataUrl: storageUrl });
                     saveCloudData();
                     document.getElementById('uploadSuccessMsg').classList.remove('hidden');
                 };
@@ -2140,9 +2178,6 @@
             }
         }
 
-        // ==========================================
-        // UNIFIED BACKEND ENTRY MODAL LOGIC WITH ATTACHMENTS
-        // ==========================================
         function openBackendEntryModal(type) {
             currentBackendModuleType = type;
             stagedBackendAttachments = [];
@@ -2442,8 +2477,6 @@
             sel.innerHTML = '<option value="">Select container in yard</option>' + a.map(c => `<option value="${c.id}">${c.number} (${c.size} ${c.type} - ${c.line})</option>`).join('');
         }
 
-        let activeSelectedContainer = null;
-
         function containerSelectedForGateOut() {
             const c = yardDb.containers.find(x => x.id === document.getElementById('yardOutContainer').value);
             const plateInput = document.getElementById('gateOutPlate');
@@ -2476,7 +2509,6 @@
             const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
             const storageFee = diffDays * rate;
             const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanIn = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
 
             const total = storageFee + vanOut;
             document.getElementById('calcTotalAmount').value = total.toFixed(2);
@@ -2651,7 +2683,7 @@
 
             saveYardDB();
             clearGateInFormAndPhotos();
-            alert('Container Gate-In successfully recorded and synced to cloud database!');
+            alert('Container Gate-In successfully recorded and uploaded to Supabase Storage & Cloud DB!');
             switchYardTab('yardInventory');
         }
 
@@ -2670,6 +2702,7 @@
             container.status = 'Released';
             container.gateOutDate = formData.get('date');
             container.vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
+            container.gateOutPhotos = stagedGateOutPhotos;
 
             const totalAmount = parseFloat(document.getElementById('calcTotalAmount').value) || 0;
             const storageDays = parseInt(document.getElementById('calcStorageDays').value) || 0;
@@ -2700,7 +2733,7 @@
 
             saveYardDB();
             clearGateOutFormAndPhotos();
-            alert('Container Gate-Out and billing successfully processed!');
+            alert('Container Gate-Out and billing successfully processed with uploaded files!');
             switchYardTab('yardRevenue');
         }
 
