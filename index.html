@@ -807,6 +807,46 @@
         const STORAGE_BUCKET_NAME = "skymover-attachments";
 
         // ==========================================
+        // AUTOMATED DISTANCE CALCULATION (HAVERSINE)
+        // ==========================================
+        const destinationHubs = [
+            { name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667 },
+            { name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830 },
+            { name: "Subic Bay Freeport Zone", lat: 14.8291, lng: 120.2828 },
+            { name: "Batangas Port Container Terminal", lat: 13.7565, lng: 121.0583 }
+        ];
+
+        function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+
+        function getNearestDestinationHub(driverLat, driverLng) {
+            let nearest = destinationHubs[0];
+            let minDistance = calculateDistanceKm(driverLat, driverLng, nearest.lat, nearest.lng);
+
+            for (let i = 1; i < destinationHubs.length; i++) {
+                const dist = calculateDistanceKm(driverLat, driverLng, destinationHubs[i].lat, destinationHubs[i].lng);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearest = destinationHubs[i];
+                }
+            }
+            return { hub: nearest.name, distanceKm: minDistance.toFixed(2) };
+        }
+
+        // ==========================================
         // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY
         // ==========================================
         async function uploadCompressedPhotosToSupabaseStorage(fileObj, folderName = "general") {
@@ -929,7 +969,6 @@
                     currentUser = session.user;
                     currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
                     
-                    // AUTO-CLEAR GEOFENCE ALERT HISTORY UPON SUCCESSFUL LOGIN
                     if(db && db.geofenceAlerts) {
                         db.geofenceAlerts = [];
                         saveCloudData();
@@ -1067,7 +1106,6 @@
                     currentUser = data.user;
                     currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
                     
-                    // AUTO-CLEAR GEOFENCE ALERT HISTORY ON SUCCESSFUL LOGIN
                     if(db && db.geofenceAlerts) {
                         db.geofenceAlerts = [];
                         saveCloudData();
@@ -1344,14 +1382,14 @@
         let skymoverMapMarkersLayer = null;
 
         // ==========================================
-        // FETCH ACTUAL GPS POSITION & REVERSE GEOCODE ADDRESS
+        // FETCH ACTUAL GPS POSITION & DISTANCE TO NEAREST HUB
         // ==========================================
         async function fetchDriverLiveLocation() {
             const statusDiv = document.getElementById('driverGeoStatus');
             if (navigator.geolocation) {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
-                    statusDiv.textContent = '📡 Acquiring GPS position & resolving actual street address...';
+                    statusDiv.textContent = '📡 Acquiring GPS position & resolving actual street address and distance to nearest hub...';
                 }
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
@@ -1360,6 +1398,9 @@
                         const latStr = lat.toFixed(4);
                         const lngStr = lng.toFixed(4);
                         
+                        // Calculate nearest destination hub distance
+                        const nearestHubInfo = getNearestDestinationHub(lat, lng);
+
                         let resolvedAddress = "Resolving street address...";
                         try {
                             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -1372,17 +1413,18 @@
                         }
 
                         if(statusDiv) {
-                            statusDiv.innerHTML = `✅ <b>GPS Position & Address Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
+                            statusDiv.innerHTML = `✅ <b>GPS Position & Distance Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><i class="fa-solid fa-route text-sky-400 mr-1"></i> <b>Nearest Destination Hub:</b> ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km away)<br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
                         }
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
-                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS & ADDRESS] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}].`, time: new Date().toISOString() });
+                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS & DISTANCE] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`, time: new Date().toISOString() });
                         saveCloudData();
                     },
                     (error) => {
                         const fallbackLat = 14.7011;
                         const fallbackLng = 120.9830;
+                        const nearestHubInfo = getNearestDestinationHub(fallbackLat, fallbackLng);
                         if(statusDiv) {
-                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}]`;
+                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km)`;
                         }
                     },
                     { timeout: 10000, enableHighAccuracy: true }
@@ -1420,8 +1462,9 @@
 
             const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
             const jitterLng = Number((targetCorridor.lng + (Math.random() - 0.5) * 0.01).toFixed(4));
+            const nearestHubInfo = getNearestDestinationHub(jitterLat, jitterLng);
 
-            const plotMsg = `[GPS PLOT] Unit ${activeUnit} successfully plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] near ${targetCorridor.name} (${new Date().toLocaleTimeString()})`;
+            const plotMsg = `[GPS PLOT] Unit ${activeUnit} plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km) (${new Date().toLocaleTimeString()})`;
 
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: plotMsg, time: new Date().toISOString() });
@@ -1477,7 +1520,7 @@
                             html: '<div style="background-color: #0284c7; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🚛 ' + activeUnit + '</div>'
                         })
                     });
-                    activeMarker.bindPopup(`<b>Active Fleet Unit:</b> ${activeUnit}<br><b>Location:</b> ${targetCorridor.name}<br><b>Coordinates:</b> ${jitterLat}, ${jitterLng}<br><b>Time:</b> ${new Date().toLocaleTimeString()}`);
+                    activeMarker.bindPopup(`<b>Active Fleet Unit:</b> ${activeUnit}<br><b>Nearest Hub:</b> ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km)<br><b>Coordinates:</b> ${jitterLat}, ${jitterLng}<br><b>Time:</b> ${new Date().toLocaleTimeString()}`);
                     skymoverMapMarkersLayer.addLayer(activeMarker);
 
                     skymoverLeafletMap.setView([jitterLat, jitterLng], 12);
@@ -2378,46 +2421,123 @@
 
         function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
 
+        // ==========================================
+        // VISUAL EXTRACTION REPORT & PHOTO AUDIT
+        // ==========================================
         function openExtractionReport() {
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
             modal.classList.remove('hidden');
 
-            const gateInMovements = (yardDb.movements || []).filter(m => m.kind === 'GATE-IN');
+            const gateInContainers = (yardDb.containers || []);
             const gateOutMovements = (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT');
 
-            let gateInHtml = gateInMovements.length ? gateInMovements.map(m => `
-                <div class="border rounded-xl p-4 bg-slate-50 mb-3 text-slate-900 shadow-sm">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900">${m.number}</strong></div>
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Date & Time:</span><span class="font-bold text-slate-900">${stamp(m.date)}</span></div>
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Trucking Name:</span><span class="font-bold text-slate-900">${m.truckingName || '—'}</span></div>
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Plate No.:</span><span class="font-bold text-slate-900">${m.plate || '—'}</span></div>
+            let gateInHtml = gateInContainers.length ? gateInContainers.map(c => {
+                const photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => `
+                    <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white">
+                        <img src="${p.dataUrl}" class="w-full h-full object-cover">
                     </div>
-                </div>
-            `).join('') : '<div class="text-slate-500 p-2">No Gate-In records found.</div>';
+                `).join('') : '<span class="text-slate-400 italic text-[11px]">No inspection photos attached.</span>';
 
-            let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => `
-                <div class="border rounded-xl p-4 bg-slate-50 mb-3 text-slate-900 shadow-sm">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900">${m.number}</strong></div>
-                        <div><span class="text-slate-600 font-semibold block text-[10px]">Release Date:</span><span class="font-bold text-slate-900">${stamp(m.date)}</span></div>
+                return `
+                    <div class="border rounded-xl p-4 bg-slate-50 mb-4 text-slate-900 shadow-sm space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900">${c.number}</strong></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Date & Time:</span><span class="font-bold text-slate-900">${stamp(c.date)}</span></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Trucking Name:</span><span class="font-bold text-slate-900">${c.truckingName || '—'}</span></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Plate No.:</span><span class="font-bold text-slate-900">${c.plate || '—'}</span></div>
+                        </div>
+                        <div>
+                            <span class="text-slate-600 font-semibold block text-[10px] mb-1">Gate-In Photo Previews:</span>
+                            <div class="flex flex-wrap gap-2">${photosHtml}</div>
+                        </div>
                     </div>
-                </div>
-            `).join('') : '<div class="text-slate-500 p-2">No Gate-Out records found.</div>';
+                `;
+            }).join('') : '<div class="text-slate-500 p-2">No Gate-In records found.</div>';
+
+            let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => {
+                const containerObj = (yardDb.containers || []).find(c => c.number === m.number && c.gateOutPhotos);
+                const proofsHtml = (containerObj && containerObj.gateOutPhotos && containerObj.gateOutPhotos.length) ? containerObj.gateOutPhotos.map(p => `
+                    <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white">
+                        <img src="${p.dataUrl}" class="w-full h-full object-cover">
+                    </div>
+                `).join('') : '<span class="text-slate-400 italic text-[11px]">No release proof photos attached.</span>';
+
+                return `
+                    <div class="border rounded-xl p-4 bg-slate-50 mb-4 text-slate-900 shadow-sm space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900">${m.number}</strong></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Release Date:</span><span class="font-bold text-slate-900">${stamp(m.date)}</span></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Storage Days:</span><span class="font-bold text-slate-900">${m.storageDays || 0} days</span></div>
+                            <div><span class="text-slate-600 font-semibold block text-[10px]">Total Amount:</span><span class="font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString()}</span></div>
+                        </div>
+                        <div>
+                            <span class="text-slate-600 font-semibold block text-[10px] mb-1">Gate-Out Release Proofs:</span>
+                            <div class="flex flex-wrap gap-2">${proofsHtml}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<div class="text-slate-500 p-2">No Gate-Out records found.</div>';
 
             content.innerHTML = `
-                <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4 text-white">
-                    <div>
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Skymover Visual Extraction Report</h3>
+                <div id="extractionReportPdfContainer" class="space-y-6">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4 text-white">
+                        <div>
+                            <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Skymover Visual Extraction Report & Photo Audit</h3>
+                            <p class="text-xs text-slate-300">Complete merged details of Gate-In inputs with actual photo previews and Gate-Out releases with proofs.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="downloadExtractionReportPDF()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow"><i class="fa-solid fa-file-pdf mr-1"></i> Download PDF Exports</button>
+                            <button onclick="exportMergedExtractionCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow"><i class="fa-solid fa-file-excel mr-1"></i> Export Merged CSV</button>
+                        </div>
+                    </div>
+                    <div class="space-y-6 text-xs text-slate-900 bg-white p-6 rounded-2xl shadow-xl">
+                        <div><h4 class="font-bold text-base text-sky-900 mb-3 border-b pb-2"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Gate-In Inputs & Photo Audits</h4>${gateInHtml}</div>
+                        <div class="pt-4"><h4 class="font-bold text-base text-amber-900 mb-3 border-b pb-2"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Gate-Out Releases & Proofs</h4>${gateOutHtml}</div>
                     </div>
                 </div>
-                <div class="space-y-6 text-xs text-slate-900 bg-white p-4 rounded-xl shadow">
-                    <div><h4 class="font-bold text-sm text-sky-900 mb-3 border-b pb-1">Gate-In Inputs</h4>${gateInHtml}</div>
-                    <div><h4 class="font-bold text-sm text-amber-900 mb-3 border-b pb-1">Gate-Out Releases</h4>${gateOutHtml}</div>
-                </div>
             `;
+        }
+
+        function downloadExtractionReportPDF() {
+            const element = document.getElementById('extractionReportPdfContainer');
+            if(!element) return;
+            html2pdf().from(element).save('SKYMOVER_Visual_Extraction_Report_and_Photo_Audit.pdf');
+        }
+
+        function exportMergedExtractionCSV() {
+            const containers = yardDb.containers || [];
+            const csvRows = [
+                ['Movement Type', 'Container No', 'Size', 'Shipping Line', 'Plate No', 'Driver', 'Date / Time', 'Status / Condition', 'Van Amount', 'Total Amount', 'EIR Ref'],
+                ...containers.map(c => [
+                    'GATE-IN',
+                    c.number,
+                    c.size || '',
+                    c.line || '',
+                    c.plate || '',
+                    c.driver || '',
+                    c.date || '',
+                    c.condition || '',
+                    c.vanInAmount || 0,
+                    '',
+                    c.eir || ''
+                ]),
+                ...(yardDb.movements || []).filter(m => m.kind === 'GATE-OUT').map(m => [
+                    'GATE-OUT',
+                    m.number,
+                    '',
+                    '',
+                    m.plate || '',
+                    '',
+                    m.date || '',
+                    'Released',
+                    m.vanInAmount || 0,
+                    m.totalAmount || 0,
+                    m.eir || ''
+                ])
+            ];
+            csv(csvRows, 'skymover_merged_extraction_report.csv');
         }
 
         function renderTransshipmentTable() {
