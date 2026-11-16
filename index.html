@@ -1180,6 +1180,39 @@
             if(trackContainer) renderGeofenceLogs(trackContainer);
         }
 
+        // ==========================================
+        // NEW FEATURE: AUTOMATED MAP COORDINATES PLOTTING
+        // ==========================================
+        function plotAutomatedMapCoordinates() {
+            const vehicles = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'SKV-101' }, { id: 'SKV-102' }];
+            const sampleCorridors = [
+                { name: "Manila North Harbor Terminal", lat: "14.6333", lng: "120.9667" },
+                { name: "Valenzuela Empty Container Depot", lat: "14.7011", lng: "120.9830" },
+                { name: "Subic Bay Freeport Zone", lat: "14.8291", lng: "120.2828" },
+                { name: "Batangas Port Container Terminal", lat: "13.7565", lng: "121.0583" }
+            ];
+
+            const activeUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
+            const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
+            
+            // Add slight GPS drift simulation
+            const jitterLat = (parseFloat(targetCorridor.lat) + (Math.random() - 0.5) * 0.01).toFixed(4);
+            const jitterLng = (parseFloat(targetCorridor.lng) + (Math.random() - 0.5) * 0.01).toFixed(4);
+
+            const plotMsg = `[GPS PLOT] Unit ${activeUnit} successfully plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] near ${targetCorridor.name} (${new Date().toLocaleTimeString()})`;
+            
+            if(!db.geofenceAlerts) db.geofenceAlerts = [];
+            db.geofenceAlerts.unshift({ message: plotMsg, time: new Date().toISOString() });
+            saveCloudData();
+
+            const trackContainer = document.getElementById('geofenceAlertsContainer');
+            if(trackContainer) {
+                renderGeofenceLogs(trackContainer);
+            } else {
+                alert(plotMsg);
+            }
+        }
+
         function sendDriverSms(unitId, messageText) {
             if(!db.smsLogs) db.smsLogs = [];
             db.smsLogs.unshift({ unit: unitId, message: messageText, time: new Date().toISOString() });
@@ -1748,6 +1781,7 @@
                                 <p class="text-xs text-slate-300 mt-1">Live Philippine corridor positioning, automated geofence boundary alerts, and driver SMS dispatch controls.</p>
                             </div>
                             <div class="flex flex-wrap gap-2">
+                                <button onclick="plotAutomatedMapCoordinates()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-map-pin mr-1"></i> Plot Map Coordinates</button>
                                 <button onclick="triggerGeofenceScan()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-location-crosshairs mr-1"></i> Run Geofence Scan</button>
                                 <button onclick="openGeofenceSmsModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-gear mr-1"></i> Configure Zones & SMS</button>
                             </div>
