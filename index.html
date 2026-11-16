@@ -1591,7 +1591,7 @@
         }
 
         // ==========================================
-        // UPDATED USER PROVISIONING FUNCTION
+        // CORRECTED & OPTIMIZED USER PROVISIONING FUNCTION
         // ==========================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
@@ -1610,10 +1610,8 @@
                 return;
             }
 
-            // Initialize system users array if not present
             if (!db.systemUsers) db.systemUsers = [];
 
-            // Prevent duplicate local entries
             const existingIndex = db.systemUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
             const newUserRecord = { email, role, createdAt: new Date().toISOString() };
 
@@ -1623,15 +1621,13 @@
                 db.systemUsers.push(newUserRecord);
             }
 
-            // Sync update to cloud database payload
             await saveCloudData();
 
-            // Secure Supabase Authentication Provisioning Pipeline
             if (supabaseClient) {
                 try {
                     const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
 
-                    const { data, error } = await supabaseClient.auth.signUp({ 
+                    const { error } = await supabaseClient.auth.signUp({ 
                         email: email, 
                         password: password, 
                         options: { 
