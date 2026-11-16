@@ -1596,28 +1596,30 @@
             const containerId = type === 'gateIn' ? 'gateInPhotoPreviewContainer' : 'gateOutPhotoPreviewContainer';
             const previewContainer = document.getElementById(containerId);
             if(!previewContainer) return;
-
+        
             for (let file of files) {
                 const optimizedFile = await compressImageFile(file);
-
+        
                 const reader = new FileReader();
                 reader.onload = async function(event) {
                     const base64Data = event.target.result;
                     const tempFileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data };
-
+        
                     const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
-
-                    const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: storageUrl, date: new Date().toISOString() };
-
+                    const finalUrl = storageUrl || base64Data; // Fallback to base64 if storage URL fails
+        
+                    const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: finalUrl, date: new Date().toISOString() };
+        
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
                     else stagedGateOutPhotos.push(fileObj);
-
+        
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
-                    if (optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = `<img src="${storageUrl}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=Error';">`;
+                    
+                    if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
+                        thumb.innerHTML = `<img src="${finalUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-[9px] text-slate-600 font-bold p-1 text-center\'>${optimizedFile.name.substring(0, 10)}</span>';">`;
                     } else {
-                        thumb.innerHTML = '<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate">' + optimizedFile.name + '</div>';
+                        thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
                     previewContainer.appendChild(thumb);
                 };
