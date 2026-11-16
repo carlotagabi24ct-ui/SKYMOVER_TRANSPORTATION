@@ -1157,7 +1157,7 @@
         }
 
         // ==========================================
-        // DATABASE RESET & CONFIRMATION AUDIT FIX
+        // 3. ENHANCED DATABASE RESET & ARRAY CLEARING FIX
         // ==========================================
         async function confirmResetAllDatabases() {
             if(currentUserRole !== 'admin') {
@@ -1167,8 +1167,28 @@
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
             if(pwd !== 'Skymover_Transportation_2026') return;
 
-            db = { vehicles: [], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [], geofenceZones: [], systemUsers: [] };
-            yardDb = { containers: [], movements: [], revenues: [], expenses: [] };
+            // Fully clear all arrays and logs
+            db = { 
+                vehicles: [], 
+                drivers: [], 
+                fuelLogs: [], 
+                maintenanceLogs: [], 
+                dispatchLogs: [], 
+                expenseLogs: [], 
+                transshipments: [], 
+                uploads: [], 
+                smsLogs: [], 
+                geofenceAlerts: [], 
+                geofenceZones: [], 
+                systemUsers: [] 
+            };
+            
+            yardDb = { 
+                containers: [], 
+                movements: [], 
+                revenues: [], 
+                expenses: [] 
+            };
 
             saveDB();
             localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
@@ -1180,7 +1200,9 @@
                         payload: { managementBackend: db, emptyYard: yardDb },
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'id' });
-                } catch(e) {}
+                } catch(e) {
+                    console.error("Cloud DB reset sync error:", e);
+                }
             }
 
             refreshYard();
@@ -1190,7 +1212,7 @@
             if (currentBackendModuleType === 'Dashboard') {
                 openSubModule('Dashboard');
             }
-            alert('🔄 Database successfully reset! All ghost container units and records have been cleared with confirmation audit trail.');
+            alert('🔄 Database successfully reset! All initial seed records, container arrays, and logs have been fully cleared and synced.');
         }
 
         function openGeofenceSmsModal() {
@@ -1267,17 +1289,30 @@
             refreshDriverSmsInbox();
         }
 
+        // ==========================================
+        // 2. UPDATED GEOFENCE SCAN CHECKING REGISTERED UNITS
+        // ==========================================
         function triggerGeofenceScan() {
             const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
                 { name: "Manila North Harbor Terminal", radius: 5 },
                 { name: "Valenzuela Empty Container Depot", radius: 3 }
             ];
             
-            const vehicles = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'SKV-101' }, { id: 'SKV-102' }];
-            const randomZone = zones[Math.floor(Math.random() * zones.length)];
-            const randomUnit = vehicles[Math.floor(Math.random() * vehicles.length)].id;
+            // Check for actual registered vehicles/units in the system
+            const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
             
-            const alertMsg = `[GEOFENCE ALERT] Unit ${randomUnit} crossed geofence boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
+            if (registeredUnits.length === 0) {
+                const alertMsg = `[GEOFENCE SYSTEM] Scan executed: No registered active units found in fleet masterlist.`;
+                if(!db.geofenceAlerts) db.geofenceAlerts = [];
+                db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
+                saveCloudData();
+                return;
+            }
+
+            const randomZone = zones[Math.floor(Math.random() * zones.length)];
+            const randomUnit = registeredUnits[Math.floor(Math.random() * registeredUnits.length)].id;
+            
+            const alertMsg = `[GEOFENCE ALERT] Registered unit ${randomUnit} crossed boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
             
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
@@ -1547,10 +1582,26 @@
         function clearGateOutFormAndPhotos() { document.getElementById('yardGateOutForm').reset(); clearGateOutPhotos(); containerSelectedForGateOut(); }
         function clearYardExpenseForm() { document.getElementById('yardExpenseForm').reset(); }
 
+        // ==========================================
+        // 1. CLEAR INITIAL HARDCODED SEED DATA FIX
+        // ==========================================
         let db;
         try { db = JSON.parse(localStorage.getItem('skymover_unified_db_v3')); } catch(e) { db = null; }
         if (!db || typeof db !== 'object') {
-            db = { vehicles: [{ id: 'SKV-101', model: 'Isuzu Giga', status: 'Active' }, { id: 'SKV-102', model: 'Hino Profia', status: 'Active' }], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [{ message: '[GEOFENCE ALERT] Unit SKV-101 approached Manila North Harbor Terminal.', time: new Date().toISOString() }], geofenceZones: [], systemUsers: [] };
+            db = { 
+                vehicles: [], 
+                drivers: [], 
+                fuelLogs: [], 
+                maintenanceLogs: [], 
+                dispatchLogs: [], 
+                expenseLogs: [], 
+                transshipments: [], 
+                uploads: [], 
+                smsLogs: [], 
+                geofenceAlerts: [], 
+                geofenceZones: [], 
+                systemUsers: [] 
+            };
         }
 
         const YARD_KEY = 'skymover_empty_yard_v3';
