@@ -167,7 +167,8 @@
                     <button onclick="openSubModule('Maintenance')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnMaint">Maintenance</button>
                     <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnGps">GPS & Dispatch</button>
                     <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnExpenses">Expenses</button>
-                    <button onclick="openSubModule('Data Backup')" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white" data-i18n="btnBackup">Backup / Restore</button>
+                    <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Audit Trail</button>
+                    <button onclick="openSubModule('Data Backup')" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded-lg font-semibold text-white" data-i18n="btnBackup">Backup / Restore</button>
                     <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> <span data-i18n="btnReset">Reset DB</span></button>
                 </div>
             </div>
@@ -1462,6 +1463,63 @@
             document.getElementById('driverRegForm').reset();
         }
 
+        // ==========================================
+        // STEP 2: JAVASCRIPT FETCH & RENDER FUNCTION
+        // ==========================================
+        async function loadAuditLogsModal() {
+            if (!supabaseClient) return;
+
+            // Fetch logs from the secure SQL view
+            const { data: logs, error } = await supabaseClient
+                .from('v_audit_logs')
+                .select('*')
+                .order('changed_at', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                alert('Error loading audit logs: ' + error.message);
+                return;
+            }
+
+            // Open your sub-module modal and render the table
+            const modal = document.getElementById('subModuleModal');
+            const content = document.getElementById('subModuleContent');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+
+            const rows = logs && logs.length ? logs.map(l => `
+                <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
+                    <td class="p-3 font-mono text-[11px]">${new Date(l.changed_at).toLocaleString()}</td>
+                    <td class="p-3 font-bold text-sky-800">${l.user_email || 'System'} <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">${l.user_role || 'API'}</span></td>
+                    <td class="p-3 uppercase font-extrabold ${l.action === 'INSERT' ? 'text-emerald-700' : (l.action === 'UPDATE' ? 'text-amber-700' : 'text-rose-700')}">${l.action}</td>
+                    <td class="p-3 font-mono text-xs">${l.table_name}</td>
+                    <td class="p-3 font-mono text-[10px] text-slate-600 truncate max-w-[200px]" title="${JSON.stringify(l.new_data)}">${l.new_data ? JSON.stringify(l.new_data) : '—'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No audit logs found.</td></tr>';
+
+            content.innerHTML = `
+                <div class="flex justify-between items-center mb-4 text-white">
+                    <div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-clock-rotate-left text-amber-400 mr-2"></i> System Audit Trail</h3>
+                        <p class="text-xs text-slate-300">Live tracking of administrative and operational modifications across Skymover.</p>
+                    </div>
+                    <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                </div>
+                <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3 shadow-inner">
+                    <table class="w-full text-left text-xs">
+                        <tr class="border-b text-slate-800 font-bold">
+                            <th class="p-3">Timestamp</th>
+                            <th class="p-3">User & Role</th>
+                            <th class="p-3">Action</th>
+                            <th class="p-3">Table</th>
+                            <th class="p-3">New Data Payload</th>
+                        </tr>
+                        ${rows}
+                    </table>
+                </div>
+            `;
+        }
+
         function openNewUserRegistrationModal() {
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
@@ -1501,9 +1559,6 @@
             `;
         }
 
-        // =========================================================================
-        // FIXED USER CREATION: RETAINS DISPATCHER / ADMIN SESSION WITHOUT LOGOUT
-        // =========================================================================
         async function handleNewUserSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('newUserEmail').value;
@@ -1516,7 +1571,6 @@
 
             if(supabaseClient) {
                 try {
-                    // Capture active dispatcher/admin session tokens prior to sign-up
                     const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
 
                     await supabaseClient.auth.signUp({ 
@@ -1527,7 +1581,6 @@
                         } 
                     });
 
-                    // Restore the current dispatcher or admin session instantly
                     if (currentSession) {
                         await supabaseClient.auth.setSession({
                             access_token: currentSession.access_token,
