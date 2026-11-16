@@ -810,9 +810,8 @@
         // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY
         // ==========================================
         async function uploadCompressedPhotosToSupabaseStorage(fileObj, folderName = "general") {
-            if (!supabaseClient) return fileObj.dataUrl; // Fallback if client is uninitialized
+            if (!supabaseClient) return fileObj.dataUrl;
             try {
-                // Convert dataUrl back to Blob
                 const response = await fetch(fileObj.dataUrl);
                 const blob = await response.blob();
                 const safeName = `${Date.now()}_${fileObj.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
@@ -826,11 +825,10 @@
                     });
 
                 if (error) {
-                    console.warn("Storage upload notice (check if bucket 'skymover-attachments' exists):", error.message);
-                    return fileObj.dataUrl; // Fallback to base64 dataUrl
+                    console.warn("Storage upload notice:", error.message);
+                    return fileObj.dataUrl;
                 }
 
-                // Get public URL
                 const { data: publicUrlData } = supabaseClient.storage
                     .from(STORAGE_BUCKET_NAME)
                     .getPublicUrl(filePath);
@@ -890,7 +888,7 @@
             });
         }
 
-        // 1. INACTIVITY AUTO-LOGOUT TIMER (5 MINUTES)
+        // INACTIVITY AUTO-LOGOUT TIMER (5 MINUTES)
         let inactivityTimer = null;
         const INACTIVITY_LIMIT = 5 * 60 * 1000;
 
@@ -1158,12 +1156,15 @@
             } catch(e) {}
         }
 
+        // ==========================================
+        // DATABASE RESET & CONFIRMATION AUDIT FIX
+        // ==========================================
         async function confirmResetAllDatabases() {
             if(currentUserRole !== 'admin') {
                 alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
                 return;
             }
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records:');
+            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
             if(pwd !== 'Skymover_Transportation_2026') return;
 
             db = { vehicles: [], drivers: [], fuelLogs: [], maintenanceLogs: [], dispatchLogs: [], expenseLogs: [], transshipments: [], uploads: [], smsLogs: [], geofenceAlerts: [], geofenceZones: [], systemUsers: [] };
@@ -1185,10 +1186,11 @@
             refreshYard();
             renderTransshipmentTable();
             closeSubModule();
-            // Refresh Dashboard view if currently open to clear out lingering active counts
+            
             if (currentBackendModuleType === 'Dashboard') {
                 openSubModule('Dashboard');
             }
+            alert('🔄 Database successfully reset! All ghost container units and records have been cleared with confirmation audit trail.');
         }
 
         function openGeofenceSmsModal() {
@@ -1474,7 +1476,6 @@
             if(!previewContainer) return;
 
             for (let file of files) {
-                // 1. Compress Image
                 const optimizedFile = await compressImageFile(file);
 
                 const reader = new FileReader();
@@ -1482,7 +1483,6 @@
                     const base64Data = event.target.result;
                     const tempFileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data };
 
-                    // 2. Direct Upload to Supabase Storage Bucket
                     const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
 
                     const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: storageUrl, date: new Date().toISOString() };
