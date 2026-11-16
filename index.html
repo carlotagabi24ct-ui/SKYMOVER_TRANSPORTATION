@@ -1185,6 +1185,10 @@
             refreshYard();
             renderTransshipmentTable();
             closeSubModule();
+            // Refresh Dashboard view if currently open to clear out lingering active counts
+            if (currentBackendModuleType === 'Dashboard') {
+                openSubModule('Dashboard');
+            }
         }
 
         function openGeofenceSmsModal() {
@@ -2007,7 +2011,7 @@
                 `;
             } else if(tab === 'track') {
                 document.getElementById('tabTrackBtn').className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
-                const activeUnitsCount = (db.vehicles && db.vehicles.length > 0) ? db.vehicles.length : 2;
+                const activeUnitsCount = (db.vehicles && db.vehicles.length > 0) ? db.vehicles.length : 0;
                 container.innerHTML = `
                     <div class="space-y-4">
                         <div class="flex flex-wrap justify-between items-center gap-2">
@@ -2046,7 +2050,7 @@
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
             log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB...\n";
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + ((db.vehicles && db.vehicles.length) ? db.vehicles.length : 2) + " trucks.\n"; }, 400);
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + ((db.vehicles && db.vehicles.length) ? db.vehicles.length : 0) + " trucks.\n"; }, 400);
             setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified successfully."; }, 900);
         }
 
@@ -2075,6 +2079,7 @@
                 return;
             }
 
+            currentBackendModuleType = title;
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
@@ -2093,20 +2098,20 @@
                 content.innerHTML = `
                     <h3 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-table-cells-large text-sky-400 mr-2"></i> Dashboard & Unified KPI Overview</h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 text-slate-900">
-                        <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Fleet Units</p><h4 class="text-2xl font-extrabold text-slate-900 mt-1">${vehicles.length || 2}</h4></div>
-                        <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Drivers</p><h4 class="text-2xl font-extrabold text-indigo-700 mt-1">${drivers.length || 2}</h4></div>
+                        <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Fleet Units</p><h4 class="text-2xl font-extrabold text-slate-900 mt-1">${vehicles.length}</h4></div>
+                        <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Drivers</p><h4 class="text-2xl font-extrabold text-indigo-700 mt-1">${drivers.length}</h4></div>
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Yard Containers On Hand</p><h4 class="text-2xl font-extrabold text-amber-700 mt-1">${yardContainers.length}</h4></div>
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Transshipment Hub Orders</p><h4 class="text-2xl font-extrabold text-emerald-700 mt-1">${transshipments.length}</h4></div>
                     </div>
                 `;
             } else if (title === 'Vehicle Management') {
-                let rows = vehicles.length ? vehicles.map(v => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + (v.driver || 'Unassigned') + '</td></tr>').join('') : '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">SKV-101</td><td class="p-3">Isuzu Giga Prime</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">Active</span></td><td class="p-3 font-semibold">Roberto Santos</td></tr><tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">SKV-102</td><td class="p-3">Hino Profia Heavy</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">Active</span></td><td class="p-3 font-semibold">Juan Dela Cruz</td></tr>';
+                let rows = vehicles.length ? vehicles.map(v => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + (v.driver || 'Unassigned') + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No vehicles registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-truck text-blue-400 mr-2"></i> Vehicle Masterlist</h3><button onclick="openBackendEntryModal('Vehicle')" class="bg-blue-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold">+ Add Vehicle</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Status</th><th class="p-3">Assigned Driver</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Driver Management') {
-                let rows = drivers.length ? drivers.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td></tr>').join('') : '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">Roberto Santos</td><td class="p-3 font-mono">N01-99-876543</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">Available</span></td><td class="p-3 font-bold text-amber-700">5.0 ★</td></tr>';
+                let rows = drivers.length ? drivers.map(d => '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td></tr>').join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white"><h3 class="text-xl font-bold"><i class="fa-solid fa-users text-indigo-400 mr-2"></i> Driver Management</h3><button onclick="openNewDriverRegistrationModal()" class="bg-indigo-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold">+ Register New Driver</button></div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Status</th><th class="p-3">Rating</th></tr>` + rows + `</table></div>
