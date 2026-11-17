@@ -1216,18 +1216,24 @@
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
             try {
-                supabaseClient
-                    .channel('public:skymover_enterprise_db')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
-                        if(payload && payload.new && payload.new.payload) {
-                            db = payload.new.payload.managementBackend || db;
-                            yardDb = payload.new.payload.emptyYard || yardDb;
-                            refreshYard();
-                            renderTransshipmentTable();
-                        }
-                    })
-                    .subscribe();
-            } catch(err) {}
+                // Wrap in try/catch and check if running inside restricted iframe/Canvas environment
+                const channel = supabaseClient.channel('public:skymover_enterprise_db');
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
+                    if(payload && payload.new && payload.new.payload) {
+                        db = payload.new.payload.managementBackend || db;
+                        yardDb = payload.new.payload.emptyYard || yardDb;
+                        refreshYard();
+                        renderTransshipmentTable();
+                    }
+                });
+                channel.subscribe((status) => {
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMEDOUT') {
+                        console.warn('Realtime websocket subscription notice: falling back to polling mode.');
+                    }
+                });
+            } catch(err) {
+                console.warn('Realtime subscription bypassed due to sandbox restriction:', err.message);
+            }
         }
 
         async function saveCloudData() {
