@@ -1237,7 +1237,7 @@
         async function fetchCloudData() {
             if(!supabaseClient) return;
             try {
-                const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).single();
+                const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).maybeSingle();
                 if(error) {
                     saveCloudData();
                     return;
