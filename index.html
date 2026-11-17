@@ -2507,92 +2507,135 @@
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
             modal.classList.remove('hidden');
-
+        
             const gateInContainers = (yardDb.containers || []);
             const gateOutMovements = (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT');
-
+        
             let gateInHtml = gateInContainers.length ? gateInContainers.map(c => {
-                const photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => {
-                    const imgSrc = p.dataUrl || p.url || '';
-                    return `
-                        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center">
-                            ${imgSrc ? `<img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=No+Preview';">` : '<span class="text-[9px] text-slate-400">No Image</span>'}
-                        </div>`;
-                }).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-In entry.</span>';
-
-                return `
-                    <div class="border rounded-xl p-4 bg-white mb-4 text-slate-900 shadow-sm space-y-3">
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900 font-bold">${c.number}</strong></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Date & Time:</span><span class="font-bold text-slate-900">${stamp(c.date)}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Trucking Name:</span><span class="font-bold text-slate-900">${c.truckingName || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Plate No.:</span><span class="font-bold text-slate-900">${c.plate || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Driver Name:</span><span class="font-bold text-slate-900">${c.driver || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">EIR / Ref No.:</span><span class="font-bold text-slate-900">${c.eir || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Row Location:</span><span class="font-bold text-slate-900">${c.row || 'GROUND'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Van In Amount:</span><span class="font-bold text-slate-900">₱${Number(c.vanInAmount || 0).toLocaleString()} <span class="${c.vanInStats === 'PAID' ? 'text-emerald-600' : 'text-rose-600'} font-bold">(${c.vanInStats || 'UNPAID'})</span></span></div>
-                        </div>
-                        <div class="pt-1">
-                            <span class="text-slate-500 font-semibold block text-[10px] mb-1">Remarks: <span class="text-slate-900 font-normal">${c.remarks || 'None'}</span></span>
-                        </div>
-                        <div class="border-t pt-2">
-                            <span class="text-slate-500 font-semibold block text-[10px] mb-1.5">Attached Gate-In Photos (${c.photos ? c.photos.length : 0}):</span>
-                            <div class="flex flex-wrap gap-2">${photosHtml}</div>
-                        </div>
+                let photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => `
+                    <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 inline-block mr-1">
+                        <img src="${p.dataUrl}" class="w-full h-full object-cover" title="${p.name}">
                     </div>
+                `).join('') : '<span class="text-slate-400 italic text-[10px]">No inspection photos</span>';
+        
+                return `
+                    <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
+                        <td class="p-3 font-mono font-bold text-sky-800">${c.number}</td>
+                        <td class="p-3">${c.size} / ${c.type || 'Dry'}</td>
+                        <td class="p-3 font-bold">${c.line}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status === 'Available' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${c.status}</span></td>
+                        <td class="p-3 font-mono text-xs">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
+                        <td class="p-3">${photosHtml}</td>
+                    </tr>
                 `;
-            }).join('') : '<div class="text-slate-500 p-2 italic text-xs">No Gate-In records found.</div>';
-
+            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-In container inspection records found.</td></tr>';
+        
             let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => {
-                const containerObj = (yardDb.containers || []).find(c => c.number === m.number && c.gateOutPhotos);
-                const proofsHtml = (containerObj && containerObj.gateOutPhotos && containerObj.gateOutPhotos.length) ? containerObj.gateOutPhotos.map(p => {
-                    const imgSrc = p.dataUrl || p.url || '';
-                    return `
-                        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center">
-                            ${imgSrc ? `<img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://via.placeholder.com/80?text=No+Preview';">` : '<span class="text-[9px] text-slate-400">No Image</span>'}
-                        </div>
-                    `;
-                }).join('') : '<span class="text-slate-400 italic text-[11px]">No photo attachments for this Gate-Out release.</span>';
-
+                let photosHtml = (m.photos && m.photos.length) ? m.photos.map(p => `
+                    <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 inline-block mr-1">
+                        <img src="${p.dataUrl}" class="w-full h-full object-cover" title="${p.name}">
+                    </div>
+                `).join('') : '<span class="text-slate-400 italic text-[10px]">No release photos</span>';
+        
                 return `
-                    <div class="border rounded-xl p-4 bg-white mb-4 text-slate-900 shadow-sm space-y-3">
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Container No:</span><strong class="font-mono text-slate-900 font-bold">${m.number}</strong></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Gate-Out Date:</span><span class="font-bold text-slate-900">${stamp(m.date)}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Customer / Release To:</span><span class="font-bold text-slate-900">${m.customer || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Plate No.:</span><span class="font-bold text-slate-900">${m.plate || '—'}</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Storage Days:</span><span class="font-bold text-slate-900">${m.storageDays || 0} Days</span></div>
-                            <div><span class="text-slate-500 font-semibold block text-[10px]">Total Billed (₱):</span><span class="font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString()}</span></div>
-                        </div>
-                        <div class="border-t pt-2">
-                            <span class="text-slate-500 font-semibold block text-[10px] mb-1.5">Attached Gate-Out Photos / Files:</span>
-                            <div class="flex flex-wrap gap-2">${proofsHtml}</div>
-                        </div>
-                    </div>
+                    <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
+                        <td class="p-3 font-mono font-bold text-purple-800">${m.container}</td>
+                        <td class="p-3 font-mono">${m.plate || '—'}</td>
+                        <td class="p-3">${m.storageDays || 0} Days</td>
+                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 font-mono text-xs">${m.date ? new Date(m.date).toLocaleString() : '—'}</td>
+                        <td class="p-3">${photosHtml}</td>
+                    </tr>
                 `;
-            }).join('') : '<div class="text-slate-500 p-2 italic text-xs">No Gate-Out release records found.</div>';
-
+            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-Out release records found.</td></tr>';
+        
             content.innerHTML = `
-                <div class="flex justify-between items-center mb-4 text-white">
+                <div class="flex justify-between items-center mb-4 text-white flex-wrap gap-3">
                     <div>
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-invoice text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit</h3>
-                        <p class="text-xs text-slate-300">Complete audit trail of all container movements paired with photographic inspection evidence.</p>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit</h3>
+                        <p class="text-xs text-slate-300">Complete inspection audit trail featuring attached container photos, Gate-In logs, and release documentation.</p>
                     </div>
-                    <button onclick="closeSubModule()" class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold">Close Report</button>
+                    <div class="flex gap-2">
+                        <button onclick="exportVisualExtractionPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow"><i class="fa-solid fa-file-pdf mr-1"></i> Export PDF Report</button>
+                        <button onclick="exportVisualExtractionExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow"><i class="fa-solid fa-file-excel mr-1"></i> Export Excel (CSV)</button>
+                    </div>
                 </div>
+        
                 <div class="space-y-6">
-                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                        <h4 class="font-bold text-sm text-sky-400 mb-3"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Gate-In Inspection Records & Photos</h4>
-                        ${gateInHtml}
+                    <div class="bg-white text-slate-900 rounded-xl p-4 shadow border">
+                        <h4 class="font-bold text-sm text-slate-900 mb-3"><i class="fa-solid fa-arrow-down text-sky-600 mr-1"></i> Gate-In Inspection & Photo Audit Logs</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <tr class="border-b text-slate-800 font-bold">
+                                    <th class="p-3">Container No.</th>
+                                    <th class="p-3">Size/Type</th>
+                                    <th class="p-3">Shipping Line</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Gate-In Date</th>
+                                    <th class="p-3">Attached Inspection Photos</th>
+                                </tr>
+                                ${gateInHtml}
+                            </table>
+                        </div>
                     </div>
-                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                        <h4 class="font-bold text-sm text-amber-400 mb-3"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Gate-Out Release Records & Proof Photos</h4>
-                        ${gateOutHtml}
+        
+                    <div class="bg-white text-slate-900 rounded-xl p-4 shadow border">
+                        <h4 class="font-bold text-sm text-slate-900 mb-3"><i class="fa-solid fa-arrow-up text-purple-600 mr-1"></i> Gate-Out Release & Photo Audit Logs</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <tr class="border-b text-slate-800 font-bold">
+                                    <th class="p-3">Container No.</th>
+                                    <th class="p-3">Plate No.</th>
+                                    <th class="p-3">Storage Days</th>
+                                    <th class="p-3">Total Amount</th>
+                                    <th class="p-3">Gate-Out Date</th>
+                                    <th class="p-3">Attached Release Photos</th>
+                                </tr>
+                                ${gateOutHtml}
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
+        // ==========================================
+        // AUTOMATED PDF & EXCEL EXPORT FUNCTIONS
+        // ==========================================
+        function exportVisualExtractionPDF() {
+            const element = document.getElementById('subModuleContent');
+            const opt = {
+                margin:       0.5,
+                filename:     'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+        
+        function exportVisualExtractionExcel() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "GATE-IN INSPECTION AUDIT\r\n";
+            csvContent += "Container No,Size/Type,Shipping Line,Status,Gate-In Date\r\n";
+            (yardDb.containers || []).forEach(c => {
+                csvContent += `"${c.number}","${c.size} / ${c.type || 'Dry'}","${c.line}","${c.status}","${c.date || ''}"\r\n`;
+            });
+            csvContent += "\r\nGATE-OUT RELEASE AUDIT\r\n";
+            csvContent += "Container No,Plate No,Storage Days,Total Amount,Gate-Out Date\r\n";
+            (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT').forEach(m => {
+                csvContent += `"${m.container}","${m.plate || ''}","${m.storageDays || 0}","${m.totalAmount || 0}","${m.date || ''}"\r\n`;
+            });
+        
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Skymover_Visual_Extraction_Report_" + new Date().toISOString().slice(0,10) + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
         function switchYardTab(tabId) {
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(tabId);
