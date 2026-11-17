@@ -81,7 +81,7 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white" onload="initSupabase()">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white" onload="window.initSupabase()">
 
     <!-- TOP NAVIGATION BAR -->
     <header class="w-full bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex justify-between items-center shadow-lg">
@@ -646,7 +646,7 @@
                 <h2>Sign In</h2>
                 <p>Enter your credentials to access SkyMover Transportation.</p>
             </div>
-            <form onsubmit="event.preventDefault(); handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, true);" class="modal-form">
+            <form onsubmit="event.preventDefault(); window.handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, true);" class="modal-form">
                 <div class="form-group">
                     <label for="loginEmail">Email Address</label>
                     <input type="email" id="loginEmail" required value="admin@skymover.com" placeholder="admin@skymover.com">
@@ -744,7 +744,7 @@
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS (FIXED) -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -903,7 +903,7 @@
         }
 
         // ==========================================
-        // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY (FIXED)
+        // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY
         // ==========================================
         async function uploadCompressedPhotosToSupabaseStorage(fileObj, folderName = "general") {
             if (!supabaseClient) return fileObj.dataUrl;
@@ -1007,7 +1007,7 @@
             window.addEventListener(evt, resetInactivityTimer, true);
         });
 
-        function initSupabase() {
+        window.initSupabase = function() {
             try {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 updateSyncBadge('connected', 'Cloud DB & Storage Bucket Active');
@@ -1158,7 +1158,7 @@
             }
         }
 
-        async function handleSupabaseSignIn(email, password, rememberMe) {
+        window.handleSupabaseSignIn = async function(email, password, rememberMe) {
             if(!supabaseClient) {
                 alert('Supabase client not initialized.');
                 return;
@@ -2401,141 +2401,116 @@
                     </div>
                 `;
             } else if (title === 'Vehicle Management') {
-                let rows = vehicles.length ? vehicles.map(v => {
-                    let atts = (v.attachments && v.attachments.length) ? v.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-sky-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No files</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + (v.driver || 'Unassigned') + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No vehicles registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-truck text-blue-400 mr-2"></i> Vehicle Masterlist</h3>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-truck text-sky-400 mr-2"></i> Vehicle Masterlist</h3>
                         <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('Vehicle Masterlist')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('Vehicle Masterlist')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Vehicle')" class="bg-blue-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Add Vehicle</button>
+                            <button onclick="openBackendEntryModal('Vehicle')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3 py-1.5 rounded font-bold">+ Add Vehicle</button>
+                            <button onclick="generateModulePDFReport('Vehicle Masterlist')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold">PDF</button>
+                            <button onclick="generateModuleExcelReport('Vehicle Masterlist')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold">Excel</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Status</th><th class="p-3">Assigned Driver</th><th class="p-3">Attached Photo / Files</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Plate No.</th><th class="p-3">Status</th><th class="p-3">Driver</th><th class="p-3 text-right">Actions</th></tr>
+                            ${vehicles.length ? vehicles.map((v, i) => `<tr class="border-b"><td class="p-3 font-bold">${v.id}</td><td class="p-3">${v.model}</td><td class="p-3 font-mono">${v.plate || '—'}</td><td class="p-3"><span class="pill ${v.status}">${v.status}</span></td><td class="p-3">${v.driver || 'Unassigned'}</td><td class="p-3 text-right"><button onclick="deleteBackendEntry('vehicles', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No vehicles registered yet.</td></tr>'}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'Driver Management') {
-                let rows = drivers.length ? drivers.map(d => {
-                    let atts = (d.attachments && d.attachments.length) ? d.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-purple-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No ID attached</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3 font-mono text-[11px]">' + (d.phone || '—') + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-users text-indigo-400 mr-2"></i> Driver Management</h3>
-                        <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('Driver Management')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('Driver Management')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openNewDriverRegistrationModal()" class="bg-indigo-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Register New Driver</button>
-                        </div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-users text-purple-400 mr-2"></i> Driver Masterlist</h3>
+                        <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ Register Driver</button>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Mobile No.</th><th class="p-3">Status</th><th class="p-3">Rating</th><th class="p-3">ID / Photo Files</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License No.</th><th class="p-3">Mobile No.</th><th class="p-3">Assigned Truck</th><th class="p-3">Status</th><th class="p-3 text-right">Actions</th></tr>
+                            ${drivers.length ? drivers.map((d, i) => `<tr class="border-b"><td class="p-3 font-bold">${d.name}</td><td class="p-3 font-mono">${d.license}</td><td class="p-3">${d.phone}</td><td class="p-3 font-bold">${d.truck}</td><td class="p-3"><span class="pill Available">${d.status}</span></td><td class="p-3 text-right"><button onclick="deleteBackendEntry('drivers', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No drivers registered yet.</td></tr>'}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'User Management') {
-                let users = db.systemUsers || [];
-                let userRows = users.length ? users.map((u, index) => `
-                    <tr class="border-b font-medium text-slate-900">
-                        <td class="p-3 font-bold">${u.email}</td>
-                        <td class="p-3 uppercase"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-900' : (u.role === 'dispatcher' ? 'bg-sky-100 text-sky-900' : (u.role === 'yard_manager' ? 'bg-amber-100 text-amber-900' : (u.role === 'accounting_reports' ? 'bg-teal-100 text-teal-900' : 'bg-purple-100 text-purple-900')))}">${u.role.replace('_', ' ')}</span></td>
-                        <td class="p-3">${new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="deleteSystemUser(${index})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Delete</button>
-                        </td>
-                    </tr>
-                `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No custom users provisioned yet. (Default admin session active)</td></tr>';
-
+                const users = db.systemUsers || [{ email: 'admin@skymover.com', role: 'admin', createdAt: new Date().toISOString() }];
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <div>
-                            <h3 class="text-xl font-bold"><i class="fa-solid fa-user-shield text-sky-400 mr-2"></i> User Provisioning & RBAC Access Rights</h3>
-                            <p class="text-xs text-slate-300">Add new users and configure role permissions across the SkyMover platform.</p>
-                        </div>
-                        <button onclick="openNewUserRegistrationModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold">+ Add New User</button>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-user-shield text-sky-400 mr-2"></i> RBAC System Users & Access Control</h3>
+                        <button onclick="openNewUserRegistrationModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ Add User Account</button>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3">
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
                         <table class="w-full text-left text-xs">
-                            <tr class="border-b text-slate-800 font-bold"><th class="p-3">User Email</th><th class="p-3">Assigned Role</th><th class="p-3">Date Provisioned</th><th class="p-3 text-right">Actions</th></tr>
-                            ${userRows}
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Email Address</th><th class="p-3">Assigned Role</th><th class="p-3">Created Date</th><th class="p-3 text-right">Actions</th></tr>
+                            ${users.map((u, i) => `
+                                <tr class="border-b">
+                                    <td class="p-3 font-bold">${u.email}</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-100 text-sky-800">${u.role.replace('_', ' ')}</span></td>
+                                    <td class="p-3 font-mono text-slate-500">${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
+                                    <td class="p-3 text-right"><button onclick="deleteSystemUser(${i})" class="text-rose-600 hover:underline font-bold">Remove</button></td>
+                                </tr>
+                            `).join('')}
                         </table>
                     </div>
                 `;
             } else if (title === 'Fuel Monitoring') {
-                let rows = fuelLogs.length ? fuelLogs.map(f => {
-                    let atts = (f.attachments && f.attachments.length) ? f.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-amber-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No receipt</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + f.unit + '</td><td class="p-3">' + f.liters + '</td><td class="p-3 font-bold text-emerald-700">' + f.cost + '</td><td class="p-3">' + f.station + '</td><td class="p-3">' + f.date + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No fuel logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Fuel Monitoring</h3>
-                        <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('Fuel Monitoring')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('Fuel Monitoring')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Fuel')" class="bg-amber-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Fuel Fill</button>
-                        </div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Fuel Logs</h3>
+                        <button onclick="openBackendEntryModal('Fuel')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ Log Fuel</button>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Volume</th><th class="p-3">Cost</th><th class="p-3">Station</th><th class="p-3">Date</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Date</th><th class="p-3">Unit ID</th><th class="p-3">Litres</th><th class="p-3 text-right">Total Cost (₱)</th><th class="p-3 text-right">Actions</th></tr>
+                            ${fuelLogs.length ? fuelLogs.map((f, i) => `<tr class="border-b"><td class="p-3 font-mono">${f.date}</td><td class="p-3 font-bold">${f.unit}</td><td class="p-3">${f.litres} L</td><td class="p-3 text-right font-bold text-emerald-700">₱${Number(f.cost).toLocaleString()}</td><td class="p-3 text-right"><button onclick="deleteBackendEntry('fuelLogs', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No fuel logs recorded yet.</td></tr>'}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'Maintenance') {
-                let rows = maintenanceLogs.length ? maintenanceLogs.map(m => {
-                    let atts = (m.attachments && m.attachments.length) ? m.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-rose-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No report</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + m.unit + '</td><td class="p-3">' + m.issue + '</td><td class="p-3 font-bold text-rose-700">' + m.cost + '</td><td class="p-3 font-bold text-slate-900">' + m.status + '</td><td class="p-3">' + m.date + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No maintenance logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Fleet Maintenance & Automated Alerts</h3>
-                        <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('Fleet Maintenance')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('Fleet Maintenance')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Maintenance')" class="bg-rose-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Schedule Maintenance</button>
-                        </div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Maintenance & Repairs</h3>
+                        <button onclick="openBackendEntryModal('Maintenance')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ Log Maintenance</button>
                     </div>
-                    <div class="mb-4 bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-xs text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base"></i>
-                        <span><strong>Automated Alert Notification:</strong> Units SKV-102 and SKV-105 are approaching scheduled mileage threshold for preventative brake and oil service.</span>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Date</th><th class="p-3">Unit ID</th><th class="p-3">Service Description</th><th class="p-3 text-right">Cost (₱)</th><th class="p-3 text-right">Actions</th></tr>
+                            ${maintenanceLogs.length ? maintenanceLogs.map((m, i) => `<tr class="border-b"><td class="p-3 font-mono">${m.date}</td><td class="p-3 font-bold">${m.unit}</td><td class="p-3">${m.desc}</td><td class="p-3 text-right font-bold text-rose-700">₱${Number(m.cost).toLocaleString()}</td><td class="p-3 text-right"><button onclick="deleteBackendEntry('maintenanceLogs', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No maintenance records logged yet.</td></tr>'}
+                        </table>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Issue</th><th class="p-3">Cost</th><th class="p-3">Status</th><th class="p-3">Date</th><th class="p-3">Photo / Attached File</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'GPS & Dispatch') {
-                let rows = dispatchLogs.length ? dispatchLogs.map(d => {
-                    let atts = (d.attachments && d.attachments.length) ? d.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-emerald-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No waybill</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + d.unit + '</td><td class="p-3">' + d.route + '</td><td class="p-3">' + d.driver + '</td><td class="p-3 text-emerald-700 font-bold">' + d.status + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No active dispatches.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> GPS & Dispatch</h3>
-                        <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('GPS & Dispatch')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('GPS & Dispatch')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Dispatch')" class="bg-emerald-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ New Dispatch</button>
-                        </div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> GPS & Dispatch Logs</h3>
+                        <button onclick="openBackendEntryModal('Dispatch')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ New Dispatch</button>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Route</th><th class="p-3">Driver</th><th class="p-3">Status</th><th class="p-3">Waybill Photo / File</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Dispatch ID</th><th class="p-3">Unit ID</th><th class="p-3">Driver</th><th class="p-3">Route / Destination</th><th class="p-3">Status</th><th class="p-3 text-right">Actions</th></tr>
+                            ${dispatchLogs.length ? dispatchLogs.map((d, i) => `<tr class="border-b"><td class="p-3 font-bold">${d.id}</td><td class="p-3">${d.unit}</td><td class="p-3">${d.driver}</td><td class="p-3">${d.route}</td><td class="p-3"><span class="pill Available">${d.status}</span></td><td class="p-3 text-right"><button onclick="deleteBackendEntry('dispatchLogs', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No dispatch records logged yet.</td></tr>'}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'Fleet Expenses') {
-                let rows = expenseLogs.length ? expenseLogs.map(e => {
-                    let atts = (e.attachments && e.attachments.length) ? e.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-teal-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No receipt</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold text-sky-800">' + e.trip + '</td><td class="p-3">' + e.fuel + '</td><td class="p-3">' + e.tolls + '</td><td class="p-3">' + e.maintenance + '</td><td class="p-3 font-extrabold text-emerald-700">' + e.total + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No fleet expenses.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Fleet Expenses</h3>
-                        <div class="flex gap-2">
-                            <button onclick="generateModulePDFReport('Fleet Expenses')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
-                            <button onclick="generateModuleExcelReport('Fleet Expenses')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Expense')" class="bg-teal-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Expense</button>
-                        </div>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-receipt text-amber-400 mr-2"></i> Fleet Expense Logs</h3>
+                        <button onclick="openBackendEntryModal('Expense')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3.5 py-1.5 rounded font-bold">+ Add Expense</button>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip / Ref</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl shadow">
+                        <table class="w-full text-left text-xs">
+                            <tr class="bg-slate-100 text-slate-800 font-bold"><th class="p-3">Date</th><th class="p-3">Category</th><th class="p-3">Description</th><th class="p-3 text-right">Amount (₱)</th><th class="p-3 text-right">Actions</th></tr>
+                            ${expenseLogs.length ? expenseLogs.map((ex, i) => `<tr class="border-b"><td class="p-3 font-mono">${ex.date}</td><td class="p-3 font-bold">${ex.category}</td><td class="p-3">${ex.desc}</td><td class="p-3 text-right font-bold text-rose-700">₱${Number(ex.amount).toLocaleString()}</td><td class="p-3 text-right"><button onclick="deleteBackendEntry('expenseLogs', ${i})" class="text-rose-600 hover:underline">Delete</button></td></tr>`).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No fleet expenses logged yet.</td></tr>'}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'Data Backup') {
                 content.innerHTML = `
                     <div class="space-y-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-cloud-arrow-down text-sky-400 mr-2"></i> Unified Data Backup & Cloud Sync</h3>
-                        <p class="text-xs text-slate-300">Download or restore enterprise JSON snapshots of management backend and empty yard databases.</p>
-                        <div class="flex gap-3 pt-2">
-                            <button onclick="backupUnifiedEnterpriseData()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold">Download Unified JSON Backup</button>
-                            <label class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer">Restore JSON Backup<input type="file" accept=".json,application/json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-cloud-arrow-down text-sky-400 mr-2"></i> Database Backup & Restore</h3>
+                        <p class="text-xs text-slate-300">Download or restore a complete JSON backup of the unified management backend and empty container yard.</p>
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button onclick="backupUnifiedEnterpriseData()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow">Download Unified Backup</button>
+                            <label class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow cursor-pointer inline-flex items-center">Restore JSON Backup<input type="file" accept=".json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
                         </div>
                     </div>
                 `;
@@ -2553,48 +2528,44 @@
             const titleEl = document.getElementById('backendModalTitle');
             const fieldsEl = document.getElementById('backendModalFields');
             if(!modal || !titleEl || !fieldsEl) return;
+
             modal.classList.remove('hidden');
-            stagedBackendAttachments = [];
-            document.getElementById('backendEntryFilePreview').innerHTML = '';
+            titleEl.innerHTML = `<i class="fa-solid fa-plus text-sky-400 mr-2"></i> Add ${type} Entry`;
 
             if (type === 'Vehicle') {
-                titleEl.innerHTML = '<i class="fa-solid fa-truck text-sky-400 mr-2"></i> Add New Vehicle';
                 fieldsEl.innerHTML = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID / Plate No. *</label><input type="text" id="entVehicleId" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Model *</label><input type="text" id="entVehicleModel" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Isuzu Giga 10-Wheeler"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Status</label><select id="entVehicleStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Available</option><option>In Transit</option><option>Maintenance</option></select></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver</label><input type="text" id="entVehicleDriver" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Roberto Santos"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entId" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Model *</label><input type="text" id="entModel" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="Isuzu Giga Prime"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Plate Number *</label><input type="text" id="entPlate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="NMV-8821"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Status</label><select id="entStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"><option>Available</option><option>Reserved</option><option>Hold</option></select></div>
                 `;
             } else if (type === 'Fuel') {
-                titleEl.innerHTML = '<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Log Fuel Fill';
                 fieldsEl.innerHTML = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entFuelUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Liters *</label><input type="number" id="entFuelLiters" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="250"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="entFuelCost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱14,750"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Station *</label><input type="text" id="entFuelStation" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Shell Valenzuela"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Date *</label><input type="date" id="entDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Litres *</label><input type="number" step="any" id="entLitres" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="150"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="number" step="any" id="entCost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="9750"></div>
                 `;
             } else if (type === 'Maintenance') {
-                titleEl.innerHTML = '<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Schedule Maintenance';
                 fieldsEl.innerHTML = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entMaintUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-102"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Issue / Service *</label><input type="text" id="entMaintIssue" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Preventative Brake Pad Replacement"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Estimated Cost (₱) *</label><input type="text" id="entMaintCost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱8,500"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Status</label><select id="entMaintStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Scheduled</option><option>In Progress</option><option>Completed</option></select></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Date *</label><input type="date" id="entDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Service Description *</label><input type="text" id="entDesc" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="Brake pad replacement & oil change"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Cost (₱) *</label><input type="number" step="any" id="entCost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="4500"></div>
                 `;
             } else if (type === 'Dispatch') {
-                titleEl.innerHTML = '<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> New Fleet Dispatch';
                 fieldsEl.innerHTML = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entDispUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Corridor *</label><input type="text" id="entDispRoute" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Manila North Harbor to Valenzuela Yard"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Driver *</label><input type="text" id="entDispDriver" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Roberto Santos"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Dispatch ID *</label><input type="text" id="entId" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="DSP-501"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="entUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Driver Name *</label><input type="text" id="entDriver" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="Roberto Santos"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="entRoute" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="Valenzuela Yard → Manila North Harbor"></div>
                 `;
             } else if (type === 'Expense') {
-                titleEl.innerHTML = '<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Log Fleet Expense';
                 fieldsEl.innerHTML = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Trip / Reference *</label><input type="text" id="entExpTrip" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="TRIP-9982"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Fuel (₱)</label><input type="text" id="entExpFuel" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱5,000"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Tolls (₱)</label><input type="text" id="entExpTolls" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱1,200"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total (₱) *</label><input type="text" id="entExpTotal" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱6,200"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Date *</label><input type="date" id="entDate" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Category *</label><select id="entCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"><option>Toll & Port Fees</option><option>Office & Admin</option><option>Driver Allowance</option><option>Permits & Licensing</option></select></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Description *</label><input type="text" id="entDesc" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="North Harbor gate pass"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Amount (₱) *</label><input type="number" step="any" id="entAmount" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="1250"></div>
                 `;
             }
         }
@@ -2602,6 +2573,9 @@
         function closeBackendEntryModal() {
             const modal = document.getElementById('backendEntryModal');
             if(modal) modal.classList.add('hidden');
+            stagedBackendAttachments = [];
+            const prev = document.getElementById('backendEntryFilePreview');
+            if(prev) prev.innerHTML = '';
         }
 
         async function handleBackendEntrySubmit(e) {
@@ -2611,476 +2585,379 @@
             if (type === 'Vehicle') {
                 if(!db.vehicles) db.vehicles = [];
                 db.vehicles.push({
-                    id: document.getElementById('entVehicleId').value,
-                    model: document.getElementById('entVehicleModel').value,
-                    status: document.getElementById('entVehicleStatus').value,
-                    driver: document.getElementById('entVehicleDriver').value,
+                    id: document.getElementById('entId').value,
+                    model: document.getElementById('entModel').value,
+                    plate: document.getElementById('entPlate').value,
+                    status: document.getElementById('entStatus').value,
+                    driver: 'Unassigned',
                     attachments: stagedBackendAttachments
                 });
+                await saveCloudData();
+                closeBackendEntryModal();
+                openSubModule('Vehicle Management');
             } else if (type === 'Fuel') {
                 if(!db.fuelLogs) db.fuelLogs = [];
                 db.fuelLogs.push({
-                    unit: document.getElementById('entFuelUnit').value,
-                    liters: document.getElementById('entFuelLiters').value + ' L',
-                    cost: document.getElementById('entFuelCost').value,
-                    station: document.getElementById('entFuelStation').value,
-                    date: new Date().toISOString().substring(0, 10),
+                    date: document.getElementById('entDate').value,
+                    unit: document.getElementById('entUnit').value,
+                    litres: document.getElementById('entLitres').value,
+                    cost: document.getElementById('entCost').value,
                     attachments: stagedBackendAttachments
                 });
+                await saveCloudData();
+                closeBackendEntryModal();
+                openSubModule('Fuel Monitoring');
             } else if (type === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
                 db.maintenanceLogs.push({
-                    unit: document.getElementById('entMaintUnit').value,
-                    issue: document.getElementById('entMaintIssue').value,
-                    cost: document.getElementById('entMaintCost').value,
-                    status: document.getElementById('entMaintStatus').value,
-                    date: new Date().toISOString().substring(0, 10),
+                    date: document.getElementById('entDate').value,
+                    unit: document.getElementById('entUnit').value,
+                    desc: document.getElementById('entDesc').value,
+                    cost: document.getElementById('entCost').value,
                     attachments: stagedBackendAttachments
                 });
+                await saveCloudData();
+                closeBackendEntryModal();
+                openSubModule('Maintenance');
             } else if (type === 'Dispatch') {
                 if(!db.dispatchLogs) db.dispatchLogs = [];
                 db.dispatchLogs.push({
-                    unit: document.getElementById('entDispUnit').value,
-                    route: document.getElementById('entDispRoute').value,
-                    driver: document.getElementById('entDispDriver').value,
+                    id: document.getElementById('entId').value,
+                    unit: document.getElementById('entUnit').value,
+                    driver: document.getElementById('entDriver').value,
+                    route: document.getElementById('entRoute').value,
                     status: 'In Transit',
                     attachments: stagedBackendAttachments
                 });
+                await saveCloudData();
+                closeBackendEntryModal();
+                openSubModule('GPS & Dispatch');
             } else if (type === 'Expense') {
                 if(!db.expenseLogs) db.expenseLogs = [];
                 db.expenseLogs.push({
-                    trip: document.getElementById('entExpTrip').value,
-                    fuel: document.getElementById('entExpFuel').value || '₱0',
-                    tolls: document.getElementById('entExpTolls').value || '₱0',
-                    maintenance: '₱0',
-                    total: document.getElementById('entExpTotal').value,
+                    date: document.getElementById('entDate').value,
+                    category: document.getElementById('entCategory').value,
+                    desc: document.getElementById('entDesc').value,
+                    amount: document.getElementById('entAmount').value,
                     attachments: stagedBackendAttachments
                 });
-            }
-
-            await saveCloudData();
-            closeBackendEntryModal();
-            openSubModule(type === 'Vehicle' ? 'Vehicle Management' : (type === 'Fuel' ? 'Fuel Monitoring' : (type === 'Maintenance' ? 'Maintenance' : (type === 'Dispatch' ? 'GPS & Dispatch' : 'Fleet Expenses'))));
-            alert('Successfully recorded entry with attachments!');
-        }
-
-        function openNewTransshipmentModal() { document.getElementById('transModal').classList.remove('hidden'); }
-        function closeNewTransshipmentModal() { document.getElementById('transModal'].classList.add('hidden'); }
-
-        async function handleTransSubmit(e) {
-            e.preventDefault();
-            const origin = document.getElementById('transOrigin').value;
-            const container = document.getElementById('transContainer').value;
-            const commission = document.getElementById('transCommission').value;
-
-            if(!db.transshipments) db.transshipments = [];
-            db.transshipments.push({
-                id: 'TR-' + Math.floor(1000 + Math.random() * 9000),
-                origin: origin,
-                container: container,
-                commission: '₱ ' + Number(commission).toLocaleString(),
-                status: 'Pending Acceptance'
-            });
-
-            await saveCloudData();
-            closeNewTransshipmentModal();
-            renderTransshipmentTable();
-            document.getElementById('transForm').reset();
-            alert('Transshipment order successfully posted to Hub portal!');
-        }
-
-        function renderTransshipmentTable() {
-            const tbody = document.getElementById('transshipmentTableBody');
-            if(!tbody) return;
-            const list = db.transshipments || [];
-            tbody.innerHTML = list.length ? list.map((t, idx) => `
-                <tr class="border-b border-slate-800">
-                    <td class="p-3 font-mono font-bold text-sky-400">${t.id}</td>
-                    <td class="p-3">${t.origin}</td>
-                    <td class="p-3 font-mono">${t.container}</td>
-                    <td class="p-3 font-bold text-emerald-400">${t.commission}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status.includes('Accepted') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${t.status}</span></td>
-                    <td class="p-3 text-right">
-                        ${t.status.includes('Pending') ? `<button onclick="acceptTransshipment(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[10px] font-bold mr-1">Accept</button>` : ''}
-                        <button onclick="deleteTransshipment(${idx})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold">Delete</button>
-                    </td>
-                </tr>
-            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No transshipment orders posted.</td></tr>';
-        }
-
-        async function acceptTransshipment(idx) {
-            if(db.transshipments && db.transshipments[idx]) {
-                db.transshipments[idx].status = 'Hub Accepted & Dispatched';
                 await saveCloudData();
-                renderTransshipmentTable();
-                alert('Transshipment order accepted and synced with dispatch masterlist!');
+                closeBackendEntryModal();
+                openSubModule('Fleet Expenses');
             }
         }
 
-        async function deleteTransshipment(idx) {
-            if(db.transshipments && db.transshipments[idx]) {
-                db.transshipments.splice(idx, 1);
-                await saveCloudData();
-                renderTransshipmentTable();
+        async function deleteBackendEntry(collectionName, index) {
+            if(confirm('Are you sure you want to delete this record?')) {
+                if(db[collectionName]) {
+                    db[collectionName].splice(index, 1);
+                    await saveCloudData();
+                    if(collectionName === 'vehicles') openSubModule('Vehicle Management');
+                    else if(collectionName === 'drivers') openSubModule('Driver Management');
+                    else if(collectionName === 'fuelLogs') openSubModule('Fuel Monitoring');
+                    else if(collectionName === 'maintenanceLogs') openSubModule('Maintenance');
+                    else if(collectionName === 'dispatchLogs') openSubModule('GPS & Dispatch');
+                    else if(collectionName === 'expenseLogs') openSubModule('Fleet Expenses');
+                }
             }
         }
 
         // ==========================================
-        // EMPTY CONTAINER YARD LOGIC & RENDERERS
+        // EMPTY CONTAINER YARD & TRANSSHIPMENT LOGIC
         // ==========================================
         function switchYardTab(tabId) {
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#yardTabButtonsArea .btn').forEach(b => {
+                b.className = 'btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200';
+            });
+
             const activeTab = document.getElementById(tabId);
             if(activeTab) activeTab.classList.remove('hidden');
 
-            for(let i=1; i<=8; i++) {
-                const btn = document.getElementById('yBtn' + i);
-                if(btn) btn.className = 'btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200';
-            }
-            const activeBtnMap = { 'yardDashboard': 'yBtn1', 'yardInventory': 'yBtn2', 'yardGateIn': 'yBtn3', 'yardGateOut': 'yBtn4', 'yardRevenue': 'yBtn5', 'yardExpenses': 'yBtn6', 'yardReports': 'yBtn7', 'yardBackup': 'yBtn8' };
-            const currBtn = document.getElementById(activeBtnMap[tabId]);
-            if(currBtn) currBtn.className = 'btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white';
+            let btnIndex = 'yBtn1';
+            if(tabId === 'yardInventory') btnIndex = 'yBtn2';
+            else if(tabId === 'yardGateIn') btnIndex = 'yBtn3';
+            else if(tabId === 'yardGateOut') btnIndex = 'yBtn4';
+            else if(tabId === 'yardRevenue') btnIndex = 'yBtn5';
+            else if(tabId === 'yardExpenses') btnIndex = 'yBtn6';
+            else if(tabId === 'yardReports') btnIndex = 'yBtn7';
+            else if(tabId === 'yardBackup') btnIndex = 'yBtn8';
 
-            if(tabId === 'yardDashboard') renderYardDashboard();
-            else if(tabId === 'yardInventory') renderYardInventory();
-            else if(tabId === 'yardGateIn') {
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('gateInDateInput').value = now.toISOString().slice(0, 16);
-            } else if(tabId === 'yardGateOut') {
-                populateGateOutContainerDropdown();
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('calcGateOutDate').value = now.toISOString().slice(0, 16);
-            } else if(tabId === 'yardRevenue') renderYardRevenue();
-            else if(tabId === 'yardExpenses') {
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('expenseDateInput').value = now.toISOString().slice(0, 16);
-                renderYardExpenses();
-            } else if(tabId === 'yardReports') renderYardReports();
+            const activeBtn = document.getElementById(btnIndex);
+            if(activeBtn) activeBtn.className = 'btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white';
+
+            refreshYard();
         }
 
         function refreshYard() {
-            renderYardDashboard();
+            const containers = yardDb.containers || [];
+            const activeContainers = containers.filter(c => c.status !== 'Released');
+            const availableCount = activeContainers.filter(c => c.status === 'Available' && c.condition === 'Good').length;
+            const reservedCount = activeContainers.filter(c => c.status === 'Reserved').length;
+            const damagedCount = activeContainers.filter(c => c.status === 'Hold' || c.condition === 'Damaged').length;
+
+            const totalEl = document.getElementById('yardTotal');
+            const availEl = document.getElementById('yardAvailable');
+            const resEl = document.getElementById('yardReserved');
+            const damEl = document.getElementById('yardDamaged');
+
+            if(totalEl) totalEl.innerText = activeContainers.length;
+            if(availEl) availEl.innerText = availableCount;
+            if(resEl) resEl.innerText = reservedCount;
+            if(damEl) damEl.innerText = damagedCount;
+
+            const dashGateIn = document.getElementById('dashGateInCount');
+            const dashGateOut = document.getElementById('dashGateOutCount');
+            const dashTotRev = document.getElementById('dashTotalRev');
+
+            if(dashGateIn) dashGateIn.innerText = containers.length;
+            if(dashGateOut) dashGateOut.innerText = containers.filter(c => c.status === 'Released').length;
+
+            const totalRevPaid = (yardDb.revenues || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+            if(dashTotRev) dashTotRev.innerText = '₱' + totalRevPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            renderYardDashboardRecent();
             renderYardInventory();
+            populateGateOutContainerDropdown();
             renderYardRevenue();
             renderYardExpenses();
             renderYardReports();
+            renderYardCharts();
         }
 
-        function renderYardDashboard() {
-            const containers = yardDb.containers || [];
-            const activeContainers = containers.filter(c => c.status !== 'Released');
-            const availableCount = activeContainers.filter(c => c.status === 'Available' || c.status === 'Good').length;
-            const reservedCount = activeContainers.filter(c => c.status === 'Reserved').length;
-            const damagedCount = activeContainers.filter(c => c.status === 'Hold' || c.status === 'Damaged').length;
-
-            document.getElementById('yardTotal').innerText = activeContainers.length;
-            document.getElementById('yardAvailable').innerText = availableCount;
-            document.getElementById('yardReserved').innerText = reservedCount;
-            document.getElementById('yardDamaged').innerText = damagedCount;
-
-            const gateInCount = (yardDb.movements || []).filter(m => m.type === 'Gate-In').length;
-            const gateOutCount = (yardDb.movements || []).filter(m => m.type === 'Gate-Out').length;
-            document.getElementById('dashGateInCount').innerText = gateInCount;
-            document.getElementById('dashGateOutCount').innerText = gateOutCount;
-
-            const totalRev = (yardDb.revenues || []).reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
-            document.getElementById('dashTotalRev').innerText = '₱' + totalRev.toLocaleString(undefined, { minimumFractionDigits: 2 });
-
-            const recentBody = document.getElementById('yardRecentBody');
-            const recentMoves = (yardDb.movements || []).slice(0, 5);
-            recentBody.innerHTML = recentMoves.length ? recentMoves.map(m => `
+        function renderYardDashboardRecent() {
+            const tbody = document.getElementById('yardRecentBody');
+            if(!tbody) return;
+            const recent = (yardDb.movements || []).slice(-6).reverse();
+            tbody.innerHTML = recent.length ? recent.map(m => `
                 <tr class="border-b">
                     <td class="p-3 font-mono text-[11px]">${m.date}</td>
-                    <td class="p-3 font-bold ${m.type === 'Gate-In' ? 'text-sky-700' : 'text-purple-700'}">${m.type}</td>
+                    <td class="p-3 font-bold ${m.movement.includes('In') ? 'text-sky-700' : 'text-purple-700'}">${m.movement}</td>
                     <td class="p-3 font-mono font-bold">${m.container}</td>
                     <td class="p-3">${m.plate || '—'}</td>
-                    <td class="p-3 font-mono text-[11px]">${m.eir || '—'}</td>
-                    <td class="p-3 font-bold text-emerald-700">₱${(parseFloat(m.amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td class="p-3 font-mono">${m.eir || '—'}</td>
+                    <td class="p-3 font-bold text-emerald-700">₱${Number(m.amount || 0).toLocaleString()}</td>
                 </tr>
             `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No recent movements recorded.</td></tr>';
-
-            // Render Charts
-            const pieCtx = document.getElementById('yardStatusPieChart');
-            if (pieCtx) {
-                if (yardPieChartInstance) yardPieChartInstance.destroy();
-                yardPieChartInstance = new Chart(pieCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Available', 'Reserved', 'Damaged / Hold'],
-                        datasets: [{
-                            data: [availableCount, reservedCount, damagedCount],
-                            backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
-            }
-
-            const barCtx = document.getElementById('yardStatusBarGraph');
-            if (barCtx) {
-                if (yardBarChartInstance) yardBarChartInstance.destroy();
-                yardBarChartInstance = new Chart(barCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Available', 'Reserved', 'Damaged / Hold'],
-                        datasets: [{
-                            label: 'Container Units',
-                            data: [availableCount, reservedCount, damagedCount],
-                            backgroundColor: ['#0284c7', '#d97706', '#e11d48'],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-                });
-            }
         }
 
         function renderYardInventory() {
+            const tbody = document.getElementById('yardInventoryRows');
+            if(!tbody) return;
             const query = (document.getElementById('yardSearchInput')?.value || '').toLowerCase();
-            const containers = (yardDb.containers || []).filter(c => c.status !== 'Released');
-            const filtered = containers.filter(c => 
-                c.number.toLowerCase().includes(query) || 
-                c.line.toLowerCase().includes(query) || 
-                (c.plate && c.plate.toLowerCase().includes(query))
-            );
+            const list = (yardDb.containers || []).filter(c => {
+                if(!query) return true;
+                return c.number.toLowerCase().includes(query) || c.line.toLowerCase().includes(query) || (c.plate && c.plate.toLowerCase().includes(query));
+            });
 
-            const rows = document.getElementById('yardInventoryRows');
-            if(!rows) return;
-            rows.innerHTML = filtered.length ? filtered.map(c => `
+            tbody.innerHTML = list.length ? list.map((c, i) => `
                 <tr class="border-b hover:bg-slate-50">
-                    <td class="p-3 font-mono font-bold text-sky-900">${c.number}</td>
-                    <td class="p-3">${c.size} <span class="text-[10px] text-slate-500">(${c.type || 'Dry'})</span></td>
-                    <td class="p-3 font-bold">${c.line}</td>
+                    <td class="p-3 font-mono font-extrabold text-slate-900">${c.number}</td>
+                    <td class="p-3 font-bold">${c.size} <span class="text-[10px] text-slate-500 font-normal">(${c.type || 'Dry'})</span></td>
+                    <td class="p-3">${c.line}</td>
                     <td class="p-3"><span class="pill ${c.status}">${c.status}</span></td>
-                    <td class="p-3 font-mono text-[11px]">${c.block}/${c.bay}/${c.row}</td>
-                    <td class="p-3 font-mono text-[10px]">${c.gateInDate || '—'}</td>
-                    <td class="p-3 font-mono text-[10px]">—</td>
-                    <td class="p-3 font-semibold text-sky-800">₱${Number(c.vanInAmount || 0).toLocaleString()} <span class="text-[9px] font-bold px-1 rounded ${c.vanInStats === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${c.vanInStats || 'UNPAID'}</span></td>
+                    <td class="p-3 font-mono font-semibold">${c.block}/${c.bay}/${c.row}</td>
+                    <td class="p-3 font-mono text-[11px]">${c.gateInDate ? c.gateInDate.replace('T', ' ') : '—'}</td>
+                    <td class="p-3 font-mono text-[11px]">${c.gateOutDate ? c.gateOutDate.replace('T', ' ') : '—'}</td>
+                    <td class="p-3 font-mono text-[11px]">In: ₱${Number(c.vanInAmount || 0).toLocaleString()} (${c.vanInStats || 'UNPAID'})</td>
                     <td class="p-3">
-                        <button onclick="releaseContainerPrompt('${c.number}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-[10px] font-bold">Gate-Out</button>
+                        <button onclick="deleteContainerRecord(${i})" class="text-rose-600 hover:underline font-bold text-xs">Delete</button>
                     </td>
                 </tr>
-            `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No container stock matching query.</td></tr>';
+            `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No containers found in inventory.</td></tr>';
         }
 
         async function handleYardGateIn(e) {
             e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const containerNo = formData.get('number').trim().toUpperCase();
-
-            const existing = (yardDb.containers || []).find(c => c.number === containerNo && c.status !== 'Released');
-            if (existing) {
-                alert(`⚠️ Container ${containerNo} is already active in the yard inventory!`);
-                return;
-            }
-
-            const vanInAmt = parseFloat(formData.get('vanInAmount')) || 0;
-            const vanInStats = formData.get('vanInStats');
-
-            const newContainer = {
-                number: containerNo,
-                size: formData.get('size'),
-                type: formData.get('type'),
-                line: formData.get('line'),
-                truckingName: formData.get('truckingName'),
-                plate: formData.get('plate'),
-                driver: formData.get('driver'),
-                eir: formData.get('eir'),
-                condition: formData.get('condition'),
-                status: formData.get('status') || 'Available',
-                block: formData.get('block'),
-                bay: formData.get('bay'),
-                row: formData.get('row'),
-                tier: formData.get('tier') || '1',
-                gateInDate: formData.get('date'),
-                remarks: formData.get('remarks'),
-                vanInAmount: vanInAmt,
-                vanInStats: vanInStats,
+            const fd = new FormData(e.target);
+            const containerObj = {
+                number: fd.get('number').toUpperCase(),
+                size: fd.get('size'),
+                type: fd.get('type'),
+                line: fd.get('line'),
+                truckingName: fd.get('truckingName'),
+                plate: fd.get('plate'),
+                driver: fd.get('driver'),
+                eir: fd.get('eir'),
+                condition: fd.get('condition'),
+                status: fd.get('status'),
+                block: fd.get('block'),
+                bay: fd.get('bay'),
+                row: fd.get('row'),
+                tier: fd.get('tier') || '1',
+                vanInAmount: fd.get('vanInAmount') || 0,
+                vanInStats: fd.get('vanInStats'),
+                gateInDate: fd.get('date'),
+                remarks: fd.get('remarks'),
                 photos: stagedGateInPhotos
             };
 
             if(!yardDb.containers) yardDb.containers = [];
-            yardDb.containers.push(newContainer);
+            yardDb.containers.push(containerObj);
 
             if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
-                date: formData.get('date'),
-                type: 'Gate-In',
-                container: containerNo,
-                plate: formData.get('plate'),
-                eir: formData.get('eir'),
-                amount: vanInAmt
+            yardDb.movements.push({
+                date: fd.get('date').replace('T', ' '),
+                movement: 'Gate-In',
+                container: containerObj.number,
+                plate: containerObj.plate,
+                eir: containerObj.eir,
+                amount: containerObj.vanInAmount
             });
 
-            if (vanInAmt > 0 && vanInStats === 'PAID') {
+            if (containerObj.vanInStats === 'PAID' && Number(containerObj.vanInAmount) > 0) {
                 if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
-                    date: formData.get('date'),
-                    source: 'Gate-In Fee',
-                    container: containerNo,
-                    eir: formData.get('eir') || 'Gate-In',
-                    amount: vanInAmt
+                yardDb.revenues.push({
+                    date: fd.get('date').replace('T', ' '),
+                    source: 'Gate-In (Van In)',
+                    container: containerObj.number,
+                    eir: containerObj.eir,
+                    amount: Number(containerObj.vanInAmount)
                 });
             }
 
             await saveCloudData();
-            form.reset();
-            clearGateInPhotos();
+            clearGateInFormAndPhotos();
             switchYardTab('yardInventory');
-            alert(`✅ Container Gate-In successfully recorded for ${containerNo}!`);
+            alert('Container Gate-In successfully recorded and synced to cloud database!');
         }
 
         function populateGateOutContainerDropdown() {
             const select = document.getElementById('yardOutContainer');
             if(!select) return;
-            const activeContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
-            select.innerHTML = '<option value="">Select container in yard</option>' + activeContainers.map(c => `
-                <option value="${c.number}">${c.number} (${c.size} - ${c.line})</option>
-            `).join('');
+            const active = (yardDb.containers || []).filter(c => c.status !== 'Released');
+            select.innerHTML = '<option value="">Select container in yard</option>' + active.map(c => `<option value="${c.number}">${c.number} — ${c.line} (${c.size})</option>`).join('');
         }
 
         function containerSelectedForGateOut() {
-            const containerNo = document.getElementById('yardOutContainer').value;
-            if(!containerNo) return;
-            const container = (yardDb.containers || []).find(c => c.number === containerNo);
+            const val = document.getElementById('yardOutContainer').value;
+            if(!val) return;
+            const container = (yardDb.containers || []).find(c => c.number === val);
             if(!container) return;
 
             document.getElementById('gateOutPlate').value = container.plate || '';
             document.getElementById('gateOutDriver').value = container.driver || '';
             document.getElementById('calcVanInAmount').value = container.vanInAmount || 0;
-            document.getElementById('calcGateInDisplay').value = container.gateInDate || '';
-
-            if (container.vanInAmount && container.vanInAmount > 0 && container.vanInStats === 'PAID') {
-                document.getElementById('vanInDeductionNotice').classList.remove('hidden');
-            } else {
-                document.getElementById('vanInDeductionNotice').classList.add('hidden');
-            }
-
+            document.getElementById('calcGateInDisplay').value = container.gateInDate ? container.gateInDate.replace('T', ' ') : '';
+            document.getElementById('calcGateOutDate').value = new Date().toISOString().slice(0, 16);
+            
             recalculateTotals();
         }
 
         function recalculateTotals() {
             const gateInStr = document.getElementById('calcGateInDisplay').value;
             const gateOutStr = document.getElementById('calcGateOutDate').value;
+            const storageRate = parseFloat(document.getElementById('calcStorageAmount').value) || 500;
+            const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
+            const vanIn = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
+
             if(!gateInStr || !gateOutStr) return;
 
-            const dIn = new Date(gateInStr);
-            const dOut = new Date(gateOutStr);
-            const diffTime = Math.abs(dOut - dIn);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+            const d1 = new Date(gateInStr);
+            const d2 = new Date(gateOutStr);
+            const diffTime = Math.abs(d2 - d1);
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if(diffDays < 1) diffDays = 1;
 
             document.getElementById('calcStorageDays').value = diffDays;
-
-            const storageRate = parseFloat(document.getElementById('calcStorageAmount').value) || 500;
             const storageTotal = diffDays * storageRate;
-            const vanOutAmt = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanInAmt = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
 
-            const isVanInPaid = !document.getElementById('vanInDeductionNotice').classList.contains('hidden');
-            const effectiveVanIn = isVanInPaid ? 0 : vanInAmt;
+            let totalSum = storageTotal + vanOut;
+            const containerNo = document.getElementById('yardOutContainer').value;
+            const container = (yardDb.containers || []).find(c => c.number === containerNo);
 
-            const grandTotal = storageTotal + vanOutAmt + effectiveVanIn;
-            document.getElementById('calcTotalAmount').value = grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const notice = document.getElementById('vanInDeductionNotice');
+            if (container && container.vanInStats === 'PAID') {
+                if(notice) notice.classList.remove('hidden');
+            } else {
+                totalSum += vanIn;
+                if(notice) notice.classList.add('hidden');
+            }
+
+            document.getElementById('calcTotalAmount').value = totalSum.toFixed(2);
         }
 
         async function handleYardGateOut(e) {
             e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const containerNo = formData.get('container');
-
+            const containerNo = document.getElementById('yardOutContainer').value;
             const container = (yardDb.containers || []).find(c => c.number === containerNo);
-            if(!container) {
-                alert('Please select a valid container.');
-                return;
-            }
+            if(!container) { alert('Please select a valid container.'); return; }
+
+            const fd = new FormData(e.target);
+            const gateOutDate = fd.get('date');
+            const totalAmount = parseFloat(document.getElementById('calcTotalAmount').value) || 0;
+            const storageDays = document.getElementById('calcStorageDays').value;
 
             container.status = 'Released';
-            container.gateOutDate = formData.get('date');
-
-            const totalAmount = parseFloat(formData.get('totalAmount').replace(/,/g, '')) || 0;
-            const gateOutDate = formData.get('date');
-            const eir = formData.get('eir');
+            container.gateOutDate = gateOutDate;
+            container.gateOutPhotos = stagedGateOutPhotos;
 
             if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
-                date: gateOutDate,
-                type: 'Gate-Out',
+            yardDb.movements.push({
+                date: gateOutDate.replace('T', ' '),
+                movement: 'Gate-Out',
                 container: containerNo,
-                plate: formData.get('plate'),
-                eir: eir,
-                amount: totalAmount
+                plate: fd.get('plate'),
+                eir: fd.get('eir'),
+                amount: totalAmount,
+                storageDays: storageDays
             });
 
-            if (totalAmount > 0) {
+            if(totalAmount > 0) {
                 if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
-                    date: gateOutDate,
-                    source: 'Gate-Out & Storage Billing',
+                yardDb.revenues.push({
+                    date: gateOutDate.replace('T', ' '),
+                    source: 'Gate-Out & Storage Fee',
                     container: containerNo,
-                    eir: eir,
+                    eir: fd.get('eir'),
                     amount: totalAmount
                 });
             }
 
             await saveCloudData();
-            form.reset();
-            clearGateOutPhotos();
-            switchYardTab('yardInventory');
-            alert(`✅ Container ${containerNo} successfully released and billed!`);
-        }
-
-        function releaseContainerPrompt(containerNo) {
-            switchYardTab('yardGateOut');
-            const select = document.getElementById('yardOutContainer');
-            if(select) {
-                select.value = containerNo;
-                containerSelectedForGateOut();
-            }
+            clearGateOutFormAndPhotos();
+            switchYardTab('yardReports');
+            alert('Container successfully released (Gate-Out confirmed) and recorded in revenue ledger!');
         }
 
         function renderYardRevenue() {
-            const revBody = document.getElementById('revenueTableBody');
-            const revenues = yardDb.revenues || [];
+            const tbody = document.getElementById('revenueTableBody');
+            if(!tbody) return;
 
             const fromDate = document.getElementById('filterDateFrom')?.value;
             const toDate = document.getElementById('filterDateTo')?.value;
 
-            let filtered = revenues;
-            if (fromDate) {
-                filtered = filtered.filter(r => r.date && r.date.substring(0, 10) >= fromDate);
-            }
-            if (toDate) {
-                filtered = filtered.filter(r => r.date && r.date.substring(0, 10) <= toDate);
+            let revs = yardDb.revenues || [];
+            if (fromDate || toDate) {
+                revs = revs.filter(r => {
+                    const rDate = r.date.substring(0, 10);
+                    if (fromDate && rDate < fromDate) return false;
+                    if (toDate && rDate > toDate) return false;
+                    return true;
+                });
             }
 
-            const totalRev = filtered.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
-            const totalExp = (yardDb.expenses || []).reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            const totalRev = revs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+            const totalExp = (yardDb.expenses || []).reduce((sum, ex) => sum + Number(ex.amount || 0), 0);
             const netIncome = totalRev - totalExp;
 
-            if(document.getElementById('totalRevenueDisplay')) document.getElementById('totalRevenueDisplay').innerText = '₱' + totalRev.toLocaleString(undefined, { minimumFractionDigits: 2 });
-            if(document.getElementById('totalExpenseDisplayRev')) document.getElementById('totalExpenseDisplayRev').innerText = '₱' + totalExp.toLocaleString(undefined, { minimumFractionDigits: 2 });
-            if(document.getElementById('netTotalIncomeDisplay')) document.getElementById('netTotalIncomeDisplay').innerText = '₱' + netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 });
+            const revDisp = document.getElementById('totalRevenueDisplay');
+            const expDisp = document.getElementById('totalExpenseDisplayRev');
+            const netDisp = document.getElementById('netTotalIncomeDisplay');
 
-            if(revBody) {
-                revBody.innerHTML = filtered.length ? filtered.map(r => `
-                    <tr class="border-b">
-                        <td class="p-3 font-mono text-[11px]">${r.date}</td>
-                        <td class="p-3 font-bold text-sky-800">${r.source}</td>
-                        <td class="p-3 font-mono font-bold">${r.container}</td>
-                        <td class="p-3 font-mono text-[11px]">${r.eir}</td>
-                        <td class="p-3 text-right font-extrabold text-emerald-700">₱${(parseFloat(r.amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for selected date filter.</td></tr>';
-            }
+            if(revDisp) revDisp.innerText = '₱' + totalRev.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if(expDisp) expDisp.innerText = '₱' + totalExp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if(netDisp) netDisp.innerText = '₱' + netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-            renderMonthlyFinancialSummary();
+            tbody.innerHTML = revs.length ? revs.map(r => `
+                <tr class="border-b">
+                    <td class="p-3 font-mono text-[11px]">${r.date}</td>
+                    <td class="p-3 font-bold text-sky-800">${r.source}</td>
+                    <td class="p-3 font-mono font-bold">${r.container}</td>
+                    <td class="p-3 font-mono">${r.eir || '—'}</td>
+                    <td class="p-3 text-right font-bold text-emerald-700">₱${Number(r.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for this date range.</td></tr>';
         }
 
         function clearDateFilter() {
@@ -3089,249 +2966,254 @@
             renderYardRevenue();
         }
 
-        function renderMonthlyFinancialSummary() {
-            const body = document.getElementById('monthlyFinancialBody');
-            const select = document.getElementById('statementMonthSelect');
-            if(!body) return;
-
-            const monthlyMap = {};
-            (yardDb.revenues || []).forEach(r => {
-                if(!r.date) return;
-                const mKey = r.date.substring(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].rev += parseFloat(r.amount) || 0;
-            });
-
-            (yardDb.expenses || []).forEach(e => {
-                if(!e.date) return;
-                const mKey = e.date.substring(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].exp += parseFloat(e.amount) || 0;
-            });
-
-            const months = Object.keys(monthlyMap).sort().reverse();
-
-            if (select) {
-                select.innerHTML = months.length ? months.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">No months available</option>';
-            }
-
-            body.innerHTML = months.length ? months.map(m => {
-                const data = monthlyMap[m];
-                const net = data.rev - data.exp;
-                return `
-                    <tr class="border-b">
-                        <td class="p-3 font-bold font-mono">${m}</td>
-                        <td class="p-3 text-right font-bold text-emerald-700">₱${data.rev.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td class="p-3 text-right font-bold text-rose-700">₱${data.exp.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td class="p-3 text-right font-extrabold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}">₱${net.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                `;
-            }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No financial data available.</td></tr>';
-
-            // Render Trend Chart
-            const trendCtx = document.getElementById('monthlyTrendChart');
-            if (trendCtx) {
-                if (trendChartInstance) trendChartInstance.destroy();
-                const chartMonths = Object.keys(monthlyMap).sort();
-                trendChartInstance = new Chart(trendCtx, {
-                    type: 'line',
-                    data: {
-                        labels: chartMonths,
-                        datasets: [
-                            { label: 'Revenue (₱)', data: chartMonths.map(m => monthlyMap[m].rev), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: true },
-                            { label: 'Expenses (₱)', data: chartMonths.map(m => monthlyMap[m].exp), borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, fill: true },
-                            { label: 'Net Income (₱)', data: chartMonths.map(m => monthlyMap[m].rev - monthlyMap[m].exp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', tension: 0.3, fill: true }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
-            }
-        }
-
         async function handleYardExpenseSubmit(e) {
             e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-
-            const newExpense = {
-                date: formData.get('date'),
-                category: formData.get('category'),
-                description: formData.get('description'),
-                amount: parseFloat(formData.get('amount')) || 0
-            };
-
+            const fd = new FormData(e.target);
             if(!yardDb.expenses) yardDb.expenses = [];
-            yardDb.expenses.unshift(newExpense);
-            await saveCloudData();
+            yardDb.expenses.push({
+                date: fd.get('date').replace('T', ' '),
+                category: fd.get('category'),
+                description: fd.get('description'),
+                amount: Number(fd.get('amount'))
+            });
 
-            form.reset();
+            await saveCloudData();
+            clearYardExpenseForm();
             renderYardExpenses();
-            alert('✅ Yard operational expense successfully logged!');
+            alert('Yard operating expense successfully logged!');
         }
 
         function renderYardExpenses() {
-            const body = document.getElementById('expenseTableBody');
-            const expenses = yardDb.expenses || [];
-            const totalExp = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            const tbody = document.getElementById('expenseTableBody');
+            if(!tbody) return;
+            const exps = yardDb.expenses || [];
+            const total = exps.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-            if(document.getElementById('totalExpenseDisplay')) document.getElementById('totalExpenseDisplay').innerText = '₱' + totalExp.toLocaleString(undefined, { minimumFractionDigits: 2 });
+            const totEl = document.getElementById('totalExpenseDisplay');
+            if(totEl) totEl.innerText = '₱' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-            if(body) {
-                body.innerHTML = expenses.length ? expenses.map(e => `
-                    <tr class="border-b">
-                        <td class="p-3 font-mono text-[11px]">${e.date}</td>
-                        <td class="p-3 font-bold text-slate-800">${e.category}</td>
-                        <td class="p-3">${e.description}</td>
-                        <td class="p-3 text-right font-bold text-rose-700">₱${(parseFloat(e.amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No expense logs recorded.</td></tr>';
-            }
+            tbody.innerHTML = exps.length ? exps.map(e => `
+                <tr class="border-b">
+                    <td class="p-3 font-mono text-[11px]">${e.date}</td>
+                    <td class="p-3 font-bold">${e.category}</td>
+                    <td class="p-3">${e.description}</td>
+                    <td class="p-3 text-right font-bold text-rose-700">₱${Number(e.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500">No expenses recorded yet.</td></tr>';
         }
 
         function renderYardReports() {
-            const gateIns = (yardDb.movements || []).filter(m => m.type === 'Gate-In').length;
-            const gateOuts = (yardDb.movements || []).filter(m => m.type === 'Gate-Out').length;
-            const moves = (yardDb.movements || []).length;
+            const rptIn = document.getElementById('yardRptGateIn');
+            const rptOut = document.getElementById('yardRptGateOut');
+            const rptLines = document.getElementById('yardRptLines');
+            const rptMoves = document.getElementById('yardRptMoves');
 
-            const activeContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
-            const lines = {};
-            activeContainers.forEach(c => {
-                if(!lines[c.line]) lines[c.line] = { total: 0, avail: 0, res: 0, dam: 0 };
-                lines[c.line].total++;
-                if(c.status === 'Available' || c.status === 'Good') lines[c.line].avail++;
-                else if(c.status === 'Reserved') lines[c.line].res++;
-                else lines[c.line].dam++;
-            });
+            const containers = yardDb.containers || [];
+            if(rptIn) rptIn.innerText = containers.length;
+            if(rptOut) rptOut.innerText = containers.filter(c => c.status === 'Released').length;
 
-            if(document.getElementById('yardRptGateIn')) document.getElementById('yardRptGateIn').innerText = gateIns;
-            if(document.getElementById('yardRptGateOut')) document.getElementById('yardRptGateOut').innerText = gateOuts;
-            if(document.getElementById('yardRptLines')) document.getElementById('yardRptLines').innerText = Object.keys(lines).length;
-            if(document.getElementById('yardRptMoves')) document.getElementById('yardRptMoves').innerText = moves;
+            const lines = [...new Set(containers.map(c => c.line))];
+            if(rptLines) rptLines.innerText = lines.length;
+            if(rptMoves) rptMoves.innerText = (yardDb.movements || []).length;
 
             const lineRows = document.getElementById('yardLineRows');
             if(lineRows) {
-                const lineKeys = Object.keys(lines);
-                lineRows.innerHTML = lineKeys.length ? lineKeys.map(l => `
-                    <tr class="border-b">
-                        <td class="p-3 font-bold text-slate-900">${l}</td>
-                        <td class="p-3 font-extrabold">${lines[l].total}</td>
-                        <td class="p-3 text-emerald-700 font-bold">${lines[l].avail}</td>
-                        <td class="p-3 text-amber-700 font-bold">${lines[l].res}</td>
-                        <td class="p-3 text-rose-700 font-bold">${lines[l].dam}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No shipping line inventory data.</td></tr>';
+                lineRows.innerHTML = lines.length ? lines.map(l => {
+                    const lineContainers = containers.filter(c => c.line === l && c.status !== 'Released');
+                    const avail = lineContainers.filter(c => c.status === 'Available').length;
+                    const res = lineContainers.filter(c => c.status === 'Reserved').length;
+                    const dam = lineContainers.filter(c => c.status === 'Hold' || c.condition === 'Damaged').length;
+                    return `
+                        <tr class="border-b font-medium">
+                            <td class="p-3 font-bold text-slate-900">${l}</td>
+                            <td class="p-3 font-bold">${lineContainers.length}</td>
+                            <td class="p-3 text-emerald-700">${avail}</td>
+                            <td class="p-3 text-amber-700">${res}</td>
+                            <td class="p-3 text-rose-700">${dam}</td>
+                        </tr>
+                    `;
+                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No shipping lines data available.</td></tr>';
             }
 
             const moveRows = document.getElementById('yardMovementRows');
             if(moveRows) {
-                const movements = yardDb.movements || [];
-                moveRows.innerHTML = movements.length ? movements.map(m => `
-                    <tr class="border-b">
+                const moves = yardDb.movements || [];
+                moveRows.innerHTML = moves.length ? moves.map(m => `
+                    <tr class="border-b font-medium">
                         <td class="p-3 font-mono text-[11px]">${m.date}</td>
-                        <td class="p-3 font-bold ${m.type === 'Gate-In' ? 'text-sky-700' : 'text-purple-700'}">${m.type}</td>
+                        <td class="p-3 font-bold ${m.movement.includes('In') ? 'text-sky-700' : 'text-purple-700'}">${m.movement}</td>
                         <td class="p-3 font-mono font-bold">${m.container}</td>
                         <td class="p-3">${m.plate || '—'}</td>
-                        <td class="p-3 font-mono">1</td>
-                        <td class="p-3 font-semibold">₱${(parseFloat(m.amount) || 0).toLocaleString()}</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${(parseFloat(m.amount) || 0).toLocaleString()}</td>
-                        <td class="p-3 font-mono text-[11px]">${m.eir || '—'}</td>
+                        <td class="p-3 font-mono">${m.storageDays || '—'}</td>
+                        <td class="p-3 font-mono">₱${Number(m.amount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.amount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-mono">${m.eir || '—'}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">No movement history.</td></tr>';
+                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">No movement history logged yet.</td></tr>';
             }
         }
 
-        function exportYardCSV() {
-            let csv = ['Container No,Size,Type,Shipping Line,Status,Location,Condition'];
-            (yardDb.containers || []).forEach(c => {
-                csv.push(`"${c.number}","${c.size}","${c.type || 'Dry'}","${c.line}","${c.status}","${c.block}/${c.bay}/${c.row}","${c.condition}"`);
-            });
-            downloadCSV(csv.join('\n'), 'Skymover_Yard_Inventory.csv');
+        function renderYardCharts() {
+            const containers = yardDb.containers || [];
+            const active = containers.filter(c => c.status !== 'Released');
+            const avail = active.filter(c => c.status === 'Available').length;
+            const res = active.filter(c => c.status === 'Reserved').length;
+            const hold = active.filter(c => c.status === 'Hold' || c.condition === 'Damaged').length;
+
+            const pieEl = document.getElementById('yardStatusPieChart');
+            if(pieEl) {
+                if(yardPieChartInstance) yardPieChartInstance.destroy();
+                yardPieChartInstance = new Chart(pieEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Available', 'Reserved', 'Damaged/Hold'],
+                        datasets: [{ data: [avail, res, hold], backgroundColor: ['#059669', '#d97706', '#e11d48'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const barEl = document.getElementById('yardStatusBarGraph');
+            if(barEl) {
+                if(yardBarChartInstance) yardBarChartInstance.destroy();
+                yardBarChartInstance = new Chart(barEl, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Available', 'Reserved', 'Damaged/Hold'],
+                        datasets: [{ label: 'Units', data: [avail, res, hold], backgroundColor: ['#0284c7', '#f59e0b', '#f43f5e'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            const trendEl = document.getElementById('monthlyTrendChart');
+            if(trendEl) {
+                if(trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(trendEl, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [
+                            { label: 'Revenue (₱)', data: [120000, 145000, 160000, 190000, 210000, 240000, 255000, 280000, 295000, 310000, 330000, 350000], borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)', tension: 0.3, fill: true },
+                            { label: 'Expenses (₱)', data: [45000, 48000, 52000, 50000, 55000, 60000, 58000, 62000, 65000, 68000, 70000, 72000], borderColor: '#e11d48', backgroundColor: 'rgba(225,29,72,0.1)', tension: 0.3, fill: true }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
         }
 
-        function exportRevenueCSV() {
-            let csv = ['Date,Source,Container,EIR,Amount'];
-            (yardDb.revenues || []).forEach(r => {
-                csv.push(`"${r.date}","${r.source}","${r.container}","${r.eir}","${r.amount}"`);
-            });
-            downloadCSV(csv.join('\n'), 'Skymover_Yard_Revenue.csv');
+        // ==========================================
+        // TRANSSHIPMENT HUB LOGIC
+        // ==========================================
+        function openNewTransshipmentModal() {
+            document.getElementById('transModal').classList.remove('hidden');
         }
 
-        function exportExpensesCSV() {
-            let csv = ['Date,Category,Description,Amount'];
-            (yardDb.expenses || []).forEach(e => {
-                csv.push(`"${e.date}","${e.category}","${e.description}","${e.amount}"`);
-            });
-            downloadCSV(csv.join('\n'), 'Skymover_Yard_Expenses.csv');
+        function closeNewTransshipmentModal() {
+            document.getElementById('transModal').classList.add('hidden');
         }
 
-        function exportYardMovements() {
-            let csv = ['Date,Type,Container,Plate,EIR,Amount'];
-            (yardDb.movements || []).forEach(m => {
-                csv.push(`"${m.date}","${m.type}","${m.container}","${m.plate || ''}","${m.eir || ''}","${m.amount || 0}"`);
-            });
-            downloadCSV(csv.join('\n'), 'Skymover_Yard_Movements.csv');
+        async function handleTransSubmit(e) {
+            e.preventDefault();
+            const origin = document.getElementById('transOrigin').value;
+            const container = document.getElementById('transContainer').value;
+            const commission = document.getElementById('transCommission').value;
+
+            if(!db.transshipments) db.transshipments = [];
+            const newTrans = {
+                id: 'TRN-' + Math.floor(1000 + Math.random() * 9000),
+                origin: origin,
+                container: container,
+                commission: Number(commission),
+                status: 'Pending Acceptance'
+            };
+            db.transshipments.push(newTrans);
+            await saveCloudData();
+            closeNewTransshipmentModal();
+            document.getElementById('transForm').reset();
+            renderTransshipmentTable();
+            alert('Transshipment order successfully posted to Hub!');
         }
 
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function renderTransshipmentTable() {
+            const tbody = document.getElementById('transshipmentTableBody');
+            if(!tbody) return;
+            const trans = db.transshipments || [];
+            tbody.innerHTML = trans.length ? trans.map((t, i) => `
+                <tr class="border-b">
+                    <td class="p-3 font-bold">${t.id}</td>
+                    <td class="p-3">${t.origin}</td>
+                    <td class="p-3 font-mono">${t.container}</td>
+                    <td class="p-3 font-bold text-emerald-400">₱${Number(t.commission).toLocaleString()}</td>
+                    <td class="p-3"><span class="pill ${t.status.includes('Accepted') ? 'Available' : 'Hold'}">${t.status}</span></td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="acceptTransshipment(${i})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold text-[11px]">Accept</button>
+                        <button onclick="rejectTransshipment(${i})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded font-bold text-[11px]">Reject</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No transshipment orders posted yet.</td></tr>';
+        }
+
+        async function acceptTransshipment(idx) {
+            if(db.transshipments && db.transshipments[idx]) {
+                db.transshipments[idx].status = 'Hub Accepted';
+                await saveCloudData();
+                renderTransshipmentTable();
+                alert(`Order ${db.transshipments[idx].id} accepted! Commission synchronized with fleet dispatch.`);
+            }
+        }
+
+        async function rejectTransshipment(idx) {
+            if(db.transshipments && db.transshipments[idx]) {
+                db.transshipments[idx].status = 'Hub Rejected';
+                await saveCloudData();
+                renderTransshipmentTable();
+            }
+        }
+
+        async function deleteContainerRecord(idx) {
+            if(confirm('Are you sure you want to delete this container record?')) {
+                if(yardDb.containers) {
+                    yardDb.containers.splice(idx, 1);
+                    await saveCloudData();
+                    refreshYard();
+                }
+            }
         }
 
         function backupUnifiedEnterpriseData() {
-            const unifiedData = { managementBackend: db, emptyYard: yardDb, backupDate: new Date().toISOString() };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unifiedData, null, 2));
-            const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", `Skymover_Unified_Enterprise_Backup_${new Date().toISOString().substring(0,10)}.json`);
-            document.body.appendChild(dlAnchor);
-            dlAnchor.click();
-            dlAnchor.remove();
+            const unified = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unified, null, 2));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `Skymover_Unified_Enterprise_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(dl);
+            dl.click();
+            dl.remove();
         }
 
-        async function restoreUnifiedEnterpriseData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function restoreUnifiedEnterpriseData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = async function(event) {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.managementBackend) db = parsed.managementBackend;
-                    if (parsed.emptyYard) yardDb = parsed.emptyYard;
-                    await saveCloudData();
-                    alert('✅ Unified Enterprise Database successfully restored from JSON backup!');
-                    location.reload();
+                    const parsed = JSON.parse(event.target.result);
+                    if(parsed.managementBackend && parsed.emptyYard) {
+                        db = parsed.managementBackend;
+                        yardDb = parsed.emptyYard;
+                        await saveCloudData();
+                        alert('Unified enterprise backup successfully restored and synced!');
+                        location.reload();
+                    } else {
+                        alert('Invalid backup file format.');
+                    }
                 } catch(err) {
-                    alert('❌ Error parsing backup JSON file: ' + err.message);
+                    alert('Error parsing JSON backup file.');
                 }
             };
             reader.readAsText(file);
-        }
-
-        function downloadMonthlyStatementPDF() {
-            const monthVal = document.getElementById('statementMonthSelect')?.value;
-            if(!monthVal) {
-                alert('Please select a month to download statement.');
-                return;
-            }
-            generateModulePDFReport('Revenue & Billings (' + monthVal + ')');
-        }
-
-        function exportChartAsImage() {
-            const canvas = document.getElementById('monthlyTrendChart');
-            if(!canvas) return;
-            const link = document.createElement('a');
-            link.download = 'Skymover_Financial_Trend_Chart.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        function openExtractionReport() {
-            openSubModule('Dashboard');
         }
     </script>
 </body>
