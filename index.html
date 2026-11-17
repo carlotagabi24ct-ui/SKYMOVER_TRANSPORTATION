@@ -1660,23 +1660,23 @@
                     else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
+                    // Use local base64 data for instant rendering
+                    const imgSrc = base64Data; 
+                    
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 flex items-center justify-center';
                     
                     if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
-                        const img = document.createElement('img');
-                        img.className = 'w-full h-full object-cover';
-                        img.src = finalUrl;
-                        img.onerror = function() {
-                            this.remove();
-                            thumb.innerHTML = `<span class='text-[9px] text-slate-400 font-bold p-1 text-center'>${optimizedFile.name.substring(0, 10)}</span>`;
-                        };
-                        thumb.appendChild(img);
+                        thumb.innerHTML = `<img src="${imgSrc}" class="w-full h-full object-cover">`;
                     } else {
                         thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-300 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
                     previewContainer.appendChild(thumb);
-                };
+                    
+                    // Upload to Supabase storage in the background silently
+                    uploadCompressedPhotosToSupabaseStorage(tempFileObj, folder).then(storageUrl => {
+                        if (storageUrl) fileObj.dataUrl = storageUrl;
+                    });
                 reader.readAsDataURL(optimizedFile);
             }
         }
