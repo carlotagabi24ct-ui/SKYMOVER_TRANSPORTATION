@@ -1089,7 +1089,7 @@
                 switchView('yard');
             } else if (role === 'accounting_reports') {
                 if(cardBackend) cardBackend.style.display = 'none';
-                if(cardDriver) cardDriver.style.display = 'none';
+                if(cardDriver) cardBackend.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
                 if(auditLogBtn) auditLogBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
@@ -1649,10 +1649,7 @@
                     else if(type === 'driverReg' || type === 'driverProof') folder = 'drivers';
                     else if(type === 'backendEntry') folder = 'backend';
 
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, folder);
-                    const finalUrl = storageUrl || base64Data; 
-        
-                    const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: finalUrl, date: new Date().toISOString() };
+                    const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: base64Data, date: new Date().toISOString() };
         
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
                     else if(type === 'gateOut') stagedGateOutPhotos.push(fileObj);
@@ -1660,23 +1657,22 @@
                     else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
-                    // Use local base64 data for instant rendering
-                    const imgSrc = base64Data; 
-                    
+                    // Instant preview using local data URI
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 flex items-center justify-center';
                     
                     if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = `<img src="${imgSrc}" class="w-full h-full object-cover">`;
+                        thumb.innerHTML = `<img src="${base64Data}" class="w-full h-full object-cover">`;
                     } else {
                         thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-300 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
                     previewContainer.appendChild(thumb);
                     
-                    // Upload to Supabase storage in the background silently
+                    // Background upload to Supabase storage
                     uploadCompressedPhotosToSupabaseStorage(tempFileObj, folder).then(storageUrl => {
                         if (storageUrl) fileObj.dataUrl = storageUrl;
                     });
+                };
                 reader.readAsDataURL(optimizedFile);
             }
         }
