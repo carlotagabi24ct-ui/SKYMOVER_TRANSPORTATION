@@ -1664,7 +1664,14 @@
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 flex items-center justify-center';
                     
                     if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = `<img src="${finalUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-[9px] text-slate-400 font-bold p-1 text-center\'>${optimizedFile.name.substring(0, 10)}</span>';">`;
+                        const img = document.createElement('img');
+                        img.className = 'w-full h-full object-cover';
+                        img.src = finalUrl;
+                        img.onerror = function() {
+                            this.remove();
+                            thumb.innerHTML = `<span class='text-[9px] text-slate-400 font-bold p-1 text-center'>${optimizedFile.name.substring(0, 10)}</span>`;
+                        };
+                        thumb.appendChild(img);
                     } else {
                         thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-300 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
