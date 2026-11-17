@@ -1293,6 +1293,28 @@
                 const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
                 if(pwd !== 'Skymover_Transportation_2026') return;
         
+                // 🛡️ Automatic Safety Backup: Generate and download a JSON snapshot before wiping
+                try {
+                    const backupPayload = {
+                        timestamp: new Date().toISOString(),
+                        systemName: "SKYMOVER_TRANSPORTATION",
+                        managementBackend: db,
+                        yardDatabase: yardDb
+                    };
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `Skymover_Emergency_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                } catch (backupErr) {
+                    console.error("Automated backup generation failed:", backupErr);
+                    if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with the database reset?")) {
+                        return;
+                    }
+                }
+        
                 // Preserve only users tagged with the 'admin' role, wiping all non-admin accounts, data, and attachments
                 const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
         
@@ -1340,9 +1362,9 @@
                 if (currentBackendModuleType === 'Dashboard') {
                     openSubModule('Dashboard');
                 }
-                alert('🔄 Database successfully reset! All operational records, logs, and attachments have been cleared, while admin user accounts remain fully intact and synced.');
+                alert('🔄 Database successfully reset! A safety backup snapshot has been downloaded to your machine, admin accounts are preserved, and all operational logs have been cleared.');
             }
-
+        
         function openGeofenceSmsModal() {
             const modal = document.getElementById('geofenceSmsConfigModal');
             if(modal) modal.classList.remove('hidden');
