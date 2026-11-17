@@ -1874,11 +1874,31 @@
                 if(el) el.classList.add('hidden');
             });
 
-            if (viewName === 'landing') document.getElementById('viewLanding').classList.remove('hidden');
-            else if (viewName === 'backend') { document.getElementById('viewBackend').classList.remove('hidden'); }
-            else if (viewName === 'driver') { document.getElementById('viewDriver').classList.remove('hidden'); refreshDriverPortal(); }
-            else if (viewName === 'hub') { document.getElementById('viewHub').classList.remove('hidden'); renderTransshipmentTable(); }
-            else if (viewName === 'yard') { document.getElementById('viewYard').classList.remove('hidden'); }
+            if (viewName === 'landing') {
+                document.getElementById('viewLanding').classList.remove('hidden');
+            } else if (viewName === 'backend') { 
+                document.getElementById('viewBackend').classList.remove('hidden');
+                // Restore last viewed AI tab in Management Backend (defaults to 'brain' only if none saved)
+                const savedAiTab = sessionStorage.getItem('skymover_active_ai_tab') || 'brain';
+                switchAiTab(savedAiTab);
+            } else if (viewName === 'driver') { 
+                document.getElementById('viewDriver').classList.remove('hidden'); 
+                refreshDriverPortal(); 
+            } else if (viewName === 'hub') { 
+                document.getElementById('viewHub').classList.remove('hidden'); 
+                renderTransshipmentTable(); 
+            } else if (viewName === 'yard') { 
+                document.getElementById('viewYard').classList.remove('hidden'); 
+            }
+        }
+
+        function restoreLastActiveViewOrLanding() {
+            const lastView = sessionStorage.getItem('skymover_active_view');
+            if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
+                switchView(lastView);
+            } else {
+                switchView('landing');
+            }
         }
 
         function openBackendModule(mod) {
@@ -2140,7 +2160,7 @@
             }
         }
 
-        function switchAiTab(tab) {
+function switchAiTab(tab) {
             sessionStorage.setItem('skymover_active_ai_tab', tab);
             ['tabBrainBtn', 'tabLensBtn', 'tabTrackBtn'].forEach(id => {
                 const b = document.getElementById(id);
@@ -2150,7 +2170,8 @@
             if(!container) return;
 
             if(tab === 'brain') {
-                document.getElementById('tabBrainBtn').className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
+                const btn = document.getElementById('tabBrainBtn');
+                if(btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
                 container.innerHTML = `
                     <div class="flex flex-col lg:flex-row gap-8 items-center">
                         <div class="w-full lg:w-1/2">
@@ -2164,7 +2185,8 @@
                     </div>
                 `;
             } else if(tab === 'lens') {
-                document.getElementById('tabLensBtn').className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
+                const btn = document.getElementById('tabLensBtn');
+                if(btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
                 container.innerHTML = `
                     <div>
                         <h3 class="text-xl font-bold text-blue-400 mb-2 flex items-center"><i class="fa-solid fa-magnifying-glass-chart mr-2"></i> LogiLENS Deep Visual Inspector</h3>
@@ -2178,7 +2200,8 @@
                     </div>
                 `;
             } else if(tab === 'track') {
-                document.getElementById('tabTrackBtn').className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
+                const btn = document.getElementById('tabTrackBtn');
+                if(btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
                 const activeUnitsCount = (db.vehicles && db.vehicles.length > 0) ? db.vehicles.length : 0;
                 container.innerHTML = `
                     <div class="space-y-4">
