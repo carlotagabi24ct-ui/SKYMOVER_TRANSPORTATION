@@ -1867,10 +1867,10 @@
             });
 
             if (viewName === 'landing') document.getElementById('viewLanding').classList.remove('hidden');
-            else if (viewName === 'backend') { document.getElementById('viewBackend').classList.remove('hidden'); switchAiTab('brain'); }
+            else if (viewName === 'backend') { document.getElementById('viewBackend').classList.remove('hidden'); }
             else if (viewName === 'driver') { document.getElementById('viewDriver').classList.remove('hidden'); refreshDriverPortal(); }
             else if (viewName === 'hub') { document.getElementById('viewHub').classList.remove('hidden'); renderTransshipmentTable(); }
-            else if (viewName === 'yard') { document.getElementById('viewYard').classList.remove('hidden'); switchYardTab('yardDashboard'); }
+            else if (viewName === 'yard') { document.getElementById('viewYard').classList.remove('hidden'); }
         }
 
         function openBackendModule(mod) {
@@ -1884,7 +1884,7 @@
 
         function openDriverPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('driver'); }
         function openHubPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('hub'); }
-        function openYardPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('yard'); switchYardTab('yardDashboard'); }
+        function openYardPortal() { if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; } switchView('yard'); }
 
         function refreshDriverPortal() {
             const infoContainer = document.getElementById('driverActiveTripInfo');
@@ -1968,7 +1968,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="exportAuditLogsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Export CSV</button>
-                        <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                        <button onclick="loadAuditLogsModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3 shadow-inner">
@@ -2133,6 +2133,7 @@
         }
 
         function switchAiTab(tab) {
+            sessionStorage.setItem('skymover_active_ai_tab', tab);
             ['tabBrainBtn', 'tabLensBtn', 'tabTrackBtn'].forEach(id => {
                 const b = document.getElementById(id);
                 if(b) b.className = "px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition";
@@ -2618,6 +2619,7 @@
         }
 
         function switchYardTab(tabId) {
+            sessionStorage.setItem('skymover_active_yard_tab', tabId);
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(tabId);
             if(target) target.classList.remove('hidden');
@@ -3054,6 +3056,20 @@
             });
             initSupabase();
             refreshYard();
+
+            // Restore last active AI tab if present
+            const lastAiTab = sessionStorage.getItem('skymover_active_ai_tab');
+            if(lastAiTab) {
+                switchAiTab(lastAiTab);
+            } else {
+                switchAiTab('brain');
+            }
+
+            // Restore last active Yard tab if present
+            const lastYardTab = sessionStorage.getItem('skymover_active_yard_tab');
+            if(lastYardTab) {
+                switchYardTab(lastYardTab);
+            }
         });
     </script>
 
