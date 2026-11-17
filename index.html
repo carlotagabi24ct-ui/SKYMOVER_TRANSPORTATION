@@ -1226,9 +1226,9 @@
                         renderTransshipmentTable();
                     }
                 });
-                channel.subscribe((status) => {
-                    if (status === 'CHANNEL_ERROR' || status === 'TIMEDOUT') {
-                        console.warn('Realtime websocket subscription notice: falling back to polling mode.');
+                channel.subscribe((status, err) => {
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMEDOUT' || (err && err.message && err.message.includes('SecurityError'))) {
+                        console.warn('Realtime websocket notice: running in restricted Canvas mode, falling back to HTTP data fetch sync.');
                     }
                 });
             } catch(err) {
