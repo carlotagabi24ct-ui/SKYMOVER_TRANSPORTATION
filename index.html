@@ -1286,59 +1286,62 @@
         }
 
         async function confirmResetAllDatabases() {
-            if(currentUserRole !== 'admin') {
-                alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
-                return;
-            }
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
-            if(pwd !== 'Skymover_Transportation_2026') return;
-
-            db = { 
-                vehicles: [], 
-                drivers: [], 
-                fuelLogs: [], 
-                maintenanceLogs: [], 
-                dispatchLogs: [], 
-                expenseLogs: [], 
-                transshipments: [], 
-                uploads: [], 
-                smsLogs: [], 
-                geofenceAlerts: [], 
-                geofenceZones: [], 
-                systemUsers: [] 
-            };
-
-            yardDb = { 
-                containers: [], 
-                movements: [], 
-                revenues: [], 
-                expenses: [] 
-            };
-
-            saveDB();
-            localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
-
-            if(supabaseClient) {
-                try {
-                    await supabaseClient.from('skymover_enterprise_db').upsert({
-                        id: 1,
-                        payload: { managementBackend: db, emptyYard: yardDb },
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
-                } catch(e) {
-                    console.error("Cloud DB reset sync error:", e);
+                if(currentUserRole !== 'admin') {
+                    alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
+                    return;
                 }
+                const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
+                if(pwd !== 'Skymover_Transportation_2026') return;
+        
+                // Preserve only users tagged with the 'admin' role, wiping all non-admin accounts, data, and attachments
+                const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
+        
+                db = { 
+                    vehicles: [], 
+                    drivers: [], 
+                    fuelLogs: [], 
+                    maintenanceLogs: [], 
+                    dispatchLogs: [], 
+                    expenseLogs: [], 
+                    transshipments: [], 
+                    uploads: [], 
+                    smsLogs: [], 
+                    geofenceAlerts: [], 
+                    geofenceZones: [], 
+                    systemUsers: preservedAdmins 
+                };
+        
+                yardDb = { 
+                    containers: [], 
+                    movements: [], 
+                    revenues: [], 
+                    expenses: [] 
+                };
+        
+                saveDB();
+                localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
+        
+                if(supabaseClient) {
+                    try {
+                        await supabaseClient.from('skymover_enterprise_db').upsert({
+                            id: 1,
+                            payload: { managementBackend: db, emptyYard: yardDb },
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'id' });
+                    } catch(e) {
+                        console.error("Cloud DB reset sync error:", e);
+                    }
+                }
+        
+                refreshYard();
+                renderTransshipmentTable();
+                closeSubModule();
+        
+                if (currentBackendModuleType === 'Dashboard') {
+                    openSubModule('Dashboard');
+                }
+                alert('🔄 Database successfully reset! All operational records, logs, and attachments have been cleared, while admin user accounts remain fully intact and synced.');
             }
-
-            refreshYard();
-            renderTransshipmentTable();
-            closeSubModule();
-
-            if (currentBackendModuleType === 'Dashboard') {
-                openSubModule('Dashboard');
-            }
-            alert('🔄 Database successfully reset! All initial seed records, container arrays, and logs have been fully cleared and synced.');
-        }
 
         function openGeofenceSmsModal() {
             const modal = document.getElementById('geofenceSmsConfigModal');
