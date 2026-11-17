@@ -3073,10 +3073,12 @@
             alert('✅ Container Gate-In recorded successfully!');
             switchYardTab('yardInventory');
         
-        function refreshYard() {
-            renderYardDashboard();
-            renderYardInventory();
-        
+            function refreshYard() {
+                // Safely refresh all active yard dashboard and inventory components
+                if (typeof renderYardDashboard === 'function') renderYardDashboard();
+                if (typeof renderYardInventory === 'function') renderYardInventory();
+                if (typeof renderYardRevenue === 'function') renderYardRevenue();
+            }        
         }
     </script>
 </body>
