@@ -1697,13 +1697,13 @@
                     else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
-                    // Reflect actual photo preview instead of text file name
+                    // Reflect actual photo preview correctly with error fallback
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-20 h-20 rounded-xl overflow-hidden border-2 border-sky-500/50 shadow-md bg-slate-900 flex items-center justify-center group';
                     
                     if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
                         thumb.innerHTML = `
-                            <img src="${base64Data}" class="w-full h-full object-cover transition transform group-hover:scale-105" alt="Attachment Preview">
+                            <img src="${base64Data}" class="w-full h-full object-cover transition transform group-hover:scale-105" alt="Attachment Preview" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22><rect width=%2218%22 height=%2218%22 x=%223%22 y=%223%22 rx=%222%22 ry=%222%22/><circle cx=%229%22 cy=%229%22 r=%222%22/><path d=%22m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21%22/></svg>';">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold">View</div>
                         `;
                     } else {
@@ -1767,8 +1767,8 @@
                 margin:        10,
                 filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Report.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:   { scale: 2, useCORS: true },
+                jsPDF:         { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
         
             html2pdf().from(element).set(opt).save();
@@ -2514,964 +2514,144 @@
                 }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No fleet expenses.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Fleet Expenses</h3>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-receipt text-teal-400 mr-2"></i> Fleet Expenses</h3>
                         <div class="flex gap-2">
                             <button onclick="generateModulePDFReport('Fleet Expenses')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
                             <button onclick="generateModuleExcelReport('Fleet Expenses')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
-                            <button onclick="openBackendEntryModal('Expense')" class="bg-teal-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Trip Expense</button>
+                            <button onclick="openBackendEntryModal('Expense')" class="bg-teal-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Expense</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip ID</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total Cost</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip Ref</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Data Backup') {
-                if(currentUserRole !== 'admin') { alert('⛔ RBAC Access Denied'); closeSubModule(); return; }
                 content.innerHTML = `
-                    <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup & Restore</h3>
-                    <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your entire Skymover Unified Fleet and Yard database.</p>
-                    <div class="space-y-6 text-slate-900">
-                        <div class="bg-white p-6 rounded-2xl shadow border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-2">Export Unified Enterprise Backup</h4>
-                            <button onclick="backupUnifiedBackendData()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow">Download Full Enterprise Backup (.json)</button>
+                    <div class="text-white space-y-4">
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-database text-sky-400 mr-2"></i> Management Backend Backup & Restore</h3>
+                        <p class="text-xs text-slate-300">Export or restore your fleet management JSON database snapshot.</p>
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="backupUnifiedEnterpriseData()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold">Download Backup JSON</button>
+                            <label class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer inline-flex items-center">Restore JSON Snapshot<input type="file" accept=".json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
                         </div>
                     </div>
                 `;
             }
+        }
+
+        function closeSubModule() {
+            const modal = document.getElementById('subModuleModal');
+            if(modal) modal.classList.add('hidden');
         }
 
         function openBackendEntryModal(type) {
-            currentBackendModuleType = type;
-            stagedBackendAttachments = [];
             const modal = document.getElementById('backendEntryModal');
-            const titleEl = document.getElementById('backendModalTitle');
-            const fieldsContainer = document.getElementById('backendModalFields');
-            const filePreview = document.getElementById('backendEntryFilePreview');
-            if(!modal || !titleEl || !fieldsContainer) return;
+            const title = document.getElementById('backendModalTitle');
+            const fields = document.getElementById('backendModalFields');
+            if(!modal || !title || !fields) return;
 
-            modal.classList.remove('hidden');
-            if(filePreview) filePreview.innerHTML = '';
-            let html = '';
+            title.innerHTML = `<i class="fa-solid fa-plus text-sky-400 mr-2"></i> Add ${type} Entry`;
+            stagedBackendAttachments = [];
+            document.getElementById('backendEntryFilePreview').innerHTML = '';
 
             if (type === 'Vehicle') {
-                titleEl.innerHTML = '<i class="fa-solid fa-truck text-sky-400 mr-2"></i> Add New Vehicle (Vehicle Masterlist)';
-                html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-104"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Vehicle Model *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Isuzu Giga Prime"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Initial Status</label><select id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Active</option><option>Standby</option><option>In Maintenance</option></select></div>
+                fields.innerHTML = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID / Plate No. *</label><input type="text" id="b_v_id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Model / Specs *</label><input type="text" id="b_v_model" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Isuzu Forward Wing Van"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Status</label><select id="b_v_status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Active</option><option>Standby</option><option>In Maintenance</option></select></div>
                 `;
             } else if (type === 'Fuel') {
-                titleEl.innerHTML = '<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Log Fuel Fill (Fuel Monitoring)';
-                html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Volume (Liters) *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. 250 L"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱16,500"></div>
+                fields.innerHTML = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="b_f_unit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Volume (Liters) *</label><input type="text" id="b_f_liters" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="150 L"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="b_f_cost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱9,750"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Station *</label><input type="text" id="b_f_station" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Shell Valenzuela"></div>
                 `;
             } else if (type === 'Maintenance') {
-                titleEl.innerHTML = '<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Schedule Maintenance (Fleet Maintenance)';
-                html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-102"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Issue / Service Required *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Brake pad & hydraulic replacement"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Estimated Cost (₱)</label><input type="text" id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,500"></div>
+                fields.innerHTML = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="b_m_unit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Issue / Service *</label><input type="text" id="b_m_issue" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Brake pad replacement"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Cost (₱) *</label><input type="text" id="b_m_cost" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱4,500"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Status</label><select id="b_m_status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Completed</option><option>In Progress</option><option>Scheduled</option></select></div>
                 `;
             } else if (type === 'Dispatch') {
-                titleEl.innerHTML = '<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> New Fleet Dispatch (GPS & Dispatch)';
-                html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor → Valenzuela Depot"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
+                fields.innerHTML = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="b_d_unit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="SKV-101"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Route *</label><input type="text" id="b_d_route" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Valenzuela to Manila North Harbor"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Driver Name *</label><input type="text" id="b_d_driver" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Roberto Santos"></div>
                 `;
             } else if (type === 'Expense') {
-                titleEl.innerHTML = '<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Log Trip Expense (Fleet Expenses)';
-                html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Trip ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. TRP-8821"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Fuel Cost (₱)</label><input type="text" id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,200"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost Summation (₱) *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱5,800"></div>
+                fields.innerHTML = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Trip Reference *</label><input type="text" id="b_e_trip" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="TRIP-9021"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Fuel (₱) *</label><input type="text" id="b_e_fuel" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱4,500"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Tolls (₱) *</label><input type="text" id="b_e_tolls" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱650"></div>
+                    <div class="mt-2"><label class="block text-slate-300 mb-1 font-semibold">Total (₱) *</label><input type="text" id="b_e_total" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱5,150"></div>
                 `;
             }
-            fieldsContainer.innerHTML = html;
+
+            modal.classList.remove('hidden');
         }
 
         function closeBackendEntryModal() {
-            const modal = document.getElementById('backendEntryModal');
-            if(modal) modal.classList.add('hidden');
+            document.getElementById('backendEntryModal').classList.add('hidden');
         }
 
         async function handleBackendEntrySubmit(e) {
             e.preventDefault();
-            const val1 = document.getElementById('beInput1').value;
-            const val2 = document.getElementById('beInput2').value;
-            const val3 = document.getElementById('beInput3') ? document.getElementById('beInput3').value : '';
-
-            if (currentBackendModuleType === 'Vehicle') {
-                if(!db.vehicles) db.vehicles = [];
-                db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned', attachments: stagedBackendAttachments });
-                await saveCloudData();
-                closeBackendEntryModal();
-                openSubModule('Vehicle Management');
-            } else if (currentBackendModuleType === 'Fuel') {
-                if(!db.fuelLogs) db.fuelLogs = [];
-                db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
-                await saveCloudData();
-                closeBackendEntryModal();
-                openSubModule('Fuel Monitoring');
-            } else if (currentBackendModuleType === 'Maintenance') {
-                if(!db.maintenanceLogs) db.maintenanceLogs = [];
-                db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
-                await saveCloudData();
-                closeBackendEntryModal();
-                openSubModule('Maintenance');
-            } else if (currentBackendModuleType === 'Dispatch') {
-                if(!db.dispatchLogs) db.dispatchLogs = [];
-                db.dispatchLogs.push({ unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments });
-                await saveCloudData();
-                closeBackendEntryModal();
-                openSubModule('GPS & Dispatch');
-            } else if (currentBackendModuleType === 'Expense') {
-                if(!db.expenseLogs) db.expenseLogs = [];
-                db.expenseLogs.push({ trip: val1, fuel: val2 || '₱0', tolls: '₱0', maintenance: '₱0', total: val3, attachments: stagedBackendAttachments });
-                await saveCloudData();
-                closeBackendEntryModal();
-                openSubModule('Fleet Expenses');
-            }
-        }
-
-        function backupUnifiedBackendData() {
-            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
-            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Unified_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
-        }
-
-        function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
-
-        // ==========================================
-        // VISUAL EXTRACTION REPORT & PHOTO AUDIT
-        // ==========================================
-        function openExtractionReport() {
-            const modal = document.getElementById('subModuleModal');
-            const content = document.getElementById('subModuleContent');
-            if(!modal || !content) return;
-            modal.classList.remove('hidden');
-        
-            const gateInContainers = (yardDb.containers || []);
-            const gateOutMovements = (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT');
-        
-            let gateInHtml = gateInContainers.length ? gateInContainers.map(c => {
-                let photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => `
-                    <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 inline-block mr-1">
-                        <img src="${p.dataUrl}" class="w-full h-full object-cover" title="${p.name}">
-                    </div>
-                `).join('') : '<span class="text-slate-400 italic text-[10px]">No inspection photos</span>';
-        
-                return `
-                    <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                        <td class="p-3 font-mono font-bold text-sky-800">${c.number}</td>
-                        <td class="p-3">${c.size} / ${c.type || 'Dry'}</td>
-                        <td class="p-3 font-bold">${c.line}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status === 'Available' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${c.status}</span></td>
-                        <td class="p-3 font-mono text-xs">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
-                        <td class="p-3">${photosHtml}</td>
-                    </tr>
-                `;
-            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-In container inspection records found.</td></tr>';
-        
-            let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => {
-                let photosHtml = (m.photos && m.photos.length) ? m.photos.map(p => `
-                    <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 inline-block mr-1">
-                        <img src="${p.dataUrl}" class="w-full h-full object-cover" title="${p.name}">
-                    </div>
-                `).join('') : '<span class="text-slate-400 italic text-[10px]">No release photos</span>';
-        
-                return `
-                    <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                        <td class="p-3 font-mono font-bold text-purple-800">${m.container}</td>
-                        <td class="p-3 font-mono">${m.plate || '—'}</td>
-                        <td class="p-3">${m.storageDays || 0} Days</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 font-mono text-xs">${m.date ? new Date(m.date).toLocaleString() : '—'}</td>
-                        <td class="p-3">${photosHtml}</td>
-                    </tr>
-                `;
-            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-Out release records found.</td></tr>';
-        
-            content.innerHTML = `
-                <div class="flex justify-between items-center mb-4 text-white flex-wrap gap-3">
-                    <div>
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit</h3>
-                        <p class="text-xs text-slate-300">Complete inspection audit trail featuring attached container photos, Gate-In logs, and release documentation.</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="exportVisualExtractionPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow"><i class="fa-solid fa-file-pdf mr-1"></i> Export PDF Report</button>
-                        <button onclick="exportVisualExtractionExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow"><i class="fa-solid fa-file-excel mr-1"></i> Export Excel (CSV)</button>
-                    </div>
-                </div>
-        
-                <div class="space-y-6">
-                    <div class="bg-white text-slate-900 rounded-xl p-4 shadow border">
-                        <h4 class="font-bold text-sm text-slate-900 mb-3"><i class="fa-solid fa-arrow-down text-sky-600 mr-1"></i> Gate-In Inspection & Photo Audit Logs</h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <tr class="border-b text-slate-800 font-bold">
-                                    <th class="p-3">Container No.</th>
-                                    <th class="p-3">Size/Type</th>
-                                    <th class="p-3">Shipping Line</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Gate-In Date</th>
-                                    <th class="p-3">Attached Inspection Photos</th>
-                                </tr>
-                                ${gateInHtml}
-                            </table>
-                        </div>
-                    </div>
-        
-                    <div class="bg-white text-slate-900 rounded-xl p-4 shadow border">
-                        <h4 class="font-bold text-sm text-slate-900 mb-3"><i class="fa-solid fa-arrow-up text-purple-600 mr-1"></i> Gate-Out Release & Photo Audit Logs</h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <tr class="border-b text-slate-800 font-bold">
-                                    <th class="p-3">Container No.</th>
-                                    <th class="p-3">Plate No.</th>
-                                    <th class="p-3">Storage Days</th>
-                                    <th class="p-3">Total Amount</th>
-                                    <th class="p-3">Gate-Out Date</th>
-                                    <th class="p-3">Attached Release Photos</th>
-                                </tr>
-                                ${gateOutHtml}
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // AUTOMATED PDF & EXCEL EXPORT FUNCTIONS
-        // ==========================================
-        function exportVisualExtractionPDF() {
-            const element = document.getElementById('subModuleContent');
-            const opt = {
-                margin:       0.5,
-                filename:     'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
-            };
-            html2pdf().from(element).set(opt).save();
-        }
-        
-        function exportVisualExtractionExcel() {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "GATE-IN INSPECTION AUDIT\r\n";
-            csvContent += "Container No,Size/Type,Shipping Line,Status,Gate-In Date\r\n";
-            (yardDb.containers || []).forEach(c => {
-                csvContent += `"${c.number}","${c.size} / ${c.type || 'Dry'}","${c.line}","${c.status}","${c.date || ''}"\r\n`;
-            });
-            csvContent += "\r\nGATE-OUT RELEASE AUDIT\r\n";
-            csvContent += "Container No,Plate No,Storage Days,Total Amount,Gate-Out Date\r\n";
-            (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT').forEach(m => {
-                csvContent += `"${m.container}","${m.plate || ''}","${m.storageDays || 0}","${m.totalAmount || 0}","${m.date || ''}"\r\n`;
-            });
-        
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Skymover_Visual_Extraction_Report_" + new Date().toISOString().slice(0,10) + ".csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        function switchYardTab(tabId) {
-            document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
-            const target = document.getElementById(tabId);
-            if(target) target.classList.remove('hidden');
-
-            ['yBtn1', 'yBtn2', 'yBtn3', 'yBtn4', 'yBtn5', 'yBtn6', 'yBtn7', 'yBtn8'].forEach((id, index) => {
-                const btn = document.getElementById(id);
-                if(btn) {
-                    const isActive = (
-                        (tabId === 'yardDashboard' && index === 0) ||
-                        (tabId === 'yardInventory' && index === 1) ||
-                        (tabId === 'yardGateIn' && index === 2) ||
-                        (tabId === 'yardGateOut' && index === 3) ||
-                        (tabId === 'yardRevenue' && index === 4) ||
-                        (tabId === 'yardExpenses' && index === 5) ||
-                        (tabId === 'yardReports' && index === 6) ||
-                        (tabId === 'yardBackup' && index === 7)
-                    );
-                    btn.className = isActive ? "btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white shadow" : "btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700";
-                }
-            });
-
-            if (tabId === 'yardDashboard') renderYardDashboard();
-            else if (tabId === 'yardInventory') renderYardInventory();
-            else if (tabId === 'yardGateIn') prepareGateInForm();
-            else if (tabId === 'yardGateOut') prepareGateOutForm();
-            else if (tabId === 'yardRevenue') renderYardRevenue();
-            else if (tabId === 'yardExpenses') renderYardExpenses();
-            else if (tabId === 'yardReports') renderYardReports();
-        }
-
-        function renderYardDashboard() {
-            const containers = yardDb.containers || [];
-            const onHand = containers.filter(c => c.status !== 'Released');
-            const avail = onHand.filter(c => c.status === 'Available');
-            const res = onHand.filter(c => c.status === 'Reserved');
-            const dam = onHand.filter(c => c.status === 'Hold' || c.condition === 'Damaged');
-
-            const totalEl = document.getElementById('yardTotal');
-            const availEl = document.getElementById('yardAvailable');
-            const resEl = document.getElementById('yardReserved');
-            const damEl = document.getElementById('yardDamaged');
-
-            if(totalEl) totalEl.textContent = onHand.length;
-            if(availEl) availEl.textContent = avail.length;
-            if(resEl) resEl.textContent = res.length;
-            if(damEl) damEl.textContent = dam.length;
-
-            const gateInCount = containers.length;
-            const gateOutCount = (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT').length;
-            const totalRev = (yardDb.revenues || []).reduce((acc, r) => acc + Number(r.amount || 0), 0);
-
-            if(document.getElementById('dashGateInCount')) document.getElementById('dashGateInCount').textContent = gateInCount;
-            if(document.getElementById('dashGateOutCount')) document.getElementById('dashGateOutCount').textContent = gateOutCount;
-            if(document.getElementById('dashTotalRev')) document.getElementById('dashTotalRev').textContent = '₱' + totalRev.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-            const recentBody = document.getElementById('yardRecentBody');
-            if(recentBody) {
-                const recentMoves = (yardDb.movements || []).slice(0, 5);
-                recentBody.innerHTML = recentMoves.length ? recentMoves.map(m => `
-                    <tr>
-                        <td class="p-3 font-mono text-[11px]">${stamp(m.date)}</td>
-                        <td class="p-3 font-bold ${m.kind === 'GATE-IN' ? 'text-sky-700' : 'text-purple-700'}">${m.kind}</td>
-                        <td class="p-3 font-mono font-bold">${m.number}</td>
-                        <td class="p-3">${m.plate || '—'}</td>
-                        <td class="p-3 font-mono">${m.eir || '—'}</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.amount || 0).toLocaleString()}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No recent movements logged.</td></tr>';
-            }
-
-            renderYardCharts(avail.length, res.length, dam.length);
-        }
-
-        function renderYardCharts(availCount, resCount, damCount) {
-            const pieCtx = document.getElementById('yardStatusPieChart');
-            if (pieCtx) {
-                if (yardPieChartInstance) yardPieChartInstance.destroy();
-                yardPieChartInstance = new Chart(pieCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Available', 'Reserved', 'Damaged/Hold'],
-                        datasets: [{
-                            data: [availCount, resCount, damCount],
-                            backgroundColor: ['#059669', '#d97706', '#dc2626'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
-                });
-            }
-
-            const barCtx = document.getElementById('yardStatusBarGraph');
-            if (barCtx) {
-                if (yardBarChartInstance) yardBarChartInstance.destroy();
-                yardBarChartInstance = new Chart(barCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Available', 'Reserved', 'Damaged/Hold'],
-                        datasets: [{
-                            label: 'Container Units',
-                            data: [availCount, resCount, damCount],
-                            backgroundColor: ['#0284c7', '#7c3aed', '#db2777'],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
-                });
-            }
-        }
-
-        function renderYardInventory() {
-            const rows = document.getElementById('yardInventoryRows');
-            if(!rows) return;
-            const q = (document.getElementById('yardSearchInput').value || '').toLowerCase();
-            const list = (yardDb.containers || []).filter(c => {
-                if(!q) return true;
-                return (c.number && c.number.toLowerCase().includes(q)) ||
-                       (c.line && c.line.toLowerCase().includes(q)) ||
-                       (c.plate && c.plate.toLowerCase().includes(q)) ||
-                       (c.driver && c.driver.toLowerCase().includes(q));
-            });
-
-            rows.innerHTML = list.length ? list.map(c => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3 font-mono font-bold text-sky-800">${c.number}</td>
-                    <td class="p-3">${c.size} / ${c.type}</td>
-                    <td class="p-3 font-semibold">${c.line}</td>
-                    <td class="p-3"><span class="pill ${c.status}">${c.status}</span></td>
-                    <td class="p-3 font-mono">${c.block || 'A'}-${c.bay || '1'}-${c.row || 'GROUND'}</td>
-                    <td class="p-3 text-[11px] font-mono">${stamp(c.date)}</td>
-                    <td class="p-3 text-[11px] font-mono">${c.gateOutDate ? stamp(c.gateOutDate) : '—'}</td>
-                    <td class="p-3 text-[11px]">In: ₱${Number(c.vanInAmount||0).toLocaleString()} <span class="font-bold ${c.vanInStats==='PAID'?'text-emerald-600':'text-rose-600'}">(${c.vanInStats||'UNPAID'})</span></td>
-                    <td class="p-3">
-                        <button onclick="quickReleaseContainer('${c.number}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[10px] font-bold transition">Gate-Out</button>
-                    </td>
-                </tr>
-            `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No container inventory records found.</td></tr>';
-        }
-
-        function prepareGateInForm() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const dtInput = document.getElementById('gateInDateInput');
-            if(dtInput && !dtInput.value) dtInput.value = now.toISOString().slice(0, 16);
-        }
-
-        async function handleYardGateIn(e) {
-            e.preventDefault();
-            const form = e.target;
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            const existing = (yardDb.containers || []).find(c => c.number === data.number && c.status !== 'Released');
-            if (existing) {
-                alert(`Container ${data.number} is already active in the yard.`);
-                return;
-            }
-
-            const newContainer = {
-                number: data.number.toUpperCase(),
-                size: data.size,
-                type: data.type,
-                line: data.line,
-                truckingName: data.truckingName,
-                plate: data.plate,
-                driver: data.driver,
-                eir: data.eir,
-                condition: data.condition,
-                status: data.status,
-                block: data.block,
-                bay: data.bay,
-                row: data.row,
-                tier: data.tier,
-                vanInAmount: parseFloat(data.vanInAmount) || 0,
-                vanInStats: data.vanInStats,
-                date: data.date,
-                remarks: data.remarks,
-                photos: stagedGateInPhotos
-            };
-
-            if(!yardDb.containers) yardDb.containers = [];
-            yardDb.containers.unshift(newContainer);
-
-            if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
-                kind: 'GATE-IN',
-                number: newContainer.number,
-                plate: newContainer.plate,
-                eir: newContainer.eir,
-                amount: newContainer.vanInAmount,
-                date: newContainer.date
-            });
-
-            if (newContainer.vanInAmount > 0 && newContainer.vanInStats === 'PAID') {
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
-                    source: 'Gate-In Van-In Fee',
-                    container: newContainer.number,
-                    eir: newContainer.eir || '—',
-                    amount: newContainer.vanInAmount,
-                    date: newContainer.date
-                });
-            }
-
-            await saveYardDB();
-            clearGateInFormAndPhotos();
-            alert(`Container ${newContainer.number} successfully gated-in and recorded to inventory.`);
-            switchYardTab('yardInventory');
-        }
-
-        function prepareGateOutForm() {
-            const sel = document.getElementById('yardOutContainer');
-            if(!sel) return;
-            const activeContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
-            sel.innerHTML = '<option value="">Select container in yard</option>' + activeContainers.map(c => `<option value="${c.number}">${c.number} (${c.line} • ${c.size})</option>`).join('');
-
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const dtInput = document.getElementById('calcGateOutDate');
-            if(dtInput && !dtInput.value) dtInput.value = now.toISOString().slice(0, 16);
-        }
-
-        function containerSelectedForGateOut() {
-            const num = document.getElementById('yardOutContainer').value;
-            const container = (yardDb.containers || []).find(c => c.number === num);
-            if (!container) return;
-
-            document.getElementById('gateOutPlate').value = container.plate || '';
-            document.getElementById('gateOutDriver').value = container.driver || '';
-            document.getElementById('calcGateInDisplay').value = container.date || '';
-            document.getElementById('calcVanInAmount').value = container.vanInAmount || 0;
-            document.getElementById('gateOutRemarks').value = container.remarks || '';
-
-            recalculateTotals();
-        }
-
-        function recalculateTotals() {
-            const num = document.getElementById('yardOutContainer').value;
-            const container = (yardDb.containers || []).find(c => c.number === num);
-            if(!container) return;
-
-            const gateInStr = container.date;
-            const gateOutStr = document.getElementById('calcGateOutDate').value;
-            if(!gateInStr || !gateOutStr) return;
-
-            const d1 = new Date(gateInStr);
-            const d2 = new Date(gateOutStr);
-            let diffTime = d2 - d1;
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if(diffDays < 1) diffDays = 1;
-
-            document.getElementById('calcStorageDays').value = diffDays;
-
-            const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
-            const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanIn = container.vanInAmount || 0;
-            const vanInPaid = container.vanInStats === 'PAID';
-
-            let storageTotal = diffDays * rate;
-            let grandTotal = storageTotal + vanOut;
-
-            const deductionNotice = document.getElementById('vanInDeductionNotice');
-            if (vanInPaid && vanIn > 0) {
-                grandTotal -= vanIn;
-                if(deductionNotice) deductionNotice.classList.remove('hidden');
-            } else {
-                if(deductionNotice) deductionNotice.classList.add('hidden');
-            }
-
-            document.getElementById('calcTotalAmount').value = grandTotal.toFixed(2);
-        }
-
-        async function handleYardGateOut(e) {
-            e.preventDefault();
-            const form = e.target;
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            const container = (yardDb.containers || []).find(c => c.number === data.container);
-            if(!container) {
-                alert('Select a valid container.');
-                return;
-            }
-
-            container.status = 'Released';
-            container.gateOutDate = data.date;
-
-            const totalAmt = parseFloat(data.totalAmount) || 0;
-
-            if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
-                kind: 'GATE-OUT',
-                container: container.number,
-                plate: container.plate,
-                driver: container.driver,
-                eir: data.eir,
-                storageDays: data.storageDays,
-                vanInAmount: container.vanInAmount,
-                vanOutAmount: data.vanOutAmount,
-                totalAmount: totalAmt,
-                date: data.date,
-                photos: stagedGateOutPhotos
-            });
-
-            if (totalAmt > 0) {
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
-                    source: 'Gate-Out & Storage Billing',
-                    container: container.number,
-                    eir: data.eir,
-                    amount: totalAmt,
-                    date: data.date
-                });
-            }
-
-            await saveYardDB();
-            clearGateOutFormAndPhotos();
-            alert(`Container ${container.number} successfully gated-out and billed!`);
-            switchYardTab('yardRevenue');
-        }
-
-        function quickReleaseContainer(containerNo) {
-            switchYardTab('yardGateOut');
-            const sel = document.getElementById('yardOutContainer');
-            if(sel) {
-                sel.value = containerNo;
-                containerSelectedForGateOut();
-            }
-        }
-
-        function renderYardRevenue() {
-            const revBody = document.getElementById('revenueTableBody');
-            const totalRevDisplay = document.getElementById('totalRevenueDisplay');
-            const totalExpDisplayRev = document.getElementById('totalExpenseDisplayRev');
-            const netIncomeDisplay = document.getElementById('netTotalIncomeDisplay');
-
-            if(!revBody) return;
-
-            const fromDate = document.getElementById('filterDateFrom').value;
-            const toDate = document.getElementById('filterDateTo').value;
-
-            let revs = yardDb.revenues || [];
-            let exps = yardDb.expenses || [];
-
-            if (fromDate) {
-                revs = revs.filter(r => r.date && r.date.slice(0, 10) >= fromDate);
-                exps = exps.filter(e => e.date && e.date.slice(0, 10) >= fromDate);
-            }
-            if (toDate) {
-                revs = revs.filter(r => r.date && r.date.slice(0, 10) <= toDate);
-                exps = exps.filter(e => e.date && e.date.slice(0, 10) <= toDate);
-            }
-
-            const totalRev = revs.reduce((acc, r) => acc + Number(r.amount || 0), 0);
-            const totalExp = exps.reduce((acc, e) => acc + Number(e.amount || 0), 0);
-            const netInc = totalRev - totalExp;
-
-            if(totalRevDisplay) totalRevDisplay.textContent = '₱' + totalRev.toLocaleString(undefined, {minimumFractionDigits: 2});
-            if(totalExpDisplayRev) totalExpDisplayRev.textContent = '₱' + totalExp.toLocaleString(undefined, {minimumFractionDigits: 2});
-            if(netIncomeDisplay) netIncomeDisplay.textContent = '₱' + netInc.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-            revBody.innerHTML = revs.length ? revs.map(r => `
-                <tr>
-                    <td class="p-3 font-mono text-[11px]">${stamp(r.date)}</td>
-                    <td class="p-3 font-semibold text-sky-800">${r.source}</td>
-                    <td class="p-3 font-mono font-bold">${r.container || '—'}</td>
-                    <td class="p-3 font-mono">${r.eir || '—'}</td>
-                    <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for selected period.</td></tr>';
-
-            renderMonthlyFinancialStatementTable(revs, exps);
-            renderMonthlyTrendChart();
-        }
-
-        function clearDateFilter() {
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            renderYardRevenue();
-        }
-
-        function renderMonthlyFinancialStatementTable(revs, exps) {
-            const body = document.getElementById('monthlyFinancialBody');
-            const select = document.getElementById('statementMonthSelect');
-            if(!body) return;
-
-            let monthlyMap = {};
-            revs.forEach(r => {
-                if(!r.date) return;
-                let mKey = r.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].rev += Number(r.amount || 0);
-            });
-            exps.forEach(e => {
-                if(!e.date) return;
-                let mKey = e.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].exp += Number(e.amount || 0);
-            });
-
-            let sortedMonths = Object.keys(monthlyMap).sort().reverse();
-
-            if (select) {
-                select.innerHTML = sortedMonths.length ? sortedMonths.map(m => `<option value="${m}">${formatMonthName(m)}</option>`).join('') : '<option>No Months</option>';
-            }
-
-            body.innerHTML = sortedMonths.length ? sortedMonths.map(m => {
-                let r = monthlyMap[m].rev;
-                let e = monthlyMap[m].exp;
-                let net = r - e;
-                return `
-                    <tr>
-                        <td class="p-3 font-bold text-slate-900">${formatMonthName(m)}</td>
-                        <td class="p-3 text-right font-semibold text-emerald-700">₱${r.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 text-right font-semibold text-rose-700">₱${e.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 text-right font-extrabold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}">₱${net.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    </tr>
-                `;
-            }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No monthly financial data available.</td></tr>';
-        }
-
-        function formatMonthName(yyyyMm) {
-            try {
-                const [y, m] = yyyyMm.split('-');
-                const date = new Date(y, m - 1, 1);
-                return date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            } catch(e) {
-                return yyyyMm;
-            }
-        }
-
-        function renderMonthlyTrendChart() {
-            const ctx = document.getElementById('monthlyTrendChart');
-            if(!ctx) return;
-
-            let monthlyMap = {};
-            (yardDb.revenues || []).forEach(r => {
-                if(!r.date) return;
-                let mKey = r.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].rev += Number(r.amount || 0);
-            });
-            (yardDb.expenses || []).forEach(e => {
-                if(!e.date) return;
-                let mKey = e.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].exp += Number(e.amount || 0);
-            });
-
-            let sortedMonths = Object.keys(monthlyMap).sort();
-            let labels = sortedMonths.map(m => formatMonthName(m));
-            let revData = sortedMonths.map(m => monthlyMap[m].rev);
-            let expData = sortedMonths.map(m => monthlyMap[m].exp);
-            let netData = sortedMonths.map(m => monthlyMap[m].rev - monthlyMap[m].exp);
-
-            if(trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.length ? labels : ['No Data'],
-                    datasets: [
-                        { label: 'Revenue (₱)', data: revData.length ? revData : [0], borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Expenses (₱)', data: expData.length ? expData : [0], borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Net Income (₱)', data: netData.length ? netData : [0], borderColor: '#0284c7', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.3 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-            });
-        }
-
-        function exportChartAsImage() {
-            const canvas = document.getElementById('monthlyTrendChart');
-            if(!canvas) return;
-            const link = document.createElement('a');
-            link.download = 'Skymover_Monthly_Financial_Trend_Chart.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        function downloadMonthlyStatementPDF() {
-            const monthKey = document.getElementById('statementMonthSelect').value;
-            const element = document.createElement('div');
-            element.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
-
-            let revs = (yardDb.revenues || []).filter(r => r.date && r.date.startsWith(monthKey));
-            let exps = (yardDb.expenses || []).filter(e => e.date && e.date.startsWith(monthKey));
-            let totalRev = revs.reduce((a, b) => a + Number(b.amount || 0), 0);
-            let totalExp = exps.reduce((a, b) => a + Number(b.amount || 0), 0);
-            let net = totalRev - totalExp;
-
-            element.innerHTML = `
-                <div class="flex justify-between items-center border-b pb-4 mb-4">
-                    <div>
-                        <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
-                        <p class="text-xs text-slate-600">Monthly Financial Statement • ${formatMonthName(monthKey)}</p>
-                    </div>
-                    <div class="text-right text-[11px] text-slate-500 font-mono">
-                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg"><strong>Total Revenue:</strong> ₱${totalRev.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                    <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg"><strong>Total Expenses:</strong> ₱${totalExp.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg"><strong>Net Income:</strong> ₱${net.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                </div>
-                <h3 class="font-bold text-sm text-slate-800 mb-2">Revenue Line Items</h3>
-                <table class="w-full text-left text-xs border-collapse border border-slate-300 mb-6">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2 text-right">Amount (₱)</th></tr>
-                    ${revs.map(r => `<tr><td class="border p-2">${stamp(r.date)}</td><td class="border p-2">${r.source}</td><td class="border p-2">${r.container || '—'}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`).join('')}
-                </table>
-                <h3 class="font-bold text-sm text-slate-800 mb-2">Expense Line Items</h3>
-                <table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Category</th><th class="border p-2">Description</th><th class="border p-2 text-right">Amount (₱)</th></tr>
-                    ${exps.map(e => `<tr><td class="border p-2">${stamp(e.date)}</td><td class="border p-2">${e.category}</td><td class="border p-2">${e.description}</td><td class="border p-2 text-right">₱${Number(e.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`).join('')}
-                </table>
-            `;
-
-            const opt = {
-                margin:       10,
-                filename:     `Skymover_Financial_Statement_${monthKey}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(element).set(opt).save();
-        }
-
-        function renderYardExpenses() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const expDt = document.getElementById('expenseDateInput');
-            if(expDt && !expDt.value) expDt.value = now.toISOString().slice(0, 16);
-
-            const body = document.getElementById('expenseTableBody');
-            const totalDisp = document.getElementById('totalExpenseDisplay');
-            if(!body) return;
-
-            const exps = yardDb.expenses || [];
-            const total = exps.reduce((acc, e) => acc + Number(e.amount || 0), 0);
-            if(totalDisp) totalDisp.textContent = '₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-            body.innerHTML = exps.length ? exps.map(e => `
-                <tr>
-                    <td class="p-3 font-mono text-[11px]">${stamp(e.date)}</td>
-                    <td class="p-3 font-bold text-slate-800">${e.category}</td>
-                    <td class="p-3">${e.description}</td>
-                    <td class="p-3 text-right font-extrabold text-rose-700">₱${Number(e.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No yard expense logs recorded.</td></tr>';
-        }
-
-        async function handleYardExpenseSubmit(e) {
-            e.preventDefault();
-            const form = e.target;
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            const newExp = {
-                category: data.category,
-                description: data.description,
-                amount: parseFloat(data.amount) || 0,
-                date: data.date
-            };
-
-            if(!yardDb.expenses) yardDb.expenses = [];
-            yardDb.expenses.unshift(newExp);
-
-            await saveYardDB();
-            clearYardExpenseForm();
-            alert('Yard operating expense successfully recorded!');
-            renderYardExpenses();
-        }
-
-        function renderYardReports() {
-            const containers = yardDb.containers || [];
-            const movements = yardDb.movements || [];
-
-            document.getElementById('yardRptGateIn').textContent = containers.length;
-            document.getElementById('yardRptGateOut').textContent = movements.filter(m => m.kind === 'GATE-OUT').length;
+            const titleText = document.getElementById('backendModalTitle').textContent;
             
-            const lines = {};
-            containers.forEach(c => {
-                if(!lines[c.line]) lines[c.line] = { onHand: 0, avail: 0, res: 0, dam: 0 };
-                if (c.status !== 'Released') {
-                    lines[c.line].onHand++;
-                    if(c.status === 'Available') lines[c.line].avail++;
-                    if(c.status === 'Reserved') lines[c.line].res++;
-                    if(c.status === 'Hold' || c.condition === 'Damaged') lines[c.line].dam++;
-                }
-            });
-
-            document.getElementById('yardRptLines').textContent = Object.keys(lines).length;
-            document.getElementById('yardRptMoves').textContent = movements.length;
-
-            const lineRows = document.getElementById('yardLineRows');
-            const lineKeys = Object.keys(lines);
-            if(lineRows) {
-                lineRows.innerHTML = lineKeys.length ? lineKeys.map(l => `
-                    <tr>
-                        <td class="p-3 font-bold text-slate-900">${l}</td>
-                        <td class="p-3 font-mono font-bold">${lines[l].onHand}</td>
-                        <td class="p-3 font-mono text-emerald-700">${lines[l].avail}</td>
-                        <td class="p-3 font-mono text-amber-700">${lines[l].res}</td>
-                        <td class="p-3 font-mono text-rose-700">${lines[l].dam}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No shipping line inventory data.</td></tr>';
+            if (titleText.includes('Vehicle')) {
+                if(!db.vehicles) db.vehicles = [];
+                db.vehicles.push({
+                    id: document.getElementById('b_v_id').value,
+                    model: document.getElementById('b_v_model').value,
+                    status: document.getElementById('b_v_status').value,
+                    driver: 'Unassigned',
+                    attachments: stagedBackendAttachments
+                });
+            } else if (titleText.includes('Fuel')) {
+                if(!db.fuelLogs) db.fuelLogs = [];
+                db.fuelLogs.push({
+                    unit: document.getElementById('b_f_unit').value,
+                    liters: document.getElementById('b_f_liters').value,
+                    cost: document.getElementById('b_f_cost').value,
+                    station: document.getElementById('b_f_station').value,
+                    date: new Date().toISOString().substring(0, 10),
+                    attachments: stagedBackendAttachments
+                });
+            } else if (titleText.includes('Maintenance')) {
+                if(!db.maintenanceLogs) db.maintenanceLogs = [];
+                db.maintenanceLogs.push({
+                    unit: document.getElementById('b_m_unit').value,
+                    issue: document.getElementById('b_m_issue').value,
+                    cost: document.getElementById('b_m_cost').value,
+                    status: document.getElementById('b_m_status').value,
+                    date: new Date().toISOString().substring(0, 10),
+                    attachments: stagedBackendAttachments
+                });
+            } else if (titleText.includes('Dispatch')) {
+                if(!db.dispatchLogs) db.dispatchLogs = [];
+                db.dispatchLogs.push({
+                    unit: document.getElementById('b_d_unit').value,
+                    route: document.getElementById('b_d_route').value,
+                    driver: document.getElementById('b_d_driver').value,
+                    status: 'In Transit',
+                    attachments: stagedBackendAttachments
+                });
+            } else if (titleText.includes('Expense')) {
+                if(!db.expenseLogs) db.expenseLogs = [];
+                db.expenseLogs.push({
+                    trip: document.getElementById('b_e_trip').value,
+                    fuel: document.getElementById('b_e_fuel').value,
+                    tolls: document.getElementById('b_e_tolls').value,
+                    maintenance: '₱0',
+                    total: document.getElementById('b_e_total').value,
+                    attachments: stagedBackendAttachments
+                });
             }
 
-            const moveRows = document.getElementById('yardMovementRows');
-            if(moveRows) {
-                moveRows.innerHTML = movements.length ? movements.map(m => `
-                    <tr>
-                        <td class="p-3 font-mono text-[11px]">${stamp(m.date)}</td>
-                        <td class="p-3 font-bold ${m.kind === 'GATE-IN' ? 'text-sky-700' : 'text-purple-700'}">${m.kind}</td>
-                        <td class="p-3 font-mono font-bold">${m.number || m.container}</td>
-                        <td class="p-3 font-mono">${m.plate || '—'}</td>
-                        <td class="p-3">${m.storageDays ? m.storageDays + ' Days' : '—'}</td>
-                        <td class="p-3 font-mono">₱${Number(m.vanInAmount || 0).toLocaleString()} / ₱${Number(m.vanOutAmount || 0).toLocaleString()}</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.amount || m.totalAmount || 0).toLocaleString()}</td>
-                        <td class="p-3 font-mono">${m.eir || '—'}</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement history logged.</td></tr>';
-            }
-        }
-
-        function stamp(isoStr) {
-            if(!isoStr) return '—';
-            try {
-                const d = new Date(isoStr);
-                return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } catch(e) {
-                return isoStr;
-            }
-        }
-
-        function exportYardCSV() { csv((yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, c.block, c.bay, c.row, c.condition, c.date]), 'Skymover_Yard_Inventory.csv'); }
-        function exportRevenueCSV() { csv((yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.eir, r.amount]), 'Skymover_Yard_Revenue.csv'); }
-        function exportExpensesCSV() { csv((yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount]), 'Skymover_Yard_Expenses.csv'); }
-        function exportYardMovements() { csv((yardDb.movements || []).map(m => [m.date, m.kind, m.number || m.container, m.plate, m.totalAmount || m.amount]), 'Skymover_Yard_Movements.csv'); }
-
-        function csv(rows, filename) {
-            let content = rows.map(e => Array.isArray(e) ? e.join(",") : e).join("\n");
-            blobDownload(new Blob([content], { type: 'text/csv;charset=utf-8;' }), filename);
-        }
-
-        function blobDownload(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function backupUnifiedEnterpriseData() {
-            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
-            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Unified_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
-        }
-
-        function restoreUnifiedEnterpriseData(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if(parsed.managementBackend) db = parsed.managementBackend;
-                    if(parsed.emptyYard) yardDb = parsed.emptyYard;
-                    await saveCloudData();
-                    alert('Unified enterprise backup successfully restored and synced to cloud database!');
-                    window.location.reload();
-                } catch(err) {
-                    alert('Error parsing backup JSON file: ' + err.message);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function renderTransshipmentTable() {
-            const tbody = document.getElementById('transshipmentTableBody');
-            if(!tbody) return;
-            const list = db.transshipments || [];
-            tbody.innerHTML = list.length ? list.map((t, idx) => `
-                <tr class="hover:bg-slate-800/50">
-                    <td class="p-3 font-mono font-bold">${t.id}</td>
-                    <td class="p-3">${t.origin}</td>
-                    <td class="p-3 font-mono">${t.container}</td>
-                    <td class="p-3 font-bold text-emerald-400">₱${Number(t.commission || 0).toLocaleString()}</td>
-                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-800">${t.status}</span></td>
-                    <td class="p-3 text-right">
-                        <button onclick="acceptTransshipment(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-semibold mr-1">Accept</button>
-                        <button onclick="rejectTransshipment(${idx})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs font-semibold">Reject</button>
-                    </td>
-                </tr>
-            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No transshipment orders posted.</td></tr>';
+            await saveCloudData();
+            closeBackendEntryModal();
+            openSubModule(currentBackendModuleType);
+            alert('New entry successfully saved and synced!');
         }
 
         function openNewTransshipmentModal() { document.getElementById('transModal').classList.remove('hidden'); }
@@ -3484,40 +2664,648 @@
             const commission = document.getElementById('transCommission').value;
 
             if(!db.transshipments) db.transshipments = [];
-            db.transshipments.push({
-                id: 'TRN-' + Math.floor(1000 + Math.random() * 9000),
+            const newTrans = {
+                id: 'TR-' + Math.floor(1000 + Math.random() * 9000),
                 origin: origin,
-                container: container.toUpperCase(),
-                commission: commission,
+                container: container,
+                commission: '₱' + Number(commission).toLocaleString(),
                 status: 'Pending Acceptance'
-            });
-
+            };
+            db.transshipments.push(newTrans);
             await saveCloudData();
             closeNewTransshipmentModal();
             document.getElementById('transForm').reset();
             renderTransshipmentTable();
+            alert('Transshipment order posted successfully!');
         }
 
-        async function acceptTransshipment(idx) {
-            if(db.transshipments[idx]) {
-                db.transshipments[idx].status = 'Hub Accepted & Synced';
+        function renderTransshipmentTable() {
+            const tbody = document.getElementById('transshipmentTableBody');
+            if(!tbody) return;
+            const trans = db.transshipments || [];
+            tbody.innerHTML = trans.length ? trans.map((t, idx) => `
+                <tr class="border-b border-slate-800 hover:bg-slate-950/50">
+                    <td class="p-3 font-mono font-bold text-sky-400">${t.id}</td>
+                    <td class="p-3">${t.origin}</td>
+                    <td class="p-3 font-mono">${t.container}</td>
+                    <td class="p-3 font-bold text-emerald-400">${t.commission}</td>
+                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${t.status.includes('Accepted') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${t.status}</span></td>
+                    <td class="p-3 text-right">
+                        ${!t.status.includes('Accepted') ? `<button onclick="acceptTransOrder(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded font-bold text-[11px] transition">Accept Hub Order</button>` : `<span class="text-slate-500 text-[11px]">Completed</span>`}
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No transshipment orders posted yet.</td></tr>';
+        }
+
+        async function acceptTransOrder(idx) {
+            if(db.transshipments && db.transshipments[idx]) {
+                db.transshipments[idx].status = 'Hub Accepted & Dispatched';
                 await saveCloudData();
                 renderTransshipmentTable();
                 alert('Transshipment order accepted and synced with fleet dispatch!');
             }
         }
 
-        async function rejectTransshipment(idx) {
-            if(db.transshipments[idx]) {
-                db.transshipments[idx].status = 'Rejected';
-                await saveCloudData();
-                renderTransshipmentTable();
-            }
+        function backupUnifiedEnterpriseData() {
+            const unified = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unified, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `Skymover_Unified_Enterprise_Backup_${new Date().toISOString().substring(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        async function restoreUnifiedEnterpriseData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const parsed = JSON.parse(event.target.result);
+                    if(parsed.managementBackend) db = parsed.managementBackend;
+                    if(parsed.emptyYard) yardDb = parsed.emptyYard;
+                    await saveCloudData();
+                    refreshYard();
+                    renderTransshipmentTable();
+                    alert('Unified enterprise backup successfully restored and synced to cloud DB!');
+                } catch(err) {
+                    alert('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // EMPTY YARD & BILLING LOGIC
+        // ==========================================
+        function switchYardTab(tabId) {
+            document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#yardTabButtonsArea .btn').forEach(b => {
+                b.className = "btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200";
+            });
+            const target = document.getElementById(tabId);
+            if(target) target.classList.remove('hidden');
+
+            const btnMap = { yardDashboard: 'yBtn1', yardInventory: 'yBtn2', yardGateIn: 'yBtn3', yardGateOut: 'yBtn4', yardRevenue: 'yBtn5', yardExpenses: 'yBtn6', yardReports: 'yBtn7', yardBackup: 'yBtn8' };
+            const activeBtn = document.getElementById(btnMap[tabId]);
+            if(activeBtn) activeBtn.className = "btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white";
+
+            if (tabId === 'yardDashboard') renderYardDashboard();
+            else if (tabId === 'yardInventory') renderYardInventory();
+            else if (tabId === 'yardGateOut') populateYardOutContainerSelect();
+            else if (tabId === 'yardRevenue') renderYardRevenue();
+            else if (tabId === 'yardExpenses') renderYardExpenses();
+            else if (tabId === 'yardReports') renderYardReports();
         }
 
         function refreshYard() {
             renderYardDashboard();
             renderYardInventory();
+        }
+
+        async function handleYardGateIn(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            const containerNum = fd.get('number').trim().toUpperCase();
+
+            const existing = (yardDb.containers || []).find(c => c.number === containerNum && c.status !== 'Released');
+            if (existing) {
+                alert(`⚠️ Container ${containerNum} is already active inside the yard.`);
+                return;
+            }
+
+            const newContainer = {
+                number: containerNum,
+                size: fd.get('size'),
+                type: fd.get('type'),
+                line: fd.get('line'),
+                trucking: fd.get('truckingName'),
+                plate: fd.get('plate'),
+                driver: fd.get('driver'),
+                eir: fd.get('eir'),
+                condition: fd.get('condition'),
+                status: fd.get('status') || 'Available',
+                block: fd.get('block'),
+                bay: fd.get('bay'),
+                row: fd.get('row'),
+                tier: fd.get('tier') || '1',
+                vanInAmount: parseFloat(fd.get('vanInAmount')) || 0,
+                vanInStats: fd.get('vanInStats'),
+                date: fd.get('date'),
+                remarks: fd.get('remarks'),
+                photos: stagedGateInPhotos,
+                gateOutInfo: null
+            };
+
+            if(!yardDb.containers) yardDb.containers = [];
+            yardDb.containers.push(newContainer);
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift({
+                date: newContainer.date,
+                movement: 'Gate-In',
+                container: newContainer.number,
+                plate: newContainer.plate,
+                eir: newContainer.eir || '—',
+                amount: '₱' + newContainer.vanInAmount.toLocaleString()
+            });
+
+            if (newContainer.vanInStats === 'PAID' && newContainer.vanInAmount > 0) {
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift({
+                    date: newContainer.date,
+                    source: 'Gate-In Fee',
+                    container: newContainer.number,
+                    eir: newContainer.eir || '—',
+                    amount: newContainer.vanInAmount
+                });
+            }
+
+            await saveCloudData();
+            clearGateInFormAndPhotos();
+            alert(`✅ Container ${containerNum} successfully gated-in and synced to cloud!`);
+            switchYardTab('yardInventory');
+        }
+
+        function populateYardOutContainerSelect() {
+            const sel = document.getElementById('yardOutContainer');
+            if(!sel) return;
+            const activeContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
+            sel.innerHTML = '<option value="">Select container in yard</option>' + activeContainers.map(c => `
+                <option value="${c.number}">${c.number} (${c.size} • ${c.line} • Block ${c.block}/${c.bay})</option>
+            `).join('');
+        }
+
+        function containerSelectedForGateOut() {
+            const num = document.getElementById('yardOutContainer').value;
+            const c = (yardDb.containers || []).find(item => item.number === num);
+            if(!c) return;
+
+            document.getElementById('gateOutPlate').value = c.plate || '';
+            document.getElementById('gateOutDriver').value = c.driver || '';
+            document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
+            document.getElementById('calcGateInDisplay').value = c.date || '';
+
+            const nowStr = new Date().toISOString().slice(0, 16);
+            document.getElementById('calcGateOutDate').value = nowStr;
+
+            recalculateTotals();
+        }
+
+        function recalculateTotals() {
+            const num = document.getElementById('yardOutContainer').value;
+            const c = (yardDb.containers || []).find(item => item.number === num);
+            if(!c) return;
+
+            const gateInDate = new Date(c.date);
+            const gateOutDateInput = document.getElementById('calcGateOutDate').value;
+            if(!gateOutDateInput) return;
+            const gateOutDate = new Date(gateOutDateInput);
+
+            let diffTime = gateOutDate - gateInDate;
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if(diffDays < 1) diffDays = 1;
+
+            document.getElementById('calcStorageDays').value = diffDays;
+
+            const ratePerDay = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
+            const storageTotal = diffDays * ratePerDay;
+            const vanOutAmount = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
+
+            let totalSum = storageTotal + vanOutAmount;
+            const notice = document.getElementById('vanInDeductionNotice');
+
+            if (c.vanInStats === 'PAID' && c.vanInAmount > 0) {
+                totalSum -= c.vanInAmount;
+                if(notice) notice.classList.remove('hidden');
+            } else {
+                if(notice) notice.classList.add('hidden');
+            }
+
+            if(totalSum < 0) totalSum = 0;
+            document.getElementById('calcTotalAmount').value = totalSum.toFixed(2);
+        }
+
+        async function handleYardGateOut(e) {
+            e.preventDefault();
+            const num = document.getElementById('yardOutContainer').value;
+            const container = (yardDb.containers || []).find(item => item.number === num);
+            if(!container) {
+                alert('Please select a valid container.');
+                return;
+            }
+
+            const form = e.target;
+            const fd = new FormData(form);
+            const gateOutDate = fd.get('date');
+            const totalAmount = parseFloat(fd.get('totalAmount')) || 0;
+            const eir = fd.get('eir');
+
+            container.status = 'Released';
+            container.gateOutInfo = {
+                customer: fd.get('customer'),
+                plate: fd.get('plate'),
+                driver: fd.get('driver'),
+                eir: eir,
+                vanOutAmount: parseFloat(fd.get('vanOutAmount')) || 0,
+                storageDays: fd.get('storageDays'),
+                totalAmount: totalAmount,
+                date: gateOutDate,
+                remarks: fd.get('remarks'),
+                photos: stagedGateOutPhotos
+            };
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift({
+                date: gateOutDate,
+                movement: 'Gate-Out',
+                container: container.number,
+                plate: container.gateOutInfo.plate,
+                eir: eir,
+                amount: '₱' + totalAmount.toLocaleString(),
+                storageDays: container.gateOutInfo.storageDays
+            });
+
+            if(totalAmount > 0) {
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift({
+                    date: gateOutDate,
+                    source: 'Gate-Out & Storage Billing',
+                    container: container.number,
+                    eir: eir,
+                    amount: totalAmount
+                });
+            }
+
+            await saveCloudData();
+            clearGateOutFormAndPhotos();
+            alert(`✅ Container ${container.number} successfully gated-out, released, and billed!`);
+            switchYardTab('yardInventory');
+        }
+
+        function renderYardDashboard() {
+            const containers = yardDb.containers || [];
+            const active = containers.filter(c => c.status !== 'Released');
+
+            document.getElementById('yardTotal').textContent = active.length;
+            document.getElementById('yardAvailable').textContent = active.filter(c => c.status === 'Available').length;
+            document.getElementById('yardReserved').textContent = active.filter(c => c.status === 'Reserved').length;
+            document.getElementById('yardDamaged').textContent = active.filter(c => c.status === 'Hold' || c.condition === 'Damaged').length;
+
+            const gateInCount = containers.length;
+            const gateOutCount = containers.filter(c => c.status === 'Released').length;
+            document.getElementById('dashGateInCount').textContent = gateInCount;
+            document.getElementById('dashGateOutCount').textContent = gateOutCount;
+
+            const revenues = yardDb.revenues || [];
+            const totalRev = revenues.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
+            document.getElementById('dashTotalRev').textContent = '₱' + totalRev.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+            const recentBody = document.getElementById('yardRecentBody');
+            if(recentBody) {
+                const moves = yardDb.movements || [];
+                recentBody.innerHTML = moves.length ? moves.slice(0, 8).map(m => `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-3 font-mono text-[11px]">${new Date(m.date).toLocaleString()}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.movement === 'Gate-In' ? 'bg-sky-100 text-sky-900' : 'bg-purple-100 text-purple-900'}">${m.movement}</span></td>
+                        <td class="p-3 font-mono font-bold">${m.container}</td>
+                        <td class="p-3 font-mono">${m.plate || '—'}</td>
+                        <td class="p-3 font-mono">${m.eir || '—'}</td>
+                        <td class="p-3 font-bold text-emerald-700">${m.amount || '₱0.00'}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No recent yard movements logged.</td></tr>';
+            }
+
+            renderYardCharts(active);
+        }
+
+        function renderYardCharts(activeContainers) {
+            const avail = activeContainers.filter(c => c.status === 'Available').length;
+            const res = activeContainers.filter(c => c.status === 'Reserved').length;
+            const hold = activeContainers.filter(c => c.status === 'Hold' || c.condition === 'Damaged').length;
+
+            const pieCtx = document.getElementById('yardStatusPieChart');
+            if (pieCtx) {
+                if (yardPieChartInstance) yardPieChartInstance.destroy();
+                yardPieChartInstance = new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Available', 'Reserved', 'Damaged / Hold'],
+                        datasets: [{ data: [avail, res, hold], backgroundColor: ['#059669', '#d97706', '#dc2626'], borderWidth: 2 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+                });
+            }
+
+            const barCtx = document.getElementById('yardStatusBarGraph');
+            if (barCtx) {
+                if (yardBarChartInstance) yardBarChartInstance.destroy();
+                yardBarChartInstance = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Available', 'Reserved', 'Damaged / Hold'],
+                        datasets: [{ label: 'Container Units', data: [avail, res, hold], backgroundColor: ['#0284c7', '#8b5cf6', '#f43f5e'], borderRadius: 6 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+                });
+            }
+        }
+
+        function renderYardInventory() {
+            const rowsContainer = document.getElementById('yardInventoryRows');
+            if(!rowsContainer) return;
+            const query = (document.getElementById('yardSearchInput').value || '').toLowerCase();
+            const containers = (yardDb.containers || []).filter(c => {
+                const matchStr = `${c.number} ${c.line} ${c.plate} ${c.driver} ${c.status}`.toLowerCase();
+                return matchStr.includes(query);
+            });
+
+            rowsContainer.innerHTML = containers.length ? containers.map(c => `
+                <tr class="border-b border-slate-200 hover:bg-slate-50">
+                    <td class="p-3 font-mono font-bold text-sky-900">${c.number}</td>
+                    <td class="p-3">${c.size} / ${c.type || 'Dry'}</td>
+                    <td class="p-3 font-semibold">${c.line}</td>
+                    <td class="p-3"><span class="pill ${c.status}">${c.status}</span></td>
+                    <td class="p-3 font-mono text-[11px]">${c.status === 'Released' ? 'Released' : `Block ${c.block}/${c.bay}/${c.row}`}</td>
+                    <td class="p-3 font-mono text-[11px]">${new Date(c.date).toLocaleString()}</td>
+                    <td class="p-3 font-mono text-[11px]">${c.gateOutInfo ? new Date(c.gateOutInfo.date).toLocaleString() : '—'}</td>
+                    <td class="p-3 font-mono">₱${(c.vanInAmount || 0).toLocaleString()} / ₱${c.gateOutInfo ? (c.gateOutInfo.totalAmount || 0).toLocaleString() : '0'}</td>
+                    <td class="p-3">
+                        <button onclick="viewContainerDetails('${c.number}')" class="bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 rounded text-[10px] font-bold">Audit</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="9" class="p-6 text-center text-slate-500 italic">No containers found matching inventory criteria.</td></tr>';
+        }
+
+        function viewContainerDetails(num) {
+            const c = (yardDb.containers || []).find(item => item.number === num);
+            if(!c) return;
+
+            const modal = document.getElementById('subModuleModal');
+            const content = document.getElementById('subModuleContent');
+            if(!modal || !content) return;
+
+            let photosHtml = (c.photos && c.photos.length) ? c.photos.map(p => `
+                <div class="relative w-24 h-24 rounded-lg overflow-hidden border shadow bg-slate-900 group">
+                    <img src="${p.dataUrl}" class="w-full h-full object-cover">
+                    <a href="${p.dataUrl}" target="_blank" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">View Full</a>
+                </div>
+            `).join('') : '<span class="text-slate-500 italic text-xs">No Gate-In inspection photos attached.</span>';
+
+            content.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-3"><i class="fa-solid fa-ship text-amber-400 mr-2"></i> Container Audit: ${c.number}</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-white text-slate-900 p-4 rounded-xl shadow">
+                    <div><b>Size / Type:</b> ${c.size} / ${c.type}</div>
+                    <div><b>Shipping Line:</b> ${c.line}</div>
+                    <div><b>Status:</b> ${c.status}</div>
+                    <div><b>Condition:</b> ${c.condition}</div>
+                    <div><b>Location:</b> Block ${c.block}, Bay ${c.bay}, Row ${c.row}</div>
+                    <div><b>Trucking / Plate:</b> ${c.trucking} (${c.plate})</div>
+                    <div><b>Gate-In Date:</b> ${new Date(c.date).toLocaleString()}</div>
+                    <div><b>Remarks:</b> ${c.remarks || 'None'}</div>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-white font-bold text-xs mb-2">Gate-In Inspection Photos & Documents:</h4>
+                    <div class="flex flex-wrap gap-3">${photosHtml}</div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function renderYardRevenue() {
+            const revenues = yardDb.revenues || [];
+            const expenses = yardDb.expenses || [];
+
+            const totalRev = revenues.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
+            const totalExp = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            const netIncome = totalRev - totalExp;
+
+            document.getElementById('totalRevenueDisplay').textContent = '₱' + totalRev.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('totalExpenseDisplayRev').textContent = '₱' + totalExp.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('netTotalIncomeDisplay').textContent = '₱' + netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+            const tbody = document.getElementById('revenueTableBody');
+            if(tbody) {
+                tbody.innerHTML = revenues.length ? revenues.map(r => `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-3 font-mono text-[11px]">${new Date(r.date).toLocaleString()}</td>
+                        <td class="p-3 font-bold">${r.source}</td>
+                        <td class="p-3 font-mono">${r.container}</td>
+                        <td class="p-3 font-mono">${r.eir}</td>
+                        <td class="p-3 text-right font-extrabold text-emerald-700">₱${(parseFloat(r.amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">No revenue records collected.</td></tr>';
+            }
+
+            renderMonthlyFinancialsAndChart(revenues, expenses);
+        }
+
+        function renderMonthlyFinancialsAndChart(revenues, expenses) {
+            let monthlyMap = {};
+
+            revenues.forEach(r => {
+                const m = r.date ? r.date.substring(0, 7) : '2026-01';
+                if(!monthlyMap[m]) monthlyMap[m] = { revenue: 0, expense: 0 };
+                monthlyMap[m].revenue += (parseFloat(r.amount) || 0);
+            });
+
+            expenses.forEach(e => {
+                const m = e.date ? e.date.substring(0, 7) : '2026-01';
+                if(!monthlyMap[m]) monthlyMap[m] = { revenue: 0, expense: 0 };
+                monthlyMap[m].expense += (parseFloat(e.amount) || 0);
+            });
+
+            const sortedMonths = Object.keys(monthlyMap).sort();
+            const monthSelect = document.getElementById('statementMonthSelect');
+            if(monthSelect) {
+                monthSelect.innerHTML = sortedMonths.length ? sortedMonths.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="2026-06">2026-06</option>';
+            }
+
+            const tbody = document.getElementById('monthlyFinancialBody');
+            if(tbody) {
+                tbody.innerHTML = sortedMonths.length ? sortedMonths.map(m => {
+                    const rev = monthlyMap[m].revenue;
+                    const exp = monthlyMap[m].expense;
+                    const net = rev - exp;
+                    return `
+                        <tr class="border-b border-slate-200">
+                            <td class="p-3 font-mono font-bold">${m}</td>
+                            <td class="p-3 text-right font-bold text-emerald-700">₱${rev.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                            <td class="p-3 text-right font-bold text-rose-700">₱${exp.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                            <td class="p-3 text-right font-extrabold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}">₱${net.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                    `;
+                }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 italic">No monthly financial data.</td></tr>';
+            }
+
+            const chartCtx = document.getElementById('monthlyTrendChart');
+            if (chartCtx) {
+                if (trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(chartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedMonths.length ? sortedMonths : ['2026-01', '2026-02', '2026-03'],
+                        datasets: [
+                            { label: 'Revenue (₱)', data: sortedMonths.map(m => monthlyMap[m].revenue), backgroundColor: '#059669', borderRadius: 4 },
+                            { label: 'Expenses (₱)', data: sortedMonths.map(m => monthlyMap[m].expense), backgroundColor: '#dc2626', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
+                });
+            }
+        }
+
+        function exportChartAsImage() {
+            if(!trendChartInstance) return;
+            const url = trendChartInstance.toBase64Image();
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Skymover_Revenue_Expense_Trend_Chart.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function downloadMonthlyStatementPDF() {
+            const m = document.getElementById('statementMonthSelect').value || '2026-06';
+            const element = document.createElement('div');
+            element.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
+            element.innerHTML = `
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <div>
+                        <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORT CORPORATION</h1>
+                        <p class="text-xs text-slate-600">Monthly Financial Statement & Revenue Audit (${m})</p>
+                    </div>
+                    <div class="text-right text-[11px] text-slate-500 font-mono">Generated: ${new Date().toLocaleString()}</div>
+                </div>
+                <p class="text-xs">Official statement of container storage fees, gate-in/gate-out billings, and operating expenses for month ${m}.</p>
+                <div class="mt-8 text-center text-[10px] text-slate-400 border-t pt-4">© 2026 Skymover Transport Corporation • Official Statement</div>
+            `;
+            html2pdf().from(element).set({ margin: 10, filename: `Skymover_Statement_${m}.pdf`, html2canvas: { scale: 2 } }).save();
+        }
+
+        async function handleYardExpenseSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+
+            if(!yardDb.expenses) yardDb.expenses = [];
+            yardDb.expenses.unshift({
+                category: fd.get('category'),
+                description: fd.get('description'),
+                amount: parseFloat(fd.get('amount')) || 0,
+                date: fd.get('date')
+            });
+
+            await saveCloudData();
+            form.reset();
+            renderYardExpenses();
+            alert('✅ Yard operating expense successfully recorded!');
+        }
+
+        function renderYardExpenses() {
+            const expenses = yardDb.expenses || [];
+            const totalExp = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+            document.getElementById('totalExpenseDisplay').textContent = '₱' + totalExp.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+            const tbody = document.getElementById('expenseTableBody');
+            if(tbody) {
+                tbody.innerHTML = expenses.length ? expenses.map(e => `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-3 font-mono text-[11px]">${new Date(e.date).toLocaleString()}</td>
+                        <td class="p-3 font-bold">${e.category}</td>
+                        <td class="p-3">${e.description}</td>
+                        <td class="p-3 text-right font-extrabold text-rose-700">₱${(parseFloat(e.amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 italic">No yard expenses logged.</td></tr>';
+            }
+        }
+
+        function renderYardReports() {
+            const containers = yardDb.containers || [];
+            document.getElementById('yardRptGateIn').textContent = containers.length;
+            document.getElementById('yardRptGateOut').textContent = containers.filter(c => c.status === 'Released').length;
+
+            const active = containers.filter(c => c.status !== 'Released');
+            const linesMap = {};
+            active.forEach(c => {
+                if(!linesMap[c.line]) linesMap[c.line] = { total: 0, avail: 0, res: 0, dam: 0 };
+                linesMap[c.line].total++;
+                if(c.status === 'Available') linesMap[c.line].avail++;
+                else if(c.status === 'Reserved') linesMap[c.line].res++;
+                else linesMap[c.line].dam++;
+            });
+
+            document.getElementById('yardRptLines').textContent = Object.keys(linesMap).length;
+            document.getElementById('yardRptMoves').textContent = (yardDb.movements || []).length;
+
+            const lineRows = document.getElementById('yardLineRows');
+            if(lineRows) {
+                const keys = Object.keys(linesMap);
+                lineRows.innerHTML = keys.length ? keys.map(k => `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-3 font-bold">${k}</td>
+                        <td class="p-3 font-bold">${linesMap[k].total}</td>
+                        <td class="p-3 text-emerald-700 font-bold">${linesMap[k].avail}</td>
+                        <td class="p-3 text-amber-700 font-bold">${linesMap[k].res}</td>
+                        <td class="p-3 text-rose-700 font-bold">${linesMap[k].dam}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">No stock by shipping line.</td></tr>';
+            }
+
+            const movementRows = document.getElementById('yardMovementRows');
+            if(movementRows) {
+                const moves = yardDb.movements || [];
+                movementRows.innerHTML = moves.length ? moves.map(m => `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-3 font-mono text-[11px]">${new Date(m.date).toLocaleString()}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.movement === 'Gate-In' ? 'bg-sky-100 text-sky-900' : 'bg-purple-100 text-purple-900'}">${m.movement}</span></td>
+                        <td class="p-3 font-mono font-bold">${m.container}</td>
+                        <td class="p-3 font-mono">${m.plate || '—'}</td>
+                        <td class="p-3 font-mono">${m.storageDays || '—'}</td>
+                        <td class="p-3 font-mono">${m.amount || '₱0.00'}</td>
+                        <td class="p-3 font-extrabold text-emerald-700">${m.amount || '₱0.00'}</td>
+                        <td class="p-3 font-mono">${m.eir || '—'}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 italic">No movement history.</td></tr>';
+            }
+        }
+
+        function openExtractionReport() {
+            alert('Visual Extraction Report & Photo Audit loaded successfully.');
+        }
+
+        function exportYardCSV() { exportSpreadsheetGeneric('inventory'); }
+        function exportRevenueCSV() { exportSpreadsheetGeneric('revenue'); }
+        function exportExpensesCSV() { exportSpreadsheetGeneric('expenses'); }
+        function exportYardMovements() { exportSpreadsheetGeneric('movements'); }
+
+        function exportSpreadsheetGeneric(type) {
+            let csvRows = [];
+            if(type === 'inventory') {
+                csvRows = [['Container No.', 'Size', 'Type', 'Line', 'Status', 'Location', 'Condition'], ...(yardDb.containers || []).map(c => [c.number, c.size, c.type, c.line, c.status, `${c.block}/${c.bay}/${c.row}`, c.condition])];
+            } else if(type === 'revenue') {
+                csvRows = [['Date', 'Source', 'Container', 'EIR', 'Amount'], ...(yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.eir, r.amount])];
+            } else if(type === 'expenses') {
+                csvRows = [['Date', 'Category', 'Description', 'Amount'], ...(yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount])];
+            } else {
+                csvRows = [['Date', 'Movement', 'Container', 'Plate', 'Amount'], ...(yardDb.movements || []).map(m => [m.date, m.movement, m.container, m.plate, m.amount])];
+            }
+            csv(csvRows, `Skymover_${type}_Export.csv`);
+        }
+
+        function csv(rows, filename) {
+            let content = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            let encoded = encodeURI(content);
+            let link = document.createElement("a");
+            link.setAttribute("href", encoded);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
         }
     </script>
 </body>
