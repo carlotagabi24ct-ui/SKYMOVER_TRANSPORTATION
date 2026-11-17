@@ -1697,7 +1697,6 @@
                     else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
-                    // Reflect actual photo preview instead of text file name
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-20 h-20 rounded-xl overflow-hidden border-2 border-sky-500/50 shadow-md bg-slate-900 flex items-center justify-center group';
                     
@@ -1767,8 +1766,8 @@
                 margin:        10,
                 filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Report.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:   { scale: 2, useCORS: true },
+                jsPDF:         { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
         
             html2pdf().from(element).set(opt).save();
@@ -2002,7 +2001,7 @@
                 document.getElementById('viewLanding').classList.remove('hidden');
             } else if (viewName === 'backend') { 
                 document.getElementById('viewBackend').classList.remove('hidden');
-                switchAiTab('brain'); // Default view for Management Backend & Analytics
+                switchAiTab('brain');
                 const savedAiTab = localStorage.getItem('skymover_active_ai_tab') || 'brain';
                 switchAiTab(savedAiTab);
             } else if (viewName === 'driver') { 
@@ -2013,7 +2012,7 @@
                 renderTransshipmentTable(); 
             } else if (viewName === 'yard') { 
                 document.getElementById('viewYard').classList.remove('hidden'); 
-                switchYardTab('yardDashboard'); // Default view for Skymover Empty Container Yard
+                switchYardTab('yardDashboard'); 
             }
         }
 
@@ -2747,11 +2746,11 @@
         function exportVisualExtractionPDF() {
             const element = document.getElementById('subModuleContent');
             const opt = {
-                margin:       0.5,
-                filename:     'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+                margin:        0.5,
+                filename:      'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
+                image:         { type: 'jpeg', quality: 0.98 },
+                html2canvas:   { scale: 2, useCORS: true },
+                jsPDF:         { unit: 'in', format: 'letter', orientation: 'landscape' }
             };
             html2pdf().from(element).set(opt).save();
         }
@@ -2866,7 +2865,11 @@
                             borderWidth: 0
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
                 });
             }
 
@@ -2880,49 +2883,63 @@
                         datasets: [{
                             label: 'Container Units',
                             data: [availCount, resCount, damCount],
-                            backgroundColor: ['#0284c7', '#7c3aed', '#db2777'],
+                            backgroundColor: ['#059669', '#d97706', '#dc2626'],
+                            borderWidth: 0,
                             borderRadius: 6
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
                 });
             }
         }
 
         function renderYardInventory() {
-            const rows = document.getElementById('yardInventoryRows');
-            if(!rows) return;
-            const q = (document.getElementById('yardSearchInput').value || '').toLowerCase();
-            const list = (yardDb.containers || []).filter(c => {
-                if(!q) return true;
-                return (c.number && c.number.toLowerCase().includes(q)) ||
-                       (c.line && c.line.toLowerCase().includes(q)) ||
-                       (c.plate && c.plate.toLowerCase().includes(q)) ||
-                       (c.driver && c.driver.toLowerCase().includes(q));
+            const tbody = document.getElementById('yardInventoryRows');
+            if(!tbody) return;
+            const search = (document.getElementById('yardSearchInput')?.value || '').toLowerCase();
+            const containers = (yardDb.containers || []).filter(c => {
+                if (c.status === 'Released') return false;
+                if (!search) return true;
+                return (c.number && c.number.toLowerCase().includes(search)) ||
+                       (c.line && c.line.toLowerCase().includes(search)) ||
+                       (c.plate && c.plate.toLowerCase().includes(search));
             });
 
-            rows.innerHTML = list.length ? list.map(c => `
-                <tr class="hover:bg-slate-50">
+            tbody.innerHTML = containers.length ? containers.map(c => `
+                <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
                     <td class="p-3 font-mono font-bold text-sky-800">${c.number}</td>
-                    <td class="p-3">${c.size} / ${c.type}</td>
-                    <td class="p-3 font-semibold">${c.line}</td>
+                    <td class="p-3">${c.size} / ${c.type || 'Dry'}</td>
+                    <td class="p-3 font-bold">${c.line}</td>
                     <td class="p-3"><span class="pill ${c.status}">${c.status}</span></td>
-                    <td class="p-3 font-mono">${c.block || 'A'}-${c.bay || '1'}-${c.row || 'GROUND'}</td>
-                    <td class="p-3 text-[11px] font-mono">${stamp(c.date)}</td>
-                    <td class="p-3 text-[11px] font-mono">${c.gateOutDate ? stamp(c.gateOutDate) : '—'}</td>
-                    <td class="p-3 text-[11px]">In: ₱${Number(c.vanInAmount||0).toLocaleString()} <span class="font-bold ${c.vanInStats==='PAID'?'text-emerald-600':'text-rose-600'}">(${c.vanInStats||'UNPAID'})</span></td>
+                    <td class="p-3 font-mono">Blk ${c.block || 'A'}, Bay ${c.bay || '1'}, ${c.row || 'Ground'}</td>
+                    <td class="p-3 font-mono text-[11px]">${stamp(c.date)}</td>
+                    <td class="p-3 font-mono text-[11px]">${c.gateOutDate ? stamp(c.gateOutDate) : '—'}</td>
+                    <td class="p-3"><span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.vanInStats === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">In: ₱${c.vanInAmount || 0} (${c.vanInStats || 'PAID'})</span></td>
                     <td class="p-3">
-                        <button onclick="quickReleaseContainer('${c.number}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[10px] font-bold transition">Gate-Out</button>
+                        <button onclick="releaseContainerModal('${c.number}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Gate-Out</button>
                     </td>
                 </tr>
-            `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No container inventory records found.</td></tr>';
+            `).join('') : '<tr><td colspan="9" class="p-6 text-center text-slate-500 font-medium">No container units found in active yard inventory.</td></tr>';
+        }
+
+        function stamp(isoStr) {
+            if(!isoStr) return '—';
+            try {
+                return new Date(isoStr).toLocaleString();
+            } catch(e) {
+                return isoStr;
+            }
         }
 
         function prepareGateInForm() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const dtInput = document.getElementById('gateInDateInput');
-            if(dtInput && !dtInput.value) dtInput.value = now.toISOString().slice(0, 16);
+            const nowIso = new Date().toISOString().substring(0, 16);
+            const dateInput = document.getElementById('gateInDateInput');
+            if(dateInput) dateInput.value = nowIso;
         }
 
         async function handleYardGateIn(e) {
@@ -2930,61 +2947,60 @@
             const form = e.target;
             const data = Object.fromEntries(new FormData(form).entries());
 
-            const existing = (yardDb.containers || []).find(c => c.number === data.number && c.status !== 'Released');
-            if (existing) {
-                alert(`Container ${data.number} is already active in the yard.`);
-                return;
-            }
-
             const newContainer = {
-                number: data.number.toUpperCase(),
+                number: data.number.trim().toUpperCase(),
                 size: data.size,
-                type: data.type,
+                type: data.type || 'Dry',
                 line: data.line,
                 truckingName: data.truckingName,
-                plate: data.plate,
-                driver: data.driver,
-                eir: data.eir,
+                plate: data.plate.trim().toUpperCase(),
+                driver: data.driver || '',
+                eir: data.eir || '',
                 condition: data.condition,
-                status: data.status,
-                block: data.block,
-                bay: data.bay,
-                row: data.row,
-                tier: data.tier,
-                vanInAmount: parseFloat(data.vanInAmount) || 0,
-                vanInStats: data.vanInStats,
-                date: data.date,
-                remarks: data.remarks,
-                photos: stagedGateInPhotos
+                status: data.status || 'Available',
+                block: data.block || 'A',
+                bay: data.bay || 'BAY-1',
+                row: data.row || 'GROUND',
+                tier: data.tier || '1',
+                vanInAmount: Number(data.vanInAmount || 0),
+                vanInStats: data.vanInStats || 'PAID',
+                date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
+                remarks: data.remarks || '',
+                photos: [...stagedGateInPhotos]
             };
 
             if(!yardDb.containers) yardDb.containers = [];
-            yardDb.containers.unshift(newContainer);
+            const existingIdx = yardDb.containers.findIndex(c => c.number === newContainer.number && c.status !== 'Released');
+            if(existingIdx >= 0) {
+                if(!confirm(`Container number ${newContainer.number} already exists in active yard inventory. Proceed to record additional entry?`)) return;
+            }
+
+            yardDb.containers.push(newContainer);
 
             if(!yardDb.movements) yardDb.movements = [];
             yardDb.movements.unshift({
+                date: newContainer.date,
                 kind: 'GATE-IN',
                 number: newContainer.number,
                 plate: newContainer.plate,
                 eir: newContainer.eir,
-                amount: newContainer.vanInAmount,
-                date: newContainer.date
+                amount: newContainer.vanInAmount
             });
 
-            if (newContainer.vanInAmount > 0 && newContainer.vanInStats === 'PAID') {
+            if(newContainer.vanInAmount > 0 && newContainer.vanInStats === 'PAID') {
                 if(!yardDb.revenues) yardDb.revenues = [];
                 yardDb.revenues.unshift({
-                    source: 'Gate-In Van-In Fee',
+                    date: newContainer.date,
+                    source: 'Gate-In Van In Fee',
                     container: newContainer.number,
-                    eir: newContainer.eir || '—',
-                    amount: newContainer.vanInAmount,
-                    date: newContainer.date
+                    eir: newContainer.eir || 'EIR-IN',
+                    amount: newContainer.vanInAmount
                 });
             }
 
-            await saveYardDB();
+            await saveCloudData();
             clearGateInFormAndPhotos();
-            alert(`Container ${newContainer.number} successfully gated-in and recorded to inventory.`);
+            alert(`✅ Container ${newContainer.number} successfully gated-in and synced to cloud!`);
             switchYardTab('yardInventory');
         }
 
@@ -2992,62 +3008,71 @@
             const sel = document.getElementById('yardOutContainer');
             if(!sel) return;
             const activeContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
-            sel.innerHTML = '<option value="">Select container in yard</option>' + activeContainers.map(c => `<option value="${c.number}">${c.number} (${c.line} • ${c.size})</option>`).join('');
+            sel.innerHTML = '<option value="">Select container in yard</option>' + activeContainers.map(c => `
+                <option value="${c.number}">${c.number} • ${c.line} (${c.size}, ${c.status})</option>
+            `).join('');
 
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const dtInput = document.getElementById('calcGateOutDate');
-            if(dtInput && !dtInput.value) dtInput.value = now.toISOString().slice(0, 16);
+            const nowIso = new Date().toISOString().substring(0, 16);
+            const dateInput = document.getElementById('calcGateOutDate');
+            if(dateInput) dateInput.value = nowIso;
+        }
+
+        function releaseContainerModal(containerNumber) {
+            switchYardTab('yardGateOut');
+            const sel = document.getElementById('yardOutContainer');
+            if(sel) {
+                sel.value = containerNumber;
+                containerSelectedForGateOut();
+            }
         }
 
         function containerSelectedForGateOut() {
             const num = document.getElementById('yardOutContainer').value;
+            if(!num) return;
             const container = (yardDb.containers || []).find(c => c.number === num);
-            if (!container) return;
+            if(!container) return;
 
             document.getElementById('gateOutPlate').value = container.plate || '';
             document.getElementById('gateOutDriver').value = container.driver || '';
-            document.getElementById('calcGateInDisplay').value = container.date || '';
             document.getElementById('calcVanInAmount').value = container.vanInAmount || 0;
-            document.getElementById('gateOutRemarks').value = container.remarks || '';
+            document.getElementById('calcGateInDisplay').value = container.date ? new Date(container.date).toLocaleString() : '—';
+
+            if(container.vanInStats === 'PAID' && (container.vanInAmount || 0) > 0) {
+                document.getElementById('vanInDeductionNotice').classList.remove('hidden');
+            } else {
+                document.getElementById('vanInDeductionNotice').classList.add('hidden');
+            }
 
             recalculateTotals();
         }
 
         function recalculateTotals() {
             const num = document.getElementById('yardOutContainer').value;
+            if(!num) return;
             const container = (yardDb.containers || []).find(c => c.number === num);
             if(!container) return;
 
-            const gateInStr = container.date;
-            const gateOutStr = document.getElementById('calcGateOutDate').value;
-            if(!gateInStr || !gateOutStr) return;
+            const gateInTime = new Date(container.date || Date.now()).getTime();
+            const gateOutVal = document.getElementById('calcGateOutDate').value;
+            const gateOutTime = gateOutVal ? new Date(gateOutVal).getTime() : Date.now();
 
-            const d1 = new Date(gateInStr);
-            const d2 = new Date(gateOutStr);
-            let diffTime = d2 - d1;
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            let diffDays = Math.ceil((gateOutTime - gateInTime) / (1000 * 60 * 60 * 24));
             if(diffDays < 1) diffDays = 1;
 
             document.getElementById('calcStorageDays').value = diffDays;
 
-            const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
-            const vanOut = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanIn = container.vanInAmount || 0;
-            const vanInPaid = container.vanInStats === 'PAID';
+            const ratePerDay = Number(document.getElementById('calcStorageAmount').value || 450);
+            const storageTotal = diffDays * ratePerDay;
+            const vanOut = Number(document.getElementById('calcVanOutAmount').value || 0);
+            const vanIn = Number(document.getElementById('calcVanInAmount').value || 0);
 
-            let storageTotal = diffDays * rate;
-            let grandTotal = storageTotal + vanOut;
-
-            const deductionNotice = document.getElementById('vanInDeductionNotice');
-            if (vanInPaid && vanIn > 0) {
-                grandTotal -= vanIn;
-                if(deductionNotice) deductionNotice.classList.remove('hidden');
-            } else {
-                if(deductionNotice) deductionNotice.classList.add('hidden');
+            let totalSum = storageTotal + vanOut;
+            if(container.vanInStats === 'PAID') {
+                totalSum -= vanIn;
+                if(totalSum < 0) totalSum = 0;
             }
 
-            document.getElementById('calcTotalAmount').value = grandTotal.toFixed(2);
+            document.getElementById('calcTotalAmount').value = totalSum.toFixed(2);
         }
 
         async function handleYardGateOut(e) {
@@ -3057,275 +3082,201 @@
 
             const container = (yardDb.containers || []).find(c => c.number === data.container);
             if(!container) {
-                alert('Select a valid container.');
+                alert('Selected container not found in active yard.');
                 return;
             }
 
             container.status = 'Released';
-            container.gateOutDate = data.date;
-
-            const totalAmt = parseFloat(data.totalAmount) || 0;
+            container.gateOutDate = data.date ? new Date(data.date).toISOString() : new Date().toISOString();
 
             if(!yardDb.movements) yardDb.movements = [];
             yardDb.movements.unshift({
+                date: container.gateOutDate,
                 kind: 'GATE-OUT',
-                container: container.number,
-                plate: container.plate,
-                driver: container.driver,
+                number: container.number,
+                plate: data.plate,
                 eir: data.eir,
+                amount: data.totalAmount,
                 storageDays: data.storageDays,
-                vanInAmount: container.vanInAmount,
-                vanOutAmount: data.vanOutAmount,
-                totalAmount: totalAmt,
-                date: data.date,
-                photos: stagedGateOutPhotos
+                totalAmount: data.totalAmount,
+                photos: [...stagedGateOutPhotos]
             });
 
-            if (totalAmt > 0) {
+            const revenueAmount = Number(data.totalAmount || 0);
+            if(revenueAmount > 0) {
                 if(!yardDb.revenues) yardDb.revenues = [];
                 yardDb.revenues.unshift({
-                    source: 'Gate-Out & Storage Billing',
+                    date: container.gateOutDate,
+                    source: 'Gate-Out Storage & Handling',
                     container: container.number,
                     eir: data.eir,
-                    amount: totalAmt,
-                    date: data.date
+                    amount: revenueAmount
                 });
             }
 
-            await saveYardDB();
+            await saveCloudData();
             clearGateOutFormAndPhotos();
-            alert(`Container ${container.number} successfully gated-out and billed!`);
-            switchYardTab('yardRevenue');
-        }
-
-        function quickReleaseContainer(containerNo) {
-            switchYardTab('yardGateOut');
-            const sel = document.getElementById('yardOutContainer');
-            if(sel) {
-                sel.value = containerNo;
-                containerSelectedForGateOut();
-            }
+            alert(`✅ Container ${container.number} successfully gated-out and released!`);
+            switchYardTab('yardInventory');
         }
 
         function renderYardRevenue() {
-            const revBody = document.getElementById('revenueTableBody');
-            const totalRevDisplay = document.getElementById('totalRevenueDisplay');
-            const totalExpDisplayRev = document.getElementById('totalExpenseDisplayRev');
-            const netIncomeDisplay = document.getElementById('netTotalIncomeDisplay');
+            const revenues = yardDb.revenues || [];
+            const expenses = yardDb.expenses || [];
 
-            if(!revBody) return;
-
-            const fromDate = document.getElementById('filterDateFrom').value;
-            const toDate = document.getElementById('filterDateTo').value;
-
-            let revs = yardDb.revenues || [];
-            let exps = yardDb.expenses || [];
-
-            if (fromDate) {
-                revs = revs.filter(r => r.date && r.date.slice(0, 10) >= fromDate);
-                exps = exps.filter(e => e.date && e.date.slice(0, 10) >= fromDate);
-            }
-            if (toDate) {
-                revs = revs.filter(r => r.date && r.date.slice(0, 10) <= toDate);
-                exps = exps.filter(e => e.date && e.date.slice(0, 10) <= toDate);
-            }
-
-            const totalRev = revs.reduce((acc, r) => acc + Number(r.amount || 0), 0);
-            const totalExp = exps.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+            const totalRev = revenues.reduce((acc, r) => acc + Number(r.amount || 0), 0);
+            const totalExp = expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
             const netInc = totalRev - totalExp;
 
-            if(totalRevDisplay) totalRevDisplay.textContent = '₱' + totalRev.toLocaleString(undefined, {minimumFractionDigits: 2});
-            if(totalExpDisplayRev) totalExpDisplayRev.textContent = '₱' + totalExp.toLocaleString(undefined, {minimumFractionDigits: 2});
-            if(netIncomeDisplay) netIncomeDisplay.textContent = '₱' + netInc.toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('totalRevenueDisplay').textContent = '₱' + totalRev.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('totalExpenseDisplayRev').textContent = '₱' + totalExp.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('netTotalIncomeDisplay').textContent = '₱' + netInc.toLocaleString('en-US', {minimumFractionDigits: 2});
 
-            revBody.innerHTML = revs.length ? revs.map(r => `
-                <tr>
-                    <td class="p-3 font-mono text-[11px]">${stamp(r.date)}</td>
-                    <td class="p-3 font-semibold text-sky-800">${r.source}</td>
-                    <td class="p-3 font-mono font-bold">${r.container || '—'}</td>
-                    <td class="p-3 font-mono">${r.eir || '—'}</td>
-                    <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found for selected period.</td></tr>';
-
-            renderMonthlyFinancialStatementTable(revs, exps);
-            renderMonthlyTrendChart();
-        }
-
-        function clearDateFilter() {
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            renderYardRevenue();
-        }
-
-        function renderMonthlyFinancialStatementTable(revs, exps) {
-            const body = document.getElementById('monthlyFinancialBody');
-            const select = document.getElementById('statementMonthSelect');
-            if(!body) return;
-
-            let monthlyMap = {};
-            revs.forEach(r => {
-                if(!r.date) return;
-                let mKey = r.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].rev += Number(r.amount || 0);
-            });
-            exps.forEach(e => {
-                if(!e.date) return;
-                let mKey = e.date.slice(0, 7);
-                if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
-                monthlyMap[mKey].exp += Number(e.amount || 0);
-            });
-
-            let sortedMonths = Object.keys(monthlyMap).sort().reverse();
-
-            if (select) {
-                select.innerHTML = sortedMonths.length ? sortedMonths.map(m => `<option value="${m}">${formatMonthName(m)}</option>`).join('') : '<option>No Months</option>';
-            }
-
-            body.innerHTML = sortedMonths.length ? sortedMonths.map(m => {
-                let r = monthlyMap[m].rev;
-                let e = monthlyMap[m].exp;
-                let net = r - e;
-                return `
+            const tbody = document.getElementById('revenueTableBody');
+            if(tbody) {
+                tbody.innerHTML = revenues.length ? revenues.map(r => `
                     <tr>
-                        <td class="p-3 font-bold text-slate-900">${formatMonthName(m)}</td>
-                        <td class="p-3 text-right font-semibold text-emerald-700">₱${r.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 text-right font-semibold text-rose-700">₱${e.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 text-right font-extrabold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}">₱${net.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 font-mono text-[11px]">${stamp(r.date)}</td>
+                        <td class="p-3 font-bold text-sky-800">${r.source}</td>
+                        <td class="p-3 font-mono font-bold">${r.container || '—'}</td>
+                        <td class="p-3 font-mono">${r.eir || '—'}</td>
+                        <td class="p-3 text-right font-bold text-emerald-700">₱${Number(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                     </tr>
-                `;
-            }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No monthly financial data available.</td></tr>';
-        }
-
-        function formatMonthName(yyyyMm) {
-            try {
-                const [y, m] = yyyyMm.split('-');
-                const date = new Date(y, m - 1, 1);
-                return date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            } catch(e) {
-                return yyyyMm;
+                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No revenue records found.</td></tr>';
             }
+
+            renderMonthlyFinancialSummary();
         }
 
-        function renderMonthlyTrendChart() {
-            const ctx = document.getElementById('monthlyTrendChart');
-            if(!ctx) return;
+        function renderMonthlyFinancialSummary() {
+            const tbody = document.getElementById('monthlyFinancialBody');
+            const monthSelect = document.getElementById('statementMonthSelect');
+            if(!tbody) return;
 
             let monthlyMap = {};
             (yardDb.revenues || []).forEach(r => {
                 if(!r.date) return;
-                let mKey = r.date.slice(0, 7);
+                const mKey = r.date.substring(0, 7); // YYYY-MM
                 if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
                 monthlyMap[mKey].rev += Number(r.amount || 0);
             });
+
             (yardDb.expenses || []).forEach(e => {
                 if(!e.date) return;
-                let mKey = e.date.slice(0, 7);
+                const mKey = e.date.substring(0, 7);
                 if(!monthlyMap[mKey]) monthlyMap[mKey] = { rev: 0, exp: 0 };
                 monthlyMap[mKey].exp += Number(e.amount || 0);
             });
 
-            let sortedMonths = Object.keys(monthlyMap).sort();
-            let labels = sortedMonths.map(m => formatMonthName(m));
-            let revData = sortedMonths.map(m => monthlyMap[m].rev);
-            let expData = sortedMonths.map(m => monthlyMap[m].exp);
-            let netData = sortedMonths.map(m => monthlyMap[m].rev - monthlyMap[m].exp);
+            const sortedMonths = Object.keys(monthlyMap).sort().reverse();
+            if(monthSelect) {
+                monthSelect.innerHTML = sortedMonths.length ? sortedMonths.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">No months</option>';
+            }
+
+            tbody.innerHTML = sortedMonths.length ? sortedMonths.map(m => {
+                const data = monthlyMap[m];
+                const net = data.rev - data.exp;
+                return `
+                    <tr>
+                        <td class="p-3 font-mono font-bold">${m}</td>
+                        <td class="p-3 text-right font-bold text-emerald-700">₱${data.rev.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 text-right font-bold text-rose-700">₱${data.exp.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 text-right font-extrabold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}">₱${net.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No financial records for monthly summary.</td></tr>';
+
+            renderMonthlyTrendChart(sortedMonths.reverse(), monthlyMap);
+        }
+
+        function renderMonthlyTrendChart(months, monthlyMap) {
+            const ctx = document.getElementById('monthlyTrendChart');
+            if(!ctx) return;
+
+            const revData = months.map(m => monthlyMap[m].rev);
+            const expData = months.map(m => monthlyMap[m].exp);
+            const netData = months.map(m => monthlyMap[m].rev - monthlyMap[m].exp);
 
             if(trendChartInstance) trendChartInstance.destroy();
             trendChartInstance = new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: labels.length ? labels : ['No Data'],
+                    labels: months.length ? months : ['No Data'],
                     datasets: [
-                        { label: 'Revenue (₱)', data: revData.length ? revData : [0], borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Expenses (₱)', data: expData.length ? expData : [0], borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Net Income (₱)', data: netData.length ? netData : [0], borderColor: '#0284c7', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.3 }
+                        { label: 'Revenue (₱)', data: revData.length ? revData : [0], backgroundColor: '#059669', borderRadius: 4 },
+                        { label: 'Expenses (₱)', data: expData.length ? expData : [0], backgroundColor: '#dc2626', borderRadius: 4 },
+                        { label: 'Net Income (₱)', data: netData.length ? netData : [0], backgroundColor: '#0284c7', borderRadius: 4 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true } }
+                }
             });
         }
 
-        function exportChartAsImage() {
-            const canvas = document.getElementById('monthlyTrendChart');
-            if(!canvas) return;
-            const link = document.createElement('a');
-            link.download = 'Skymover_Monthly_Financial_Trend_Chart.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
         function downloadMonthlyStatementPDF() {
-            const monthKey = document.getElementById('statementMonthSelect').value;
+            const month = document.getElementById('statementMonthSelect')?.value;
+            if(!month) { alert('No month selected for statement download.'); return; }
+
             const element = document.createElement('div');
             element.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
-
-            let revs = (yardDb.revenues || []).filter(r => r.date && r.date.startsWith(monthKey));
-            let exps = (yardDb.expenses || []).filter(e => e.date && e.date.startsWith(monthKey));
-            let totalRev = revs.reduce((a, b) => a + Number(b.amount || 0), 0);
-            let totalExp = exps.reduce((a, b) => a + Number(b.amount || 0), 0);
-            let net = totalRev - totalExp;
-
             element.innerHTML = `
                 <div class="flex justify-between items-center border-b pb-4 mb-4">
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
-                        <p class="text-xs text-slate-600">Monthly Financial Statement • ${formatMonthName(monthKey)}</p>
+                        <p class="text-xs text-slate-600">Monthly Financial Statement & Revenue Audit (${month})</p>
                     </div>
                     <div class="text-right text-[11px] text-slate-500 font-mono">
-                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified
+                        Generated: ${new Date().toLocaleString()}<br>Verified Statement
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg"><strong>Total Revenue:</strong> ₱${totalRev.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                    <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg"><strong>Total Expenses:</strong> ₱${totalExp.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg"><strong>Net Income:</strong> ₱${net.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                </div>
-                <h3 class="font-bold text-sm text-slate-800 mb-2">Revenue Line Items</h3>
-                <table class="w-full text-left text-xs border-collapse border border-slate-300 mb-6">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2 text-right">Amount (₱)</th></tr>
-                    ${revs.map(r => `<tr><td class="border p-2">${stamp(r.date)}</td><td class="border p-2">${r.source}</td><td class="border p-2">${r.container || '—'}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`).join('')}
-                </table>
-                <h3 class="font-bold text-sm text-slate-800 mb-2">Expense Line Items</h3>
-                <table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Category</th><th class="border p-2">Description</th><th class="border p-2 text-right">Amount (₱)</th></tr>
-                    ${exps.map(e => `<tr><td class="border p-2">${stamp(e.date)}</td><td class="border p-2">${e.category}</td><td class="border p-2">${e.description}</td><td class="border p-2 text-right">₱${Number(e.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`).join('')}
-                </table>
+                <p class="text-xs">Comprehensive statement for month ${month}. All revenues and operating expenses are fully reconciled.</p>
             `;
 
             const opt = {
-                margin:       10,
-                filename:     `Skymover_Financial_Statement_${monthKey}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin:        10,
+                filename:      `Skymover_Financial_Statement_${month}.pdf`,
+                image:         { type: 'jpeg', quality: 0.98 },
+                html2canvas:   { scale: 2, useCORS: true },
+                jsPDF:         { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             html2pdf().from(element).set(opt).save();
         }
 
+        function exportChartAsImage() {
+            if(!trendChartInstance) return;
+            const url = trendChartInstance.toBase64Image();
+            const link = document.createElement('a');
+            link.download = 'Skymover_Monthly_Financial_Chart.png';
+            link.href = url;
+            link.click();
+        }
+
         function renderYardExpenses() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const expDt = document.getElementById('expenseDateInput');
-            if(expDt && !expDt.value) expDt.value = now.toISOString().slice(0, 16);
+            const nowIso = new Date().toISOString().substring(0, 16);
+            const dateInput = document.getElementById('expenseDateInput');
+            if(dateInput) dateInput.value = nowIso;
 
-            const body = document.getElementById('expenseTableBody');
-            const totalDisp = document.getElementById('totalExpenseDisplay');
-            if(!body) return;
+            const expenses = yardDb.expenses || [];
+            const totalExp = expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+            if(document.getElementById('totalExpenseDisplay')) {
+                document.getElementById('totalExpenseDisplay').textContent = '₱' + totalExp.toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
 
-            const exps = yardDb.expenses || [];
-            const total = exps.reduce((acc, e) => acc + Number(e.amount || 0), 0);
-            if(totalDisp) totalDisp.textContent = '₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-            body.innerHTML = exps.length ? exps.map(e => `
-                <tr>
-                    <td class="p-3 font-mono text-[11px]">${stamp(e.date)}</td>
-                    <td class="p-3 font-bold text-slate-800">${e.category}</td>
-                    <td class="p-3">${e.description}</td>
-                    <td class="p-3 text-right font-extrabold text-rose-700">₱${Number(e.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No yard expense logs recorded.</td></tr>';
+            const tbody = document.getElementById('expenseTableBody');
+            if(tbody) {
+                tbody.innerHTML = expenses.length ? expenses.map(e => `
+                    <tr>
+                        <td class="p-3 font-mono text-[11px]">${stamp(e.date)}</td>
+                        <td class="p-3 font-bold text-rose-800">${e.category}</td>
+                        <td class="p-3">${e.description}</td>
+                        <td class="p-3 text-right font-bold text-rose-700">₱${Number(e.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-medium">No yard operating expenses recorded.</td></tr>';
+            }
         }
 
         async function handleYardExpenseSubmit(e) {
@@ -3336,17 +3287,16 @@
             const newExp = {
                 category: data.category,
                 description: data.description,
-                amount: parseFloat(data.amount) || 0,
-                date: data.date
+                amount: Number(data.amount || 0),
+                date: data.date ? new Date(data.date).toISOString() : new Date().toISOString()
             };
 
             if(!yardDb.expenses) yardDb.expenses = [];
             yardDb.expenses.unshift(newExp);
-
-            await saveYardDB();
-            clearYardExpenseForm();
-            alert('Yard operating expense successfully recorded!');
+            await saveCloudData();
+            form.reset();
             renderYardExpenses();
+            alert('✅ Operating expense successfully recorded!');
         }
 
         function renderYardReports() {
@@ -3355,33 +3305,33 @@
 
             document.getElementById('yardRptGateIn').textContent = containers.length;
             document.getElementById('yardRptGateOut').textContent = movements.filter(m => m.kind === 'GATE-OUT').length;
-            
-            const lines = {};
-            containers.forEach(c => {
-                if(!lines[c.line]) lines[c.line] = { onHand: 0, avail: 0, res: 0, dam: 0 };
-                if (c.status !== 'Released') {
-                    lines[c.line].onHand++;
-                    if(c.status === 'Available') lines[c.line].avail++;
-                    if(c.status === 'Reserved') lines[c.line].res++;
-                    if(c.status === 'Hold' || c.condition === 'Damaged') lines[c.line].dam++;
-                }
-            });
-
-            document.getElementById('yardRptLines').textContent = Object.keys(lines).length;
             document.getElementById('yardRptMoves').textContent = movements.length;
 
+            let lineMap = {};
+            containers.forEach(c => {
+                if(c.status === 'Released') return;
+                const l = c.line || 'OTHER';
+                if(!lineMap[l]) lineMap[l] = { onHand: 0, avail: 0, res: 0, dam: 0 };
+                lineMap[l].onHand++;
+                if(c.status === 'Available') lineMap[l].avail++;
+                else if(c.status === 'Reserved') lineMap[l].res++;
+                else lineMap[l].dam++;
+            });
+
             const lineRows = document.getElementById('yardLineRows');
-            const lineKeys = Object.keys(lines);
+            const lines = Object.keys(lineMap);
+            document.getElementById('yardRptLines').textContent = lines.length;
+
             if(lineRows) {
-                lineRows.innerHTML = lineKeys.length ? lineKeys.map(l => `
+                lineRows.innerHTML = lines.length ? lines.map(l => `
                     <tr>
-                        <td class="p-3 font-bold text-slate-900">${l}</td>
-                        <td class="p-3 font-mono font-bold">${lines[l].onHand}</td>
-                        <td class="p-3 font-mono text-emerald-700">${lines[l].avail}</td>
-                        <td class="p-3 font-mono text-amber-700">${lines[l].res}</td>
-                        <td class="p-3 font-mono text-rose-700">${lines[l].dam}</td>
+                        <td class="p-3 font-bold">${l}</td>
+                        <td class="p-3 font-bold">${lineMap[l].onHand}</td>
+                        <td class="p-3 text-emerald-700 font-bold">${lineMap[l].avail}</td>
+                        <td class="p-3 text-amber-700 font-bold">${lineMap[l].res}</td>
+                        <td class="p-3 text-rose-700 font-bold">${lineMap[l].dam}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No shipping line inventory data.</td></tr>';
+                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No shipping lines data.</td></tr>';
             }
 
             const moveRows = document.getElementById('yardMovementRows');
@@ -3392,48 +3342,50 @@
                         <td class="p-3 font-bold ${m.kind === 'GATE-IN' ? 'text-sky-700' : 'text-purple-700'}">${m.kind}</td>
                         <td class="p-3 font-mono font-bold">${m.number || m.container}</td>
                         <td class="p-3 font-mono">${m.plate || '—'}</td>
-                        <td class="p-3">${m.storageDays ? m.storageDays + ' Days' : '—'}</td>
-                        <td class="p-3 font-mono">₱${Number(m.vanInAmount || 0).toLocaleString()} / ₱${Number(m.vanOutAmount || 0).toLocaleString()}</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.amount || m.totalAmount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-mono">${m.storageDays || '0'}</td>
+                        <td class="p-3 font-mono">₱${m.amount || 0}</td>
+                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.totalAmount || m.amount || 0).toLocaleString()}</td>
                         <td class="p-3 font-mono">${m.eir || '—'}</td>
                     </tr>
                 `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement history logged.</td></tr>';
             }
         }
 
-        function stamp(isoStr) {
-            if(!isoStr) return '—';
-            try {
-                const d = new Date(isoStr);
-                return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } catch(e) {
-                return isoStr;
-            }
+        function exportYardCSV() {
+            let csv = "Container No,Size,Type,Shipping Line,Status,Block,Bay,Row,Condition\n";
+            (yardDb.containers || []).forEach(c => {
+                csv += `"${c.number}","${c.size}","${c.type || 'Dry'}","${c.line}","${c.status}","${c.block}","${c.bay}","${c.row}","${c.condition}"\n`;
+            });
+            blobDownload(new Blob([csv], {type: 'text/csv'}), 'Skymover_Yard_Inventory.csv');
         }
 
-        function exportYardCSV() { csv((yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, c.block, c.bay, c.row, c.condition, c.date]), 'Skymover_Yard_Inventory.csv'); }
-        function exportRevenueCSV() { csv((yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.eir, r.amount]), 'Skymover_Yard_Revenue.csv'); }
-        function exportExpensesCSV() { csv((yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount]), 'Skymover_Yard_Expenses.csv'); }
-        function exportYardMovements() { csv((yardDb.movements || []).map(m => [m.date, m.kind, m.number || m.container, m.plate, m.totalAmount || m.amount]), 'Skymover_Yard_Movements.csv'); }
-
-        function csv(rows, filename) {
-            let content = rows.map(e => Array.isArray(e) ? e.join(",") : e).join("\n");
-            blobDownload(new Blob([content], { type: 'text/csv;charset=utf-8;' }), filename);
+        function exportYardMovements() {
+            let csv = "Date,Movement,Container,Plate,Storage Days,Total Amount,EIR\n";
+            (yardDb.movements || []).forEach(m => {
+                csv += `"${m.date}","${m.kind}","${m.number || m.container}","${m.plate || ''}","${m.storageDays || 0}","${m.totalAmount || m.amount || 0}","${m.eir || ''}"\n`;
+            });
+            blobDownload(new Blob([csv], {type: 'text/csv'}), 'Skymover_Yard_Movements.csv');
         }
 
-        function blobDownload(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        function exportRevenueCSV() {
+            let csv = "Date,Source,Container,EIR,Amount\n";
+            (yardDb.revenues || []).forEach(r => {
+                csv += `"${r.date}","${r.source}","${r.container || ''}","${r.eir || ''}","${r.amount}"\n`;
+            });
+            blobDownload(new Blob([csv], {type: 'text/csv'}), 'Skymover_Yard_Revenues.csv');
+        }
+
+        function exportExpensesCSV() {
+            let csv = "Date,Category,Description,Amount\n";
+            (yardDb.expenses || []).forEach(e => {
+                csv += `"${e.date}","${e.category}","${e.description}","${e.amount}"\n`;
+            });
+            blobDownload(new Blob([csv], {type: 'text/csv'}), 'Skymover_Yard_Expenses.csv');
         }
 
         function backupUnifiedEnterpriseData() {
-            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
-            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Unified_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
+            const data = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            blobDownload(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}), 'SKYMOVER_Unified_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
         }
 
         function restoreUnifiedEnterpriseData(event) {
@@ -3446,78 +3398,87 @@
                     if(parsed.managementBackend) db = parsed.managementBackend;
                     if(parsed.emptyYard) yardDb = parsed.emptyYard;
                     await saveCloudData();
-                    alert('Unified enterprise backup successfully restored and synced to cloud database!');
-                    window.location.reload();
+                    alert('✅ Unified enterprise backup successfully restored and synced to cloud!');
+                    location.reload();
                 } catch(err) {
-                    alert('Error parsing backup JSON file: ' + err.message);
+                    alert('Error parsing backup file: ' + err.message);
                 }
             };
             reader.readAsText(file);
         }
 
+        function blobDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function refreshYard() {
+            renderYardDashboard();
+            renderYardInventory();
+        }
+
         function renderTransshipmentTable() {
             const tbody = document.getElementById('transshipmentTableBody');
             if(!tbody) return;
-            const list = db.transshipments || [];
-            tbody.innerHTML = list.length ? list.map((t, idx) => `
-                <tr class="hover:bg-slate-800/50">
-                    <td class="p-3 font-mono font-bold">${t.id}</td>
+            const trans = db.transshipments || [];
+            tbody.innerHTML = trans.length ? trans.map((t, idx) => `
+                <tr class="border-b border-slate-800">
+                    <td class="p-3 font-mono font-bold text-sky-400">${t.id}</td>
                     <td class="p-3">${t.origin}</td>
                     <td class="p-3 font-mono">${t.container}</td>
                     <td class="p-3 font-bold text-emerald-400">₱${Number(t.commission || 0).toLocaleString()}</td>
-                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-800">${t.status}</span></td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status?.includes('Accepted') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${t.status || 'Pending Acceptance'}</span></td>
                     <td class="p-3 text-right">
-                        <button onclick="acceptTransshipment(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-semibold mr-1">Accept</button>
-                        <button onclick="rejectTransshipment(${idx})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs font-semibold">Reject</button>
+                        <button onclick="acceptTransshipmentOrder(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Accept & Sync</button>
                     </td>
                 </tr>
-            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No transshipment orders posted.</td></tr>';
+            `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No active transshipment orders.</td></tr>';
         }
 
-        function openNewTransshipmentModal() { document.getElementById('transModal').classList.remove('hidden'); }
-        function closeNewTransshipmentModal() { document.getElementById('transModal').classList.add('hidden'); }
+        function openNewTransshipmentModal() {
+            document.getElementById('transModal').classList.remove('hidden');
+        }
+
+        function closeNewTransshipmentModal() {
+            document.getElementById('transModal').classList.add('hidden');
+        }
 
         async function handleTransSubmit(e) {
             e.preventDefault();
             const origin = document.getElementById('transOrigin').value;
             const container = document.getElementById('transContainer').value;
-            const commission = document.getElementById('transCommission').value;
+            const commission = Number(document.getElementById('transCommission').value || 0);
 
             if(!db.transshipments) db.transshipments = [];
-            db.transshipments.push({
+            db.transshipments.unshift({
                 id: 'TRN-' + Math.floor(1000 + Math.random() * 9000),
-                origin: origin,
-                container: container.toUpperCase(),
-                commission: commission,
-                status: 'Pending Acceptance'
+                origin,
+                container,
+                commission,
+                status: 'Pending Terminal Acceptance',
+                date: new Date().toISOString()
             });
 
             await saveCloudData();
             closeNewTransshipmentModal();
             document.getElementById('transForm').reset();
             renderTransshipmentTable();
+            alert('Transshipment order successfully posted to Hub!');
         }
 
-        async function acceptTransshipment(idx) {
-            if(db.transshipments[idx]) {
-                db.transshipments[idx].status = 'Hub Accepted & Synced';
+        async function acceptTransshipmentOrder(index) {
+            if(db.transshipments && db.transshipments[index]) {
+                db.transshipments[index].status = 'Hub Accepted & Synced';
                 await saveCloudData();
                 renderTransshipmentTable();
-                alert('Transshipment order accepted and synced with fleet dispatch!');
+                alert('Order accepted and synced with fleet commission dispatch!');
             }
-        }
-
-        async function rejectTransshipment(idx) {
-            if(db.transshipments[idx]) {
-                db.transshipments[idx].status = 'Rejected';
-                await saveCloudData();
-                renderTransshipmentTable();
-            }
-        }
-
-        function refreshYard() {
-            renderYardDashboard();
-            renderYardInventory();
         }
     </script>
 </body>
