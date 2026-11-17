@@ -1006,6 +1006,7 @@
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
+                    restoreLastActiveViewOrLanding();
                 } else {
                     currentUserRole = 'guest';
                     updateAuthUI(null, 'guest');
@@ -1143,6 +1144,7 @@
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     closeSkymoverLogin();
+                    restoreLastActiveViewOrLanding();
                 }
             } catch(err) {
                 alert('Sign in failed: ' + err.message);
