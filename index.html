@@ -2160,8 +2160,9 @@
             }
         }
 
-function switchAiTab(tab) {
-            sessionStorage.setItem('skymover_active_ai_tab', tab);
+        function switchAiTab(tab) {
+            // Updated to use localStorage for permanent persistence across log-ins
+            localStorage.setItem('skymover_active_ai_tab', tab);
             ['tabBrainBtn', 'tabLensBtn', 'tabTrackBtn'].forEach(id => {
                 const b = document.getElementById(id);
                 if(b) b.className = "px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition";
@@ -2237,6 +2238,50 @@ function switchAiTab(tab) {
             }
         }
 
+        function switchView(viewName) {
+            if (!currentUser || currentUserRole === 'guest') {
+                window.openSkymoverLogin();
+                return;
+            }
+            if (viewName === 'backend' && currentUserRole === 'driver') {
+                alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
+                return;
+            }
+
+            localStorage.setItem('skymover_active_view', viewName);
+
+            ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
+                const el = document.getElementById(v);
+                if(el) el.classList.add('hidden');
+            });
+
+            if (viewName === 'landing') {
+                document.getElementById('viewLanding').classList.remove('hidden');
+            } else if (viewName === 'backend') { 
+                document.getElementById('viewBackend').classList.remove('hidden');
+                // Read from localStorage so user's preferred view persists across logouts and logins
+                const savedAiTab = localStorage.getItem('skymover_active_ai_tab') || 'brain';
+                switchAiTab(savedAiTab);
+            } else if (viewName === 'driver') { 
+                document.getElementById('viewDriver').classList.remove('hidden'); 
+                refreshDriverPortal(); 
+            } else if (viewName === 'hub') { 
+                document.getElementById('viewHub').classList.remove('hidden'); 
+                renderTransshipmentTable(); 
+            } else if (viewName === 'yard') { 
+                document.getElementById('viewYard').classList.remove('hidden'); 
+            }
+        }
+
+        function restoreLastActiveViewOrLanding() {
+            const lastView = localStorage.getItem('skymover_active_view');
+            if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
+                switchView(lastView);
+            } else {
+                switchView('landing');
+            }
+        }
+        
         function runAiAnalysis() {
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
