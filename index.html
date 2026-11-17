@@ -698,7 +698,7 @@
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -707,17 +707,8 @@
                 <div id="backendModalFields"></div>
                 <div class="pt-2">
                     <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt (Cloud Upload)</label>
-                    <!-- Drag & Drop Dropzone Integrated Here -->
-                    <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="backendDropZone"
-                            ondragover="handleDragOver(event, 'backendDropZone')" 
-                            ondragleave="handleDragLeave(event, 'backendDropZone')" 
-                            ondrop="handleDropBackend(event)">
-                        <label class="font-bold text-slate-300 mb-1 block text-xs"><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-400"></i> Drag & Drop Photos / Files Here</label>
-                        <p class="text-[10px] text-slate-400 mb-3">or click below to browse files (Cloud Storage Direct Upload)</p>
-                        <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleBackendFileAttach(event)" class="hidden">
-                        <button type="button" onclick="document.getElementById('backendEntryFile').click()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 px-3 py-1.5 rounded-lg font-bold text-xs transition border border-slate-700">Browse Files</button>
-                        <div id="backendEntryFilePreview" class="flex flex-wrap justify-center gap-2 mt-3"></div>
-                    </div>
+                    <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleBackendFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
+                    <div id="backendEntryFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-lg transition">Save Entry</button>
@@ -1595,16 +1586,6 @@
             }
         }
 
-        function handleDropBackend(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById('backendDropZone');
-            if(zone) zone.classList.remove('drag-over');
-            if(e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                processBackendFiles(e.dataTransfer.files);
-            }
-        }
-
         async function handleFileInput(e, type) {
             if(e.target.files && e.target.files.length > 0) {
                 await processFiles(e.target.files, type);
@@ -1625,7 +1606,7 @@
                     const tempFileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data };
         
                     const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
-                    const finalUrl = storageUrl || base64Data;
+                    const finalUrl = storageUrl || base64Data; // Fallback to base64 if storage URL fails
         
                     const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: finalUrl, date: new Date().toISOString() };
         
@@ -1641,22 +1622,6 @@
                         thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
                     previewContainer.appendChild(thumb);
-                };
-                reader.readAsDataURL(optimizedFile);
-            }
-        }
-
-        async function processBackendFiles(files) {
-            const preview = document.getElementById('backendEntryFilePreview');
-            if(!preview) return;
-            for(let file of files) {
-                const optimizedFile = await compressImageFile(file);
-                const reader = new FileReader();
-                reader.onload = async function(evt) {
-                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'backend');
-                    stagedBackendAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
-                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
                 };
                 reader.readAsDataURL(optimizedFile);
             }
@@ -1682,8 +1647,21 @@
         }
 
         async function handleBackendFileAttach(e) {
-            if(e.target.files && e.target.files.length > 0) {
-                await processBackendFiles(e.target.files);
+            const files = e.target.files;
+            const preview = document.getElementById('backendEntryFilePreview');
+            if(!preview) return;
+            stagedBackendAttachments = [];
+            preview.innerHTML = '';
+            for(let file of files) {
+                const optimizedFile = await compressImageFile(file);
+                const reader = new FileReader();
+                reader.onload = async function(evt) {
+                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'backend');
+                    stagedBackendAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
+                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
+                };
+                reader.readAsDataURL(optimizedFile);
             }
         }
 
@@ -2446,7 +2424,7 @@
         function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
 
         // ==========================================
-        // VISUAL EXTRACTION REPORT & PHOTO AUDIT
+        // VISUAL EXTRACTION REPORT & PHOTO AUDIT (UPDATED WITH ROBUST THUMBNAILS)
         // ==========================================
         function openExtractionReport() {
             const modal = document.getElementById('subModuleModal');
@@ -2997,6 +2975,106 @@
             alert('Container Gate-Out and billing successfully processed with uploaded files!');
             switchYardTab('yardRevenue');
         }
+
+        function editYardStatus(id) {
+            const container = (yardDb.containers || []).find(c => c.id === id);
+            if(!container) return;
+            const newStatus = prompt(`Update status for container ${container.number} (Available, Reserved, Hold, Released):`, container.status);
+            if(newStatus) {
+                container.status = newStatus;
+                saveYardDB();
+                refreshYard();
+            }
+        }
+
+        function blobDownload(blob, name) { let a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = name; a.click(); URL.revokeObjectURL(u); }
+        function csv(rows, name) { blobDownload(new Blob(['\ufeff' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}), name); }
+
+        function exportYardCSV() {
+            const data = (yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, yardLoc(c)]);
+            csv([['Container No', 'Size', 'Shipping Line', 'Status', 'Location'], ...data], 'skymover_yard_inventory.csv');
+        }
+
+        function exportYardMovements() {
+            const data = (yardDb.movements || []).map(m => [m.kind, m.number, m.date, m.plate, m.eir]);
+            csv([['Movement', 'Container No', 'Date', 'Plate', 'EIR'], ...data], 'skymover_yard_movements.csv');
+        }
+
+        function exportRevenueCSV() {
+            const data = (yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.amount]);
+            csv([['Date', 'Source', 'Container No', 'Amount'], ...data], 'skymover_yard_revenue.csv');
+        }
+
+        function exportExpensesCSV() {
+            const data = (yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount]);
+            csv([['Date', 'Category', 'Description', 'Amount'], ...data], 'skymover_yard_expenses.csv');
+        }
+
+        function backupUnifiedEnterpriseData() {
+            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Full_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
+        }
+
+        function restoreUnifiedEnterpriseData(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.managementBackend && parsed.emptyYard) {
+                        db = parsed.managementBackend;
+                        yardDb = parsed.emptyYard;
+                        saveCloudData();
+                        alert('Unified enterprise backup successfully restored!');
+                        window.location.reload();
+                    } else {
+                        alert('Invalid backup file structure.');
+                    }
+                } catch(err) {
+                    alert('Error parsing backup file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const loginModal = document.getElementById('loginModal');
+            window.openSkymoverLogin = function() { if(loginModal) loginModal.style.display = 'flex'; };
+            document.getElementById('closeLoginModal')?.addEventListener('click', () => { 
+                closeSkymoverLogin(); 
+            });
+            document.getElementById('skymoverLoginForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, false);
+            });
+            initSupabase();
+            refreshYard();
+        });
     </script>
+
+    <!-- Login Modal Overlay -->
+    <div id="loginModal" class="skymover-modal-overlay" style="display: flex;">
+        <div class="skymover-modal-container">
+            <button type="button" class="modal-close-btn" id="closeLoginModal">&times;</button>
+            <div class="modal-header">
+                <h2>Welcome to Skymover</h2>
+                <p>Sign in with your Supabase credentials</p>
+            </div>
+            <form id="skymoverLoginForm" class="modal-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="name@skymover.com" required />
+                </div>
+                <div class="form-group">
+                    <div class="password-label-wrapper">
+                        <label for="loginPassword">Password</label>
+                    </div>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required />
+                </div>
+                <button type="submit" id="signInSubmitBtn" class="skymover-btn-primary">Sign In to Dashboard</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
