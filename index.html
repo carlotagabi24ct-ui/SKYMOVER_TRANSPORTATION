@@ -215,7 +215,17 @@
 
                     <div class="pt-2">
                         <label class="block text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-camera mr-1"></i> <span data-i18n="uploadProofLabel">Upload Proof of Delivery / Waybill Photo</span></label>
-                        <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" class="w-full text-xs bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200">
+                        <!-- DRIVER PORTAL DRAG & DROP ZONE -->
+                        <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="driverProofDropZone"
+                             ondragover="handleDragOver(event, 'driverProofDropZone')"
+                             ondragleave="handleDragLeave(event, 'driverProofDropZone')"
+                             ondrop="handleDrop(event, 'driverProof')">
+                            <label class="font-bold text-slate-300 mb-1 block text-xs"><i class="fa-solid fa-cloud-arrow-up mr-1 text-purple-400"></i> Drag & Drop Photos / Files Here</label>
+                            <p class="text-[10px] text-slate-400 mb-2">or click below to browse (Compressed & Cloud Upload)</p>
+                            <input type="file" id="driverProofPhotoInput" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'driverProof')" class="hidden">
+                            <button type="button" onclick="document.getElementById('driverProofPhotoInput').click()" class="bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 px-3 py-1 rounded-lg font-bold text-xs transition border border-purple-700/50">Browse Files</button>
+                            <div id="driverProofPhotoPreviewContainer" class="flex flex-wrap justify-center gap-2 mt-3"></div>
+                        </div>
                     </div>
                     <button onclick="submitDriverProofOfDelivery()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition" data-i18n="submitProofBtn">Submit Proof of Delivery</button>
                     <div id="uploadSuccessMsg" class="hidden text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i> <span data-i18n="uploadSuccessText">Photo successfully uploaded and synced to cloud database!</span></div>
@@ -663,7 +673,7 @@
         </div>
     </div>
 
-    <!-- NEW DRIVER REGISTRATION MODAL WITH FILE ATTACHMENTS -->
+    <!-- NEW DRIVER REGISTRATION MODAL WITH DRAG & DROP FILE ATTACHMENTS -->
     <div id="driverRegModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeNewDriverRegistrationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -687,8 +697,17 @@
                 </div>
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-purple-400"></i> Attach Driver License / Photo ID (Compressed & Cloud Upload)</label>
-                    <input type="file" id="regDriverFile" accept="image/*,application/pdf" onchange="handleDriverFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
-                    <div id="regDriverFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
+                    <!-- DRIVER REGISTRATION DRAG & DROP ZONE -->
+                    <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="driverRegDropZone"
+                         ondragover="handleDragOver(event, 'driverRegDropZone')"
+                         ondragleave="handleDragLeave(event, 'driverRegDropZone')"
+                         ondrop="handleDrop(event, 'driverReg')">
+                        <label class="font-bold text-slate-300 mb-1 block text-xs"><i class="fa-solid fa-cloud-arrow-up mr-1 text-purple-400"></i> Drag & Drop Driver License / Photo ID Here</label>
+                        <p class="text-[10px] text-slate-400 mb-2">or click below to browse (Compressed & Cloud Upload)</p>
+                        <input type="file" id="regDriverFile" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'driverReg')" class="hidden">
+                        <button type="button" onclick="document.getElementById('regDriverFile').click()" class="bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 px-3 py-1 rounded-lg font-bold text-xs transition border border-purple-700/50">Browse Files</button>
+                        <div id="regDriverFilePreview" class="flex flex-wrap justify-center gap-2 mt-3"></div>
+                    </div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition">Register Driver</button>
@@ -698,7 +717,7 @@
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH ATTACHMENTS -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -707,8 +726,17 @@
                 <div id="backendModalFields"></div>
                 <div class="pt-2">
                     <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt (Cloud Upload)</label>
-                    <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleBackendFileAttach(event)" class="w-full text-xs bg-slate-950 border border-slate-700 p-2 rounded-lg text-slate-200">
-                    <div id="backendEntryFilePreview" class="flex flex-wrap gap-2 mt-2"></div>
+                    <!-- BACKEND ENTRY DRAG & DROP ZONE -->
+                    <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="backendEntryDropZone"
+                         ondragover="handleDragOver(event, 'backendEntryDropZone')"
+                         ondragleave="handleDragLeave(event, 'backendEntryDropZone')"
+                         ondrop="handleDrop(event, 'backendEntry')">
+                        <label class="font-bold text-slate-300 mb-1 block text-xs"><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-400"></i> Drag & Drop Photos / Document Receipts Here</label>
+                        <p class="text-[10px] text-slate-400 mb-2">or click below to browse (Cloud Upload)</p>
+                        <input type="file" id="backendEntryFile" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'backendEntry')" class="hidden">
+                        <button type="button" onclick="document.getElementById('backendEntryFile').click()" class="bg-sky-900/40 hover:bg-sky-900/60 text-sky-300 px-3 py-1 rounded-lg font-bold text-xs transition border border-sky-700/50">Browse Files</button>
+                        <div id="backendEntryFilePreview" class="flex flex-wrap justify-center gap-2 mt-3"></div>
+                    </div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-lg transition">Save Entry</button>
@@ -794,6 +822,7 @@
         let stagedGateOutPhotos = [];
         let stagedDriverAttachments = [];
         let stagedBackendAttachments = [];
+        let stagedDriverProofPhotos = [];
         let trendChartInstance = null;
         let yardPieChartInstance = null;
         let yardBarChartInstance = null;
@@ -1398,7 +1427,6 @@
                         const latStr = lat.toFixed(4);
                         const lngStr = lng.toFixed(4);
                         
-                        // Calculate nearest destination hub distance
                         const nearestHubInfo = getNearestDestinationHub(lat, lng);
 
                         let resolvedAddress = "Resolving street address...";
@@ -1578,7 +1606,12 @@
         function handleDrop(e, type) {
             e.preventDefault();
             e.stopPropagation();
-            const zoneId = type === 'gateIn' ? 'gateInDropZone' : 'gateOutDropZone';
+            let zoneId = 'gateInDropZone';
+            if(type === 'gateOut') zoneId = 'gateOutDropZone';
+            else if(type === 'driverReg') zoneId = 'driverRegDropZone';
+            else if(type === 'backendEntry') zoneId = 'backendEntryDropZone';
+            else if(type === 'driverProof') zoneId = 'driverProofDropZone';
+
             const zone = document.getElementById(zoneId);
             if(zone) zone.classList.remove('drag-over');
             if(e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -1593,7 +1626,12 @@
         }
 
         async function processFiles(files, type) {
-            const containerId = type === 'gateIn' ? 'gateInPhotoPreviewContainer' : 'gateOutPhotoPreviewContainer';
+            let containerId = 'gateInPhotoPreviewContainer';
+            if(type === 'gateOut') containerId = 'gateOutPhotoPreviewContainer';
+            else if(type === 'driverReg') containerId = 'regDriverFilePreview';
+            else if(type === 'backendEntry') containerId = 'backendEntryFilePreview';
+            else if(type === 'driverProof') containerId = 'driverProofPhotoPreviewContainer';
+
             const previewContainer = document.getElementById(containerId);
             if(!previewContainer) return;
         
@@ -1605,61 +1643,32 @@
                     const base64Data = event.target.result;
                     const tempFileObj = { name: optimizedFile.name, size: (optimizedFile.size / (1024 * 1024)).toFixed(1) + ' MB', dataUrl: base64Data };
         
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, type === 'gateIn' ? 'gate-in' : 'gate-out');
-                    const finalUrl = storageUrl || base64Data; // Fallback to base64 if storage URL fails
+                    let folder = 'general';
+                    if(type === 'gateIn') folder = 'gate-in';
+                    else if(type === 'gateOut') folder = 'gate-out';
+                    else if(type === 'driverReg' || type === 'driverProof') folder = 'drivers';
+                    else if(type === 'backendEntry') folder = 'backend';
+
+                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempFileObj, folder);
+                    const finalUrl = storageUrl || base64Data; 
         
                     const fileObj = { name: optimizedFile.name, size: tempFileObj.size, dataUrl: finalUrl, date: new Date().toISOString() };
         
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
-                    else stagedGateOutPhotos.push(fileObj);
+                    else if(type === 'gateOut') stagedGateOutPhotos.push(fileObj);
+                    else if(type === 'driverReg') stagedDriverAttachments.push(fileObj);
+                    else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
+                    else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
                     const thumb = document.createElement('div');
-                    thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300 shadow-sm bg-white flex items-center justify-center';
+                    thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 flex items-center justify-center';
                     
                     if (optimizedFile.type && optimizedFile.type.startsWith('image/')) {
-                        thumb.innerHTML = `<img src="${finalUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-[9px] text-slate-600 font-bold p-1 text-center\'>${optimizedFile.name.substring(0, 10)}</span>';">`;
+                        thumb.innerHTML = `<img src="${finalUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-[9px] text-slate-400 font-bold p-1 text-center\'>${optimizedFile.name.substring(0, 10)}</span>';">`;
                     } else {
-                        thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-800 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
+                        thumb.innerHTML = `<div class="text-[9px] font-bold text-slate-300 text-center p-1 truncate" title="${optimizedFile.name}">${optimizedFile.name}</div>`;
                     }
                     previewContainer.appendChild(thumb);
-                };
-                reader.readAsDataURL(optimizedFile);
-            }
-        }
-
-        async function handleDriverFileAttach(e) {
-            const files = e.target.files;
-            const preview = document.getElementById('regDriverFilePreview');
-            if(!preview) return;
-            stagedDriverAttachments = [];
-            preview.innerHTML = '';
-            for(let file of files) {
-                const optimizedFile = await compressImageFile(file);
-                const reader = new FileReader();
-                reader.onload = async function(evt) {
-                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'drivers');
-                    stagedDriverAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
-                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-purple-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
-                };
-                reader.readAsDataURL(optimizedFile);
-            }
-        }
-
-        async function handleBackendFileAttach(e) {
-            const files = e.target.files;
-            const preview = document.getElementById('backendEntryFilePreview');
-            if(!preview) return;
-            stagedBackendAttachments = [];
-            preview.innerHTML = '';
-            for(let file of files) {
-                const optimizedFile = await compressImageFile(file);
-                const reader = new FileReader();
-                reader.onload = async function(evt) {
-                    const tempObj = { name: optimizedFile.name, dataUrl: evt.target.result };
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'backend');
-                    stagedBackendAttachments.push({ name: optimizedFile.name, dataUrl: storageUrl });
-                    preview.innerHTML += `<span class="text-[10px] bg-slate-800 text-sky-300 px-2 py-1 rounded border border-slate-700"><i class="fa-solid fa-file mr-1"></i> ${optimizedFile.name} (Uploaded)</span>`;
                 };
                 reader.readAsDataURL(optimizedFile);
             }
@@ -1888,11 +1897,21 @@
             refreshDriverSmsInbox();
         }
 
-        function submitDriverProofOfDelivery() { document.getElementById('uploadSuccessMsg').classList.remove('hidden'); }
+        async function submitDriverProofOfDelivery() {
+            if(stagedDriverProofPhotos.length > 0) {
+                if(!db.uploads) db.uploads = [];
+                stagedDriverProofPhotos.forEach(p => {
+                    db.uploads.push({ name: p.name, date: new Date().toISOString().replace('T', ' ').substring(0, 16), size: p.size, type: 'Delivery Proof', dataUrl: p.dataUrl });
+                });
+                await saveCloudData();
+            }
+            document.getElementById('uploadSuccessMsg').classList.remove('hidden');
+        }
+
         function openNewDriverRegistrationModal() { document.getElementById('driverRegModal').classList.remove('hidden'); }
         function closeNewDriverRegistrationModal() { document.getElementById('driverRegModal').classList.add('hidden'); }
 
-        function handleNewDriverSubmit(e) {
+        async function handleNewDriverSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('regDriverName').value;
             const license = document.getElementById('regDriverLicense').value;
@@ -1901,7 +1920,7 @@
 
             if(!db.drivers) db.drivers = [];
             db.drivers.push({ name, license, phone, truck, status: 'Available', rating: '5.0 ★', attachments: stagedDriverAttachments });
-            saveCloudData();
+            await saveCloudData();
             closeNewDriverRegistrationModal();
             document.getElementById('driverRegForm').reset();
             stagedDriverAttachments = [];
@@ -2191,24 +2210,6 @@
             setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified successfully."; }, 900);
         }
 
-        async function handlePhotoUpload(e) {
-            const file = e.target.files[0];
-            if(file) {
-                const optimizedFile = await compressImageFile(file);
-                const reader = new FileReader();
-                reader.onload = async function(event) {
-                    const tempObj = { name: optimizedFile.name, dataUrl: event.target.result };
-                    const storageUrl = await uploadCompressedPhotosToSupabaseStorage(tempObj, 'proof-of-delivery');
-
-                    if(!db.uploads) db.uploads = [];
-                    db.uploads.push({ name: optimizedFile.name, date: new Date().toISOString().replace('T', ' ').substring(0, 16), size: (optimizedFile.size / (1024*1024)).toFixed(1) + ' MB', type: 'Delivery Proof', dataUrl: storageUrl });
-                    saveCloudData();
-                    document.getElementById('uploadSuccessMsg').classList.remove('hidden');
-                };
-                reader.readAsDataURL(optimizedFile);
-            }
-        }
-
         function openSubModule(title) {
             if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
             if(currentUserRole === 'driver') {
@@ -2334,35 +2335,35 @@
             let html = '';
 
             if (type === 'Vehicle') {
-                titleEl.innerHTML = '<i class="fa-solid fa-truck text-sky-400 mr-2"></i> Add New Vehicle';
+                titleEl.innerHTML = '<i class="fa-solid fa-truck text-sky-400 mr-2"></i> Add New Vehicle (Vehicle Masterlist)';
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-104"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Vehicle Model *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Isuzu Giga Prime"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Initial Status</label><select id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Active</option><option>Standby</option><option>In Maintenance</option></select></div>
                 `;
             } else if (type === 'Fuel') {
-                titleEl.innerHTML = '<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Log Fuel Fill';
+                titleEl.innerHTML = '<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Log Fuel Fill (Fuel Monitoring)';
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Volume (Liters) *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. 250 L"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱16,500"></div>
                 `;
             } else if (type === 'Maintenance') {
-                titleEl.innerHTML = '<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Schedule Maintenance';
+                titleEl.innerHTML = '<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Schedule Maintenance (Fleet Maintenance)';
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-102"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Issue / Service Required *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Brake pad & hydraulic replacement"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Estimated Cost (₱)</label><input type="text" id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,500"></div>
                 `;
             } else if (type === 'Dispatch') {
-                titleEl.innerHTML = '<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> New Fleet Dispatch';
+                titleEl.innerHTML = '<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> New Fleet Dispatch (GPS & Dispatch)';
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor → Valenzuela Depot"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
                 `;
             } else if (type === 'Expense') {
-                titleEl.innerHTML = '<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Log Trip Expense';
+                titleEl.innerHTML = '<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Log Trip Expense (Fleet Expenses)';
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Trip ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. TRP-8821"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Fuel Cost (₱)</label><input type="text" id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,200"></div>
@@ -2377,7 +2378,7 @@
             if(modal) modal.classList.add('hidden');
         }
 
-        function handleBackendEntrySubmit(e) {
+        async function handleBackendEntrySubmit(e) {
             e.preventDefault();
             const val1 = document.getElementById('beInput1').value;
             const val2 = document.getElementById('beInput2').value;
@@ -2386,31 +2387,31 @@
             if (currentBackendModuleType === 'Vehicle') {
                 if(!db.vehicles) db.vehicles = [];
                 db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned', attachments: stagedBackendAttachments });
-                saveCloudData();
+                await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Vehicle Management');
             } else if (currentBackendModuleType === 'Fuel') {
                 if(!db.fuelLogs) db.fuelLogs = [];
                 db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
-                saveCloudData();
+                await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fuel Monitoring');
             } else if (currentBackendModuleType === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
                 db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
-                saveCloudData();
+                await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Maintenance');
             } else if (currentBackendModuleType === 'Dispatch') {
                 if(!db.dispatchLogs) db.dispatchLogs = [];
                 db.dispatchLogs.push({ unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments });
-                saveCloudData();
+                await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('GPS & Dispatch');
             } else if (currentBackendModuleType === 'Expense') {
                 if(!db.expenseLogs) db.expenseLogs = [];
                 db.expenseLogs.push({ trip: val1, fuel: val2 || '₱0', tolls: '₱0', maintenance: '₱0', total: val3, attachments: stagedBackendAttachments });
-                saveCloudData();
+                await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fleet Expenses');
             }
@@ -2424,7 +2425,7 @@
         function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
 
         // ==========================================
-        // VISUAL EXTRACTION REPORT & PHOTO AUDIT (UPDATED WITH ROBUST THUMBNAILS)
+        // VISUAL EXTRACTION REPORT & PHOTO AUDIT
         // ==========================================
         function openExtractionReport() {
             const modal = document.getElementById('subModuleModal');
@@ -2880,7 +2881,7 @@
             }
         }
 
-        function handleYardGateIn(e) {
+        async function handleYardGateIn(e) {
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
@@ -2926,7 +2927,7 @@
             switchYardTab('yardInventory');
         }
 
-        function handleYardGateOut(e) {
+        async function handleYardGateOut(e) {
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
