@@ -1239,7 +1239,7 @@
             try {
                 const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).maybeSingle();
                 if(error) {
-                    saveCloudData();
+                    console.error("Fetch error:", error.message);
                     return;
                 }
                 if(data && data.payload) {
@@ -1247,9 +1247,12 @@
                     yardDb = data.payload.emptyYard || yardDb;
                     refreshYard();
                     renderTransshipmentTable();
+                } else {
+                    // Seed initial row if missing
+                    saveCloudData();
                 }
             } catch(e) {
-                saveCloudData();
+                console.error("Fetch exception:", e);
             }
         }
 
