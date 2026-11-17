@@ -81,7 +81,7 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white" onload="initSupabase()">
 
     <!-- TOP NAVIGATION BAR -->
     <header class="w-full bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex justify-between items-center shadow-lg">
@@ -639,6 +639,33 @@
 
     </main>
 
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="skymover-modal-overlay">
+        <div class="skymover-modal-container">
+            <div class="modal-header">
+                <h2>Sign In</h2>
+                <p>Enter your credentials to access SkyMover Transportation.</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, true);" class="modal-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" required value="admin@skymover.com" placeholder="admin@skymover.com">
+                </div>
+                <div class="form-group">
+                    <div class="password-label-wrapper">
+                        <label for="loginPassword">Password</label>
+                        <a href="#" class="forgot-password-link" onclick="alert('Password reset link sent to registered email.'); return false;">Forgot password?</a>
+                    </div>
+                    <input type="password" id="loginPassword" required value="Skymover_Transportation_2026" placeholder="••••••••">
+                </div>
+                <button type="submit" id="signInSubmitBtn" class="skymover-btn-primary">Sign In to Dashboard</button>
+            </form>
+            <div class="modal-footer">
+                <p>Need access? Contact your system administrator to provision your role.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- SUB-MODULE MODAL OVERLAY -->
     <div id="subModuleModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
@@ -1111,8 +1138,13 @@
             }
         }
 
+        window.openSkymoverLogin = function() {
+            const loginModal = document.getElementById('loginModal');
+            if(loginModal) loginModal.style.display = 'flex';
+        };
+
         function restoreLastActiveViewOrLanding() {
-            const lastView = sessionStorage.getItem('skymover_active_view');
+            const lastView = localStorage.getItem('skymover_active_view');
             if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
                 switchView(lastView);
             } else {
@@ -1169,7 +1201,7 @@
                 await supabaseClient.auth.signOut();
                 currentUser = null;
                 currentUserRole = 'guest';
-                sessionStorage.removeItem('skymover_active_view');
+                localStorage.removeItem('skymover_active_view');
                 updateAuthUI(null, 'guest');
                 applyRbacPermissions('guest');
                 window.openSkymoverLogin();
@@ -1218,7 +1250,6 @@
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
             try {
-                // Wrap in try/catch and check if running inside restricted iframe/Canvas environment
                 const channel = supabaseClient.channel('public:skymover_enterprise_db');
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
                     if(payload && payload.new && payload.new.payload) {
@@ -1665,7 +1696,6 @@
                     else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
         
-                    // Instant preview using local data URI
                     const thumb = document.createElement('div');
                     thumb.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-sm bg-slate-900 flex items-center justify-center';
                     
@@ -1676,7 +1706,6 @@
                     }
                     previewContainer.appendChild(thumb);
                     
-                    // Background upload to Supabase storage
                     uploadCompressedPhotosToSupabaseStorage(tempFileObj, folder).then(storageUrl => {
                         if (storageUrl) fileObj.dataUrl = storageUrl;
                     });
@@ -1867,7 +1896,7 @@
                 return;
             }
 
-            sessionStorage.setItem('skymover_active_view', viewName);
+            localStorage.setItem('skymover_active_view', viewName);
 
             ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
                 const el = document.getElementById(v);
@@ -1878,8 +1907,7 @@
                 document.getElementById('viewLanding').classList.remove('hidden');
             } else if (viewName === 'backend') { 
                 document.getElementById('viewBackend').classList.remove('hidden');
-                // Restore last viewed AI tab in Management Backend (defaults to 'brain' only if none saved)
-                const savedAiTab = sessionStorage.getItem('skymover_active_ai_tab') || 'brain';
+                const savedAiTab = localStorage.getItem('skymover_active_ai_tab') || 'brain';
                 switchAiTab(savedAiTab);
             } else if (viewName === 'driver') { 
                 document.getElementById('viewDriver').classList.remove('hidden'); 
@@ -1889,15 +1917,6 @@
                 renderTransshipmentTable(); 
             } else if (viewName === 'yard') { 
                 document.getElementById('viewYard').classList.remove('hidden'); 
-            }
-        }
-
-        function restoreLastActiveViewOrLanding() {
-            const lastView = sessionStorage.getItem('skymover_active_view');
-            if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
-                switchView(lastView);
-            } else {
-                switchView('landing');
             }
         }
 
@@ -2161,7 +2180,6 @@
         }
 
         function switchAiTab(tab) {
-            // Updated to use localStorage for permanent persistence across log-ins
             localStorage.setItem('skymover_active_ai_tab', tab);
             ['tabBrainBtn', 'tabLensBtn', 'tabTrackBtn'].forEach(id => {
                 const b = document.getElementById(id);
@@ -2238,50 +2256,6 @@
             }
         }
 
-        function switchView(viewName) {
-            if (!currentUser || currentUserRole === 'guest') {
-                window.openSkymoverLogin();
-                return;
-            }
-            if (viewName === 'backend' && currentUserRole === 'driver') {
-                alert('⛔ RBAC Access Restricted: Drivers cannot access Management Backend analytics.');
-                return;
-            }
-
-            localStorage.setItem('skymover_active_view', viewName);
-
-            ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub', 'viewYard'].forEach(v => {
-                const el = document.getElementById(v);
-                if(el) el.classList.add('hidden');
-            });
-
-            if (viewName === 'landing') {
-                document.getElementById('viewLanding').classList.remove('hidden');
-            } else if (viewName === 'backend') { 
-                document.getElementById('viewBackend').classList.remove('hidden');
-                // Read from localStorage so user's preferred view persists across logouts and logins
-                const savedAiTab = localStorage.getItem('skymover_active_ai_tab') || 'brain';
-                switchAiTab(savedAiTab);
-            } else if (viewName === 'driver') { 
-                document.getElementById('viewDriver').classList.remove('hidden'); 
-                refreshDriverPortal(); 
-            } else if (viewName === 'hub') { 
-                document.getElementById('viewHub').classList.remove('hidden'); 
-                renderTransshipmentTable(); 
-            } else if (viewName === 'yard') { 
-                document.getElementById('viewYard').classList.remove('hidden'); 
-            }
-        }
-
-        function restoreLastActiveViewOrLanding() {
-            const lastView = localStorage.getItem('skymover_active_view');
-            if (lastView && document.getElementById('view' + lastView.charAt(0).toUpperCase() + lastView.slice(1))) {
-                switchView(lastView);
-            } else {
-                switchView('landing');
-            }
-        }
-        
         function runAiAnalysis() {
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
@@ -2695,7 +2669,7 @@
         }
 
         function switchYardTab(tabId) {
-            sessionStorage.setItem('skymover_active_yard_tab', tabId);
+            localStorage.setItem('skymover_active_yard_tab', tabId);
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(tabId);
             if(target) target.classList.remove('hidden');
@@ -2803,9 +2777,9 @@
             const plateInput = document.getElementById('gateOutPlate');
             const driverInput = document.getElementById('gateOutDriver');
             const remarksInput = document.getElementById('gateOutRemarks');
-                if(plateInput && c && c.plate) plateInput.value = c.plate;
-                if(driverInput && c && c.driver) driverInput.value = c.driver;
-                if(remarksInput && c && c.remarks) remarksInput.value = c.remarks;
+            if(plateInput && c && c.plate) plateInput.value = c.plate;
+            if(driverInput && c && c.driver) driverInput.value = c.driver;
+            if(remarksInput && c && c.remarks) remarksInput.value = c.remarks;
             if(c) {
                 document.getElementById('calcGateInDisplay').value = c.date || '';
                 document.getElementById('calcVanInAmount').value = c.vanInAmount || 0;
@@ -2955,22 +2929,20 @@
                         <td class="p-3">${m.plate || '—'}</td>
                         <td class="p-3">${m.storageDays || '0'} days</td>
                         <td class="p-3 font-mono">In: ₱${m.vanInAmount || 0}<br>Out: ₱${m.vanOutAmount || 0}</td>
-                        <td class="p-3 font-extrabold text-emerald-700">₱${m.totalAmount || 0}</td>
-                        <td class="p-3">${m.eir || '—'}</td>
+                        <td class="p-3 font-extrabold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-semibold">${m.eir || '—'}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movement records found.</td></tr>';
+                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No movements logged.</td></tr>';
             }
         }
 
-        async function handleYardGateIn(e) {
+        function handleYardGateIn(e) {
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
-            const containerNumber = formData.get('number').toUpperCase();
-
-            const newContainer = {
-                id: 'CNT-' + Math.floor(100000 + Math.random() * 900000),
-                number: containerNumber,
+            const container = {
+                id: 'CNT-' + Math.floor(1000 + Math.random() * 9000),
+                number: formData.get('number').toUpperCase(),
                 size: formData.get('size'),
                 type: formData.get('type'),
                 line: formData.get('line'),
@@ -2979,12 +2951,12 @@
                 driver: formData.get('driver'),
                 eir: formData.get('eir'),
                 condition: formData.get('condition'),
-                status: formData.get('status'),
+                status: formData.get('status') || 'Available',
                 block: formData.get('block'),
                 bay: formData.get('bay'),
                 row: formData.get('row'),
                 tier: formData.get('tier'),
-                date: formData.get('date'),
+                date: formData.get('date') || new Date().toISOString(),
                 vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
                 vanInStats: formData.get('vanInStats'),
                 remarks: formData.get('remarks'),
@@ -2992,185 +2964,156 @@
             };
 
             if(!yardDb.containers) yardDb.containers = [];
-            yardDb.containers.push(newContainer);
+            yardDb.containers.push(container);
 
             if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({ kind: 'GATE-IN', number: containerNumber, date: newContainer.date, plate: newContainer.plate, truckingName: newContainer.truckingName, eir: newContainer.eir });
+            yardDb.movements.unshift({ kind: 'GATE-IN', number: container.number, plate: container.plate, date: container.date, eir: container.eir, vanInAmount: container.vanInAmount });
 
-            if(newContainer.vanInStats === 'PAID' && newContainer.vanInAmount > 0) {
+            if(container.vanInStats === 'PAID' && container.vanInAmount > 0) {
                 if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({ date: newContainer.date, source: 'Van-In Fee', container: containerNumber, eir: newContainer.eir, amount: newContainer.vanInAmount });
+                yardDb.revenues.unshift({ date: container.date, source: 'Gate-In Van Fee', container: container.number, eir: container.eir, amount: container.vanInAmount });
             }
 
             saveYardDB();
             clearGateInFormAndPhotos();
-            alert('Container Gate-In successfully recorded and uploaded to Supabase Storage & Cloud DB!');
+            alert('Container Gate-In successfully recorded and synced!');
             switchYardTab('yardInventory');
         }
 
-        async function handleYardGateOut(e) {
+        function handleYardGateOut(e) {
             e.preventDefault();
+            const cId = document.getElementById('yardOutContainer').value;
+            const c = yardDb.containers.find(x => x.id === cId);
+            if(!c) { alert('Please select a valid container.'); return; }
+
             const form = e.target;
             const formData = new FormData(form);
-            const containerId = formData.get('container');
 
-            const container = (yardDb.containers || []).find(c => c.id === containerId);
-            if(!container) {
-                alert('Please select a valid container from the yard.');
-                return;
-            }
+            c.status = 'Released';
+            c.gateOutDate = formData.get('date');
+            c.gateOutPhotos = stagedGateOutPhotos;
 
-            container.status = 'Released';
-            container.gateOutDate = formData.get('date');
-            container.vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
-            container.gateOutPhotos = stagedGateOutPhotos;
-
-            const totalAmount = parseFloat(document.getElementById('calcTotalAmount').value) || 0;
-            const storageDays = parseInt(document.getElementById('calcStorageDays').value) || 0;
+            const vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
+            const storageDays = parseInt(document.getElementById('calcStorageDays').value) || 1;
+            const rate = parseFloat(document.getElementById('calcStorageAmount').value) || 450;
+            const storageTotal = storageDays * rate;
+            const totalAmount = storageTotal + vanOutAmount;
 
             if(!yardDb.movements) yardDb.movements = [];
             yardDb.movements.unshift({
                 kind: 'GATE-OUT',
-                number: container.number,
-                date: container.gateOutDate,
+                number: c.number,
                 plate: formData.get('plate'),
+                date: c.gateOutDate,
+                eir: formData.get('eir'),
                 storageDays: storageDays,
-                vanInAmount: container.vanInAmount || 0,
-                vanOutAmount: container.vanOutAmount,
-                totalAmount: totalAmount,
-                eir: formData.get('eir')
+                vanInAmount: c.vanInAmount || 0,
+                vanOutAmount: vanOutAmount,
+                totalAmount: totalAmount
             });
 
-            if(totalAmount > 0) {
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
-                    date: container.gateOutDate,
-                    source: 'Gate-Out & Storage Fee',
-                    container: container.number,
-                    eir: formData.get('eir'),
-                    amount: totalAmount
-                });
-            }
+            if(!yardDb.revenues) yardDb.revenues = [];
+            yardDb.revenues.unshift({
+                date: c.gateOutDate,
+                source: 'Gate-Out / Storage Fee',
+                container: c.number,
+                eir: formData.get('eir'),
+                amount: totalAmount
+            });
 
             saveYardDB();
             clearGateOutFormAndPhotos();
-            alert('Container Gate-Out and billing successfully processed with uploaded files!');
+            alert('Container Gate-Out & billing successfully recorded!');
             switchYardTab('yardRevenue');
         }
 
-        function editYardStatus(id) {
-            const container = (yardDb.containers || []).find(c => c.id === id);
-            if(!container) return;
-            const newStatus = prompt(`Update status for container ${container.number} (Available, Reserved, Hold, Released):`, container.status);
-            if(newStatus) {
-                container.status = newStatus;
+        function editYardStatus(cId) {
+            const c = yardDb.containers.find(x => x.id === cId);
+            if(!c) return;
+            const newStatus = prompt(`Update status for container ${c.number}:\nEnter: Available, Reserved, Hold, or Released`, c.status);
+            if(newStatus && ['Available','Reserved','Hold','Released'].includes(newStatus)) {
+                c.status = newStatus;
                 saveYardDB();
                 refreshYard();
             }
         }
 
-        function blobDownload(blob, name) { let a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = name; a.click(); URL.revokeObjectURL(u); }
-        function csv(rows, name) { blobDownload(new Blob(['\ufeff' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}), name); }
-
         function exportYardCSV() {
-            const data = (yardDb.containers || []).map(c => [c.number, c.size, c.line, c.status, yardLoc(c)]);
-            csv([['Container No', 'Size', 'Shipping Line', 'Status', 'Location'], ...data], 'skymover_yard_inventory.csv');
-        }
-
-        function exportYardMovements() {
-            const data = (yardDb.movements || []).map(m => [m.kind, m.number, m.date, m.plate, m.eir]);
-            csv([['Movement', 'Container No', 'Date', 'Plate', 'EIR'], ...data], 'skymover_yard_movements.csv');
+            const containers = yardDb.containers || [];
+            const rows = [
+                ['Container No', 'Size', 'Type', 'Shipping Line', 'Status', 'Condition', 'Block', 'Bay', 'Row', 'Tier', 'Gate-In Date', 'EIR'],
+                ...containers.map(c => [c.number, c.size, c.type, c.line, c.status, c.condition, c.block, c.bay, c.row, c.tier, c.date, c.eir])
+            ];
+            csv(rows, 'skymover_yard_inventory.csv');
         }
 
         function exportRevenueCSV() {
-            const data = (yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.amount]);
-            csv([['Date', 'Source', 'Container No', 'Amount'], ...data], 'skymover_yard_revenue.csv');
+            const revs = yardDb.revenues || [];
+            const rows = [
+                ['Date', 'Source', 'Container No', 'EIR / Ref', 'Amount (PHP)'],
+                ...revs.map(r => [r.date, r.source, r.container, r.eir, r.amount])
+            ];
+            csv(rows, 'skymover_yard_revenue.csv');
         }
 
         function exportExpensesCSV() {
-            const data = (yardDb.expenses || []).map(e => [e.date, e.category, e.description, e.amount]);
-            csv([['Date', 'Category', 'Description', 'Amount'], ...data], 'skymover_yard_expenses.csv');
+            const exps = yardDb.expenses || [];
+            const rows = [
+                ['Date', 'Category', 'Description', 'Amount (PHP)'],
+                ...exps.map(e => [e.date, e.category, e.description, e.amount])
+            ];
+            csv(rows, 'skymover_yard_expenses.csv');
+        }
+
+        function exportYardMovements() {
+            const moves = yardDb.movements || [];
+            const rows = [
+                ['Date', 'Movement', 'Container No', 'Plate', 'Storage Days', 'Total Amount', 'EIR'],
+                ...moves.map(m => [m.date, m.kind, m.number, m.plate, m.storageDays, m.totalAmount, m.eir])
+            ];
+            csv(rows, 'skymover_yard_movements.csv');
         }
 
         function backupUnifiedEnterpriseData() {
-            const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
-            blobDownload(new Blob([JSON.stringify(unifiedData, null, 2)], {type: 'application/json'}), 'SKYMOVER_Full_Enterprise_Backup_' + new Date().toISOString().slice(0,10) + '.json');
+            const payload = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
+            blobDownload(new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'}), 'SKYMOVER_Unified_Enterprise_Backup.json');
         }
 
-        function restoreUnifiedEnterpriseData(event) {
-            const file = event.target.files[0];
+        function restoreUnifiedEnterpriseData(e) {
+            const file = e.target.files[0];
             if(!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(evt) {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if(parsed.managementBackend && parsed.emptyYard) {
-                        db = parsed.managementBackend;
-                        yardDb = parsed.emptyYard;
-                        saveCloudData();
-                        alert('Unified enterprise backup successfully restored!');
-                        window.location.reload();
-                    } else {
-                        alert('Invalid backup file structure.');
-                    }
+                    const parsed = JSON.parse(evt.target.result);
+                    if(parsed.managementBackend) db = parsed.managementBackend;
+                    if(parsed.emptyYard) yardDb = parsed.emptyYard;
+                    await saveCloudData();
+                    refreshYard();
+                    renderTransshipmentTable();
+                    alert('Unified Enterprise Backup successfully restored!');
                 } catch(err) {
-                    alert('Error parsing backup file: ' + err.message);
+                    alert('Invalid backup JSON file.');
                 }
             };
             reader.readAsText(file);
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const loginModal = document.getElementById('loginModal');
-            window.openSkymoverLogin = function() { if(loginModal) loginModal.style.display = 'flex'; };
-            document.getElementById('closeLoginModal')?.addEventListener('click', () => { 
-                closeSkymoverLogin(); 
-            });
-            document.getElementById('skymoverLoginForm')?.addEventListener('submit', (e) => {
-                e.preventDefault();
-                handleSupabaseSignIn(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value, false);
-            });
-            initSupabase();
-            refreshYard();
+        function csv(rows, filename) {
+            const content = rows.map(e => e.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(",")).join("\n");
+            blobDownload(new Blob([content], { type: 'text/csv;charset=utf-8;' }), filename);
+        }
 
-            // Restore last active AI tab if present
-            const lastAiTab = sessionStorage.getItem('skymover_active_ai_tab');
-            if(lastAiTab) {
-                switchAiTab(lastAiTab);
-            } else {
-                switchAiTab('brain');
-            }
-
-            // Restore last active Yard tab if present
-            const lastYardTab = sessionStorage.getItem('skymover_active_yard_tab');
-            if(lastYardTab) {
-                switchYardTab(lastYardTab);
-            }
-        });
+        function blobDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
     </script>
-
-    <!-- Login Modal Overlay -->
-    <div id="loginModal" class="skymover-modal-overlay" style="display: flex;">
-        <div class="skymover-modal-container">
-            <button type="button" class="modal-close-btn" id="closeLoginModal">&times;</button>
-            <div class="modal-header">
-                <h2>Welcome to Skymover</h2>
-                <p>Sign in with your Supabase credentials</p>
-            </div>
-            <form id="skymoverLoginForm" class="modal-form">
-                <div class="form-group">
-                    <label for="loginEmail">Email Address</label>
-                    <input type="email" id="loginEmail" placeholder="name@skymover.com" required />
-                </div>
-                <div class="form-group">
-                    <div class="password-label-wrapper">
-                        <label for="loginPassword">Password</label>
-                    </div>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required />
-                </div>
-                <button type="submit" id="signInSubmitBtn" class="skymover-btn-primary">Sign In to Dashboard</button>
-            </form>
-        </div>
-    </div>
 </body>
 </html>
