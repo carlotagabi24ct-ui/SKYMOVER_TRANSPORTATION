@@ -3009,6 +3009,65 @@
             alert('✅ Fuel log successfully recorded and synced to Supabase cloud!');
             return true;
         }
+
+        // Fetch all GPS & Dispatch logs from Supabase
+        async function fetchDispatchLogsFromSupabase() {
+            if (!supabaseClient) return;
+        
+            const { data, error } = await supabaseClient
+                .from('dispatch_logs')
+                .select('*')
+                .order('created_at', { ascending: false });
+        
+            if (error) {
+                console.error("Error fetching dispatch logs:", error.message);
+                return;
+            }
+        
+            // Sync to local DB state matching your openSubModule('GPS & Dispatch') structure
+            db.dispatchLogs = data.map(d => ({
+                id: d.id,
+                unit: d.unit_id,
+                route: d.route,
+                driver: d.driver_name,
+                status: d.status,
+                lat: d.latitude,
+                lng: d.longitude,
+                nearestHub: d.nearest_hub,
+                attachments: d.attachments || []
+            }));
+        
+            if (typeof openSubModule === 'function' && currentBackendModuleType === 'GPS & Dispatch') {
+                openSubModule('GPS & Dispatch');
+            }
+        }
+        
+        // Insert a new GPS & Dispatch entry into Supabase
+        async function insertDispatchLogToSupabase(dispatchRecord) {
+            if (!supabaseClient) return false;
+        
+            const { error } = await supabaseClient
+                .from('dispatch_logs')
+                .insert({
+                    unit_id: dispatchRecord.unit,
+                    route: dispatchRecord.route,
+                    driver_name: dispatchRecord.driver,
+                    status: dispatchRecord.status || 'In Transit',
+                    latitude: dispatchRecord.lat || null,
+                    longitude: dispatchRecord.lng || null,
+                    nearest_hub: dispatchRecord.nearestHub || null,
+                    attachments: dispatchRecord.attachments || []
+                });
+        
+            if (error) {
+                console.error("Error saving dispatch log:", error.message);
+                alert("Failed to save dispatch record to cloud: " + error.message);
+                return false;
+            }
+        
+            await fetchDispatchLogsFromSupabase();
+            return true;
+        }
         
         function openBackendEntryModal(type) {
             currentBackendModuleType = type;
