@@ -715,7 +715,7 @@
                     <input type="text" id="regDriverName" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos">
                 </div>
                 <div>
-                    <label class="block text-slate-300 mb-1 font-semibold">Driver's Professional License No. *</label>
+                    regDriverNameDriver's Professional License No. *</label>
                     <input type="text" id="regDriverLicense" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="N01-99-876543">
                 </div>
                 <div>
@@ -2168,7 +2168,7 @@
         async function handleNewDriverSubmit(e) {
             e.preventDefault();
             const driver_name = document.getElementById('regDriverName').value;
-            const driver_license = document.getElementById('regDriverLicense').value;
+            const driver_license_number = document.getElementById('regDriverLicense').value;
             const driver_phone = document.getElementById('regDriverPhone').value;
             const helper_name = document.getElementById('regHelperName').value;
             const helper_phone = document.getElementById('regHelperPhone').value;
@@ -2689,7 +2689,7 @@
                 .from('drivers')
                 .insert({
                     driver_name: driverRecord.driver_name,
-                    driver_license_number: driverRecord.driver_license,
+                    driver_license: driverRecord.driver_license_number,
                     driver_phone: driverRecord.driver_phone,
                     helper_name: helperRecord.helper_name,
                     helper_phone: helperRecord.helper_phone,
