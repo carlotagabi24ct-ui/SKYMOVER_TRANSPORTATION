@@ -871,6 +871,7 @@
         let currentBackendModuleType = '';
         let currentEditingRecordIndex = null;
         let currentEditingDriverIndex = null;
+        let currentEditingYardExpenseIndex = null;
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -1340,8 +1341,10 @@
                     saveCloudData();
                 }
 
-                // Fetch live LogiTRACK tables directly from Supabase
+                // Fetch live LogiTRACK & Expense tables directly from Supabase
                 await fetchLogiTrackDataFromSupabase();
+                await fetchFleetExpensesFromSupabase();
+                await fetchYardExpensesFromSupabase();
 
                 refreshYard();
                 renderTransshipmentTable();
@@ -1352,7 +1355,7 @@
         }
 
         // ==========================================
-        // UPDATED: LIVE SUPABASE REALTIME LISTENERS FOR LOGITRACK & ENTERPRISE DB
+        // UPDATED: LIVE SUPABASE REALTIME LISTENERS FOR LOGITRACK, EXPENSES & ENTERPRISE DB
         // ==========================================
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
@@ -1431,6 +1434,16 @@
                 // 5. Live GPS & Dispatch Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_logs' }, () => {
                     fetchDispatchLogsFromSupabase();
+                });
+
+                // 6. Live Fleet Expenses Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_expenses' }, () => {
+                    fetchFleetExpensesFromSupabase();
+                });
+
+                // 7. Live Yard Operating Expenses Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_expenses' }, () => {
+                    fetchYardExpensesFromSupabase();
                 });
 
                 channel.subscribe((status, err) => {
@@ -1756,8 +1769,7 @@
                 }
             }
         }
-
-        // ==========================================
+// ==========================================
         // UPDATED: PLOT MAP COORDINATES & STREAM TO SUPABASE LOGITRACK
         // ==========================================
         async function plotAutomatedMapCoordinates() {
@@ -2028,6 +2040,12 @@
                     <tr class="bg-slate-100 font-bold"><th class="border p-2">Container No.</th><th class="border p-2">Size</th><th class="border p-2">Shipping Line</th><th class="border p-2">Status</th></tr>
                     ${containers.map(c => `<tr><td class="border p-2 font-bold">${c.number}</td><td class="border p-2">${c.size}</td><td class="border p-2">${c.line}</td><td class="border p-2">${c.status}</td></tr>`).join('')}
                 </table>`;
+            } else if (moduleName === 'Fleet Expenses') {
+                const expenses = db.expenseLogs || [];
+                reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Trip ID</th><th class="border p-2">Fuel</th><th class="border p-2">Tolls</th><th class="border p-2">Maintenance</th><th class="border p-2">Total Cost</th></tr>
+                    ${expenses.map(e => `<tr><td class="border p-2 font-bold">${e.trip}</td><td class="border p-2">${e.fuel}</td><td class="border p-2">${e.tolls}</td><td class="border p-2">${e.maintenance}</td><td class="border p-2 font-bold">${e.total}</td></tr>`).join('')}
+                </table>`;
             } else {
                 reportContentHTML = `<p class="text-sm">Comprehensive operational statement generated for ${moduleName} on ${new Date().toLocaleString()}.</p>`;
             }
@@ -2078,6 +2096,11 @@
                     ['Date / Time', 'Source Type', 'Container No.', 'Reference / EIR', 'Amount (PHP)'],
                     ...(yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.eir, r.amount])
                 ];
+            } else if (moduleName === 'Fleet Expenses') {
+                csvRows = [
+                    ['Trip ID', 'Fuel', 'Tolls', 'Maintenance', 'Total Cost'],
+                    ...(db.expenseLogs || []).map(e => [e.trip, `"${e.fuel}"`, `"${e.tolls}"`, `"${e.maintenance}"`, `"${e.total}"`])
+                ];
             } else {
                 csvRows = [
                     ['Module', 'Timestamp', 'Status'],
@@ -2099,7 +2122,18 @@
         function clearGateOutPhotos() { stagedGateOutPhotos = []; document.getElementById('gateOutPhotoPreviewContainer').innerHTML = ''; }
         function clearGateInFormAndPhotos() { document.getElementById('yardGateInForm').reset(); clearGateInPhotos(); }
         function clearGateOutFormAndPhotos() { document.getElementById('yardGateOutForm').reset(); clearGateOutPhotos(); containerSelectedForGateOut(); }
-        function clearYardExpenseForm() { document.getElementById('yardExpenseForm').reset(); }
+        function clearYardExpenseForm() {
+            currentEditingYardExpenseIndex = null;
+            const form = document.getElementById('yardExpenseForm');
+            if (form) {
+                form.reset();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = 'Record Expense';
+                    submitBtn.className = 'bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold';
+                }
+            }
+        }
 
         let db;
         try { db = JSON.parse(localStorage.getItem('skymover_unified_db_v3')); } catch(e) { db = null; }
@@ -2786,6 +2820,10 @@
                 await saveCloudData();
                 openSubModule('GPS & Dispatch');
             } else if (moduleType === 'Expense' && db.expenseLogs) {
+                const targetExp = db.expenseLogs[index];
+                if (targetExp && targetExp.id) {
+                    await deleteFleetExpenseFromSupabase(targetExp.id);
+                }
                 db.expenseLogs.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Fleet Expenses');
@@ -2974,10 +3012,20 @@
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Issue</th><th class="p-3">Cost</th><th class="p-3">Status</th><th class="p-3">Date</th><th class="p-3">Photo / Attached File</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'GPS & Dispatch') {
-                let rows = dispatchLogs.length ? dispatchLogs.map(d => {
+                let rows = dispatchLogs.length ? dispatchLogs.map((d, idx) => {
                     let atts = (d.attachments && d.attachments.length) ? d.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-emerald-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No waybill</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + d.unit + '</td><td class="p-3">' + d.route + '</td><td class="p-3">' + d.driver + '</td><td class="p-3 text-emerald-700 font-bold">' + d.status + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No active dispatches.</td></tr>';
+                    return `<tr class="border-b font-medium text-slate-900">
+                        <td class="p-3 font-mono font-bold text-sky-800">${d.unit}</td>
+                        <td class="p-3">${d.route}</td>
+                        <td class="p-3">${d.driver}</td>
+                        <td class="p-3 text-emerald-700 font-bold">${d.status}</td>
+                        <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Dispatch', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Dispatch', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No active dispatches.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> GPS & Dispatch</h3>
@@ -2987,13 +3035,24 @@
                             <button onclick="openBackendEntryModal('Dispatch')" class="bg-emerald-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ New Dispatch</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Route</th><th class="p-3">Driver</th><th class="p-3">Status</th><th class="p-3">Waybill Photo / File</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Route</th><th class="p-3">Driver</th><th class="p-3">Status</th><th class="p-3">Waybill Photo / File</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Fleet Expenses') {
-                let rows = expenseLogs.length ? expenseLogs.map(e => {
+                let rows = expenseLogs.length ? expenseLogs.map((e, idx) => {
                     let atts = (e.attachments && e.attachments.length) ? e.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-teal-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No receipt</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold text-sky-800">' + e.trip + '</td><td class="p-3">' + e.fuel + '</td><td class="p-3">' + e.tolls + '</td><td class="p-3">' + e.maintenance + '</td><td class="p-3 font-extrabold text-emerald-700">' + e.total + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No fleet expenses.</td></tr>';
+                    return `<tr class="border-b font-medium text-slate-900">
+                        <td class="p-3 font-bold text-sky-800">${e.trip}</td>
+                        <td class="p-3">${e.fuel}</td>
+                        <td class="p-3">${e.tolls}</td>
+                        <td class="p-3">${e.maintenance}</td>
+                        <td class="p-3 font-extrabold text-emerald-700">${e.total}</td>
+                        <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Expense', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Expense', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="7" class="p-4 text-center text-slate-500 font-medium">No fleet expenses.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Fleet Expenses</h3>
@@ -3003,7 +3062,20 @@
                             <button onclick="openBackendEntryModal('Expense')" class="bg-teal-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Trip Expense</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Trip ID</th><th class="p-3">Fuel</th><th class="p-3">Tolls</th><th class="p-3">Maintenance</th><th class="p-3">Total Cost</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3">
+                        <table class="w-full text-left text-xs">
+                            <tr class="border-b text-slate-800 font-bold">
+                                <th class="p-3">Trip ID</th>
+                                <th class="p-3">Fuel</th>
+                                <th class="p-3">Tolls</th>
+                                <th class="p-3">Maintenance</th>
+                                <th class="p-3">Total Cost</th>
+                                <th class="p-3">Receipt / Photo</th>
+                                <th class="p-3 text-right">Actions (Admin)</th>
+                            </tr>
+                            ${rows}
+                        </table>
+                    </div>
                 `;
             } else if (title === 'Data Backup') {
                 if(currentUserRole !== 'admin') { alert('⛔ RBAC Access Denied'); closeSubModule(); return; }
@@ -3229,6 +3301,287 @@
             return true;
         }
 
+        // ==========================================================
+        // SUPABASE FLEET EXPENSES & YARD EXPENSES SYNC FUNCTIONS
+        // ==========================================================
+        
+        // Helper to strip '₱' and commas when saving numeric values to Postgres
+        function parsePesoNumber(val) {
+            if (typeof val === 'number') return val;
+            if (!val) return 0;
+            return parseFloat(String(val).replace(/[^\d.-]/g, '')) || 0;
+        }
+        
+        // 1. Fetch Fleet Expenses from Supabase
+        async function fetchFleetExpensesFromSupabase() {
+            if (!supabaseClient) return;
+        
+            try {
+                const { data, error } = await supabaseClient
+                    .from('fleet_expenses')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+            
+                if (error) {
+                    console.warn("Notice fetching fleet_expenses table:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    db.expenseLogs = data.map(e => ({
+                        id: e.id,
+                        trip: e.trip_id,
+                        fuel: `₱${Number(e.fuel_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+                        tolls: `₱${Number(e.tolls_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+                        maintenance: `₱${Number(e.maintenance_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+                        total: `₱${Number(e.total_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+                        attachments: e.attachments || []
+                    }));
+                }
+            
+                if (typeof openSubModule === 'function' && currentBackendModuleType === 'Fleet Expenses') {
+                    openSubModule('Fleet Expenses');
+                }
+            } catch (err) {
+                console.warn("fetchFleetExpensesFromSupabase fallback:", err.message);
+            }
+        }
+        
+        // 2. Insert a Fleet Expense into Supabase
+        async function insertFleetExpenseToSupabase(expenseRecord) {
+            if (!supabaseClient) return false;
+        
+            try {
+                const { data, error } = await supabaseClient
+                    .from('fleet_expenses')
+                    .insert({
+                        trip_id: expenseRecord.trip,
+                        fuel_cost: parsePesoNumber(expenseRecord.fuel),
+                        tolls_cost: parsePesoNumber(expenseRecord.tolls),
+                        maintenance_cost: parsePesoNumber(expenseRecord.maintenance),
+                        total_cost: parsePesoNumber(expenseRecord.total),
+                        attachments: expenseRecord.attachments || [],
+                        logged_by: currentUser ? currentUser.email : 'system'
+                    })
+                    .select()
+                    .single();
+            
+                if (error) {
+                    console.warn("Error saving fleet expense to standalone table:", error.message);
+                    return false;
+                }
+                if (data && data.id) {
+                    expenseRecord.id = data.id;
+                }
+            
+                await fetchFleetExpensesFromSupabase();
+                return true;
+            } catch (err) {
+                console.warn("insertFleetExpenseToSupabase fallback:", err.message);
+                return false;
+            }
+        }
+
+        // 3. Update a Fleet Expense in Supabase
+        async function updateFleetExpenseInSupabase(recordId, updatedExpense) {
+            if (!supabaseClient || !recordId) return false;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('fleet_expenses')
+                    .update({
+                        trip_id: updatedExpense.trip,
+                        fuel_cost: parsePesoNumber(updatedExpense.fuel),
+                        tolls_cost: parsePesoNumber(updatedExpense.tolls),
+                        maintenance_cost: parsePesoNumber(updatedExpense.maintenance),
+                        total_cost: parsePesoNumber(updatedExpense.total),
+                        attachments: updatedExpense.attachments || [],
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', recordId);
+
+                if (error) {
+                    console.warn("Error updating fleet expense in Supabase:", error.message);
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.warn("updateFleetExpenseInSupabase fallback:", err.message);
+                return false;
+            }
+        }
+
+        // 4. Delete a Fleet Expense from Supabase
+        async function deleteFleetExpenseFromSupabase(recordId) {
+            if (!supabaseClient || !recordId) return false;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('fleet_expenses')
+                    .delete()
+                    .eq('id', recordId);
+
+                if (error) {
+                    console.warn("Error deleting fleet expense from Supabase:", error.message);
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.warn("deleteFleetExpenseFromSupabase fallback:", err.message);
+                return false;
+            }
+        }
+        
+        // 5. Fetch Yard Operating Expenses from Supabase
+        async function fetchYardExpensesFromSupabase() {
+            if (!supabaseClient) return;
+        
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_expenses')
+                    .select('*')
+                    .order('expense_date', { ascending: false });
+            
+                if (error) {
+                    console.warn("Notice fetching yard_expenses table:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    yardDb.expenses = data.map(ex => ({
+                        id: ex.id,
+                        category: ex.category,
+                        description: ex.description,
+                        amount: Number(ex.amount || 0),
+                        date: ex.expense_date ? ex.expense_date.slice(0, 16) : new Date().toISOString().slice(0, 16)
+                    }));
+                }
+            
+                renderYardExpenses();
+                renderYardRevenue();
+            } catch (err) {
+                console.warn("fetchYardExpensesFromSupabase fallback:", err.message);
+            }
+        }
+        
+        // 6. Insert a Yard Operating Expense into Supabase
+        async function insertYardExpenseToSupabase(expenseRecord) {
+            if (!supabaseClient) return false;
+        
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_expenses')
+                    .insert({
+                        category: expenseRecord.category,
+                        description: expenseRecord.description,
+                        amount: parseFloat(expenseRecord.amount) || 0,
+                        expense_date: expenseRecord.date ? new Date(expenseRecord.date).toISOString() : new Date().toISOString(),
+                        logged_by: currentUser ? currentUser.email : 'system'
+                    })
+                    .select()
+                    .single();
+            
+                if (error) {
+                    console.warn("Error saving yard expense to standalone table:", error.message);
+                    return false;
+                }
+                if (data && data.id) {
+                    expenseRecord.id = data.id;
+                }
+            
+                await fetchYardExpensesFromSupabase();
+                return true;
+            } catch (err) {
+                console.warn("insertYardExpenseToSupabase fallback:", err.message);
+                return false;
+            }
+        }
+
+        // 7. Edit a Yard Operating Expense in the Form
+        function editYardExpenseEntry(index) {
+            if (!requireAdminExecution("edit a Yard Operating Expense")) return;
+            const expenses = yardDb.expenses || [];
+            const target = expenses[index];
+            if (!target) return;
+
+            currentEditingYardExpenseIndex = index;
+
+            const form = document.getElementById('yardExpenseForm');
+            if (!form) return;
+
+            form.elements['category'].value = target.category || 'Other';
+            form.elements['description'].value = target.description || '';
+            form.elements['amount'].value = target.amount || 0;
+            form.elements['date'].value = target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16);
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.textContent = 'Update Expense';
+                submitBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-bold';
+            }
+
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 8. Update a Yard Operating Expense in Supabase
+        async function updateYardExpenseInSupabase(recordId, expenseRecord) {
+            if (!supabaseClient || !recordId) return false;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('yard_expenses')
+                    .update({
+                        category: expenseRecord.category,
+                        description: expenseRecord.description,
+                        amount: parseFloat(expenseRecord.amount) || 0,
+                        expense_date: expenseRecord.date ? new Date(expenseRecord.date).toISOString() : new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', recordId);
+
+                if (error) {
+                    console.warn("Error updating yard expense in Supabase:", error.message);
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.warn("updateYardExpenseInSupabase fallback:", err.message);
+                return false;
+            }
+        }
+
+        // 9. Delete a Yard Operating Expense from Local State & Supabase
+        async function deleteYardExpenseEntry(index) {
+            if (!requireAdminExecution("delete a Yard Operating Expense")) return;
+            const expenses = yardDb.expenses || [];
+            const target = expenses[index];
+            if (!target) return;
+
+            if (!confirm(`Are you sure you want to permanently delete the expense "${target.description}" (₱${Number(target.amount || 0).toLocaleString()})?`)) {
+                return;
+            }
+
+            if (supabaseClient && target.id) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('yard_expenses')
+                        .delete()
+                        .eq('id', target.id);
+
+                    if (error) {
+                        console.warn("Supabase yard_expenses delete notice:", error.message);
+                    }
+                } catch (err) {
+                    console.warn("deleteYardExpenseEntry fallback:", err.message);
+                }
+            }
+
+            yardDb.expenses.splice(index, 1);
+            await saveCloudData();
+            renderYardExpenses();
+            renderYardRevenue();
+        }
+        
         // Load Geofence Zones & Alerts on startup
         async function fetchLogiTrackDataFromSupabase() {
             if (!supabaseClient) return;
@@ -3315,56 +3668,81 @@
             } catch (e) {}
         }
         
-        function openBackendEntryModal(type) {
+        function openBackendEntryModal(type, editIndex = null) {
+            if (!requireAdminExecution(`${editIndex !== null ? 'edit' : 'add'} ${type} record`)) return;
             currentBackendModuleType = type;
+            currentEditingRecordIndex = editIndex;
             stagedBackendAttachments = [];
             const modal = document.getElementById('backendEntryModal');
             const titleEl = document.getElementById('backendModalTitle');
             const fieldsContainer = document.getElementById('backendModalFields');
             const filePreview = document.getElementById('backendEntryFilePreview');
+            const submitBtn = document.getElementById('backendEntrySubmitBtn');
             if(!modal || !titleEl || !fieldsContainer) return;
 
             modal.classList.remove('hidden');
             if(filePreview) filePreview.innerHTML = '';
+            if(submitBtn) submitBtn.textContent = editIndex !== null ? 'Update Entry' : 'Save Entry';
             let html = '';
 
             if (type === 'Vehicle') {
-                titleEl.innerHTML = '<i class="fa-solid fa-truck text-sky-400 mr-2"></i> Add New Vehicle (Vehicle Masterlist)';
+                const existing = (editIndex !== null && db.vehicles && db.vehicles[editIndex]) ? db.vehicles[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-truck text-sky-400 mr-2"></i> ${existing ? 'Edit' : 'Add New'} Vehicle (Vehicle Masterlist)`;
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-104"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Vehicle Model *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Isuzu Giga Prime"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Initial Status</label><select id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option>Active</option><option>Standby</option><option>In Maintenance</option></select></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.id : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-104"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Vehicle Model *</label><input type="text" id="beInput2" required value="${existing ? existing.model : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Isuzu Giga Prime"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Initial Status</label><select id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white"><option ${existing && existing.status === 'Active' ? 'selected' : ''}>Active</option><option ${existing && existing.status === 'Standby' ? 'selected' : ''}>Standby</option><option ${existing && existing.status === 'In Maintenance' ? 'selected' : ''}>In Maintenance</option></select></div>
                 `;
             } else if (type === 'Fuel') {
-                titleEl.innerHTML = '<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Log Fuel Fill (Fuel Monitoring)';
+                const existing = (editIndex !== null && db.fuelLogs && db.fuelLogs[editIndex]) ? db.fuelLogs[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> ${existing ? 'Edit' : 'Log'} Fuel Fill (Fuel Monitoring)`;
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Volume (Liters) *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. 250 L"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱16,500"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Volume (Liters) *</label><input type="text" id="beInput2" required value="${existing ? existing.liters : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. 250 L"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost (₱) *</label><input type="text" id="beInput3" required value="${existing ? existing.cost : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱16,500"></div>
                 `;
             } else if (type === 'Maintenance') {
-                titleEl.innerHTML = '<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Schedule Maintenance (Fleet Maintenance)';
+                const existing = (editIndex !== null && db.maintenanceLogs && db.maintenanceLogs[editIndex]) ? db.maintenanceLogs[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> ${existing ? 'Edit' : 'Schedule'} Maintenance (Fleet Maintenance)`;
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-102"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Issue / Service Required *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Brake pad & hydraulic replacement"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Estimated Cost (₱)</label><input type="text" id="beInput3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,500"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-102"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Issue / Service Required *</label><input type="text" id="beInput2" required value="${existing ? existing.issue : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Brake pad & hydraulic replacement"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Estimated Cost (₱)</label><input type="text" id="beInput3" value="${existing ? existing.cost : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,500"></div>
                 `;
             } else if (type === 'Dispatch') {
-                titleEl.innerHTML = '<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> New Fleet Dispatch (GPS & Dispatch)';
+                const existing = (editIndex !== null && db.dispatchLogs && db.dispatchLogs[editIndex]) ? db.dispatchLogs[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> ${existing ? 'Edit' : 'New'} Fleet Dispatch (GPS & Dispatch)`;
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor → Valenzuela Depot"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required value="${existing ? existing.route : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor → Valenzuela Depot"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required value="${existing ? existing.driver : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
                 `;
             } else if (type === 'Expense') {
-                titleEl.innerHTML = '<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Log Trip Expense (Fleet Expenses)';
+                const existing = (editIndex !== null && db.expenseLogs && db.expenseLogs[editIndex]) ? db.expenseLogs[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> ${existing ? 'Edit' : 'Log'} Trip Expense (Fleet Expenses)`;
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Trip ID *</label><input type="text" id="beInput1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. TRP-8821"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Fuel Cost (₱)</label><input type="text" id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱4,200"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost Summation (₱) *</label><input type="text" id="beInput3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. ₱5,800"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Trip ID *</label><input type="text" id="beInput1" required value="${existing ? existing.trip : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. TRP-8821"></div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Fuel (₱)</label><input type="text" id="beInput2" value="${existing ? existing.fuel : ''}" oninput="autoSumFleetExpenseModal()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱4,200"></div>
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Tolls (₱)</label><input type="text" id="beInputTolls" value="${existing ? existing.tolls : ''}" oninput="autoSumFleetExpenseModal()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱850"></div>
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Maint. (₱)</label><input type="text" id="beInputMaint" value="${existing ? existing.maintenance : ''}" oninput="autoSumFleetExpenseModal()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="₱750"></div>
+                    </div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Total Cost Summation (₱) *</label><input type="text" id="beInput3" required value="${existing ? existing.total : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-emerald-400 font-bold" placeholder="e.g. ₱5,800"></div>
                 `;
             }
             fieldsContainer.innerHTML = html;
+        }
+
+        // Helper to automatically sum Fuel + Tolls + Maintenance in the Fleet Expense modal
+        function autoSumFleetExpenseModal() {
+            const fuel = parsePesoNumber(document.getElementById('beInput2') ? document.getElementById('beInput2').value : 0);
+            const tolls = parsePesoNumber(document.getElementById('beInputTolls') ? document.getElementById('beInputTolls').value : 0);
+            const maint = parsePesoNumber(document.getElementById('beInputMaint') ? document.getElementById('beInputMaint').value : 0);
+            const totalEl = document.getElementById('beInput3');
+            if (totalEl) {
+                const sum = fuel + tolls + maint;
+                totalEl.value = `₱${sum.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            }
         }
 
         // Fetch all vehicles from Supabase
@@ -3430,45 +3808,125 @@
         }
 
         function closeBackendEntryModal() {
+            currentEditingRecordIndex = null;
             const modal = document.getElementById('backendEntryModal');
             if(modal) modal.classList.add('hidden');
         }
 
         async function handleBackendEntrySubmit(e) {
             e.preventDefault();
+            if (!requireAdminExecution(`save ${currentBackendModuleType} entry`)) return;
             const val1 = document.getElementById('beInput1').value;
             const val2 = document.getElementById('beInput2').value;
             const val3 = document.getElementById('beInput3') ? document.getElementById('beInput3').value : '';
 
             if (currentBackendModuleType === 'Vehicle') {
                 if(!db.vehicles) db.vehicles = [];
-                db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned', attachments: stagedBackendAttachments });
+                if (currentEditingRecordIndex !== null && db.vehicles[currentEditingRecordIndex]) {
+                    const existing = db.vehicles[currentEditingRecordIndex];
+                    db.vehicles[currentEditingRecordIndex] = {
+                        ...existing,
+                        id: val1,
+                        model: val2,
+                        status: val3 || 'Active',
+                        attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
+                    };
+                } else {
+                    db.vehicles.push({ id: val1, model: val2, status: val3 || 'Active', driver: 'Unassigned', attachments: stagedBackendAttachments });
+                }
+                currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Vehicle Management');
             } else if (currentBackendModuleType === 'Fuel') {
                 if(!db.fuelLogs) db.fuelLogs = [];
-                db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
+                if (currentEditingRecordIndex !== null && db.fuelLogs[currentEditingRecordIndex]) {
+                    const existing = db.fuelLogs[currentEditingRecordIndex];
+                    db.fuelLogs[currentEditingRecordIndex] = {
+                        ...existing,
+                        unit: val1,
+                        liters: val2,
+                        cost: val3,
+                        attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
+                    };
+                } else {
+                    db.fuelLogs.push({ unit: val1, liters: val2, cost: val3, station: 'Shell Station', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
+                }
+                currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fuel Monitoring');
             } else if (currentBackendModuleType === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
-                db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
+                if (currentEditingRecordIndex !== null && db.maintenanceLogs[currentEditingRecordIndex]) {
+                    const existing = db.maintenanceLogs[currentEditingRecordIndex];
+                    db.maintenanceLogs[currentEditingRecordIndex] = {
+                        ...existing,
+                        unit: val1,
+                        issue: val2,
+                        cost: val3 || '₱0',
+                        attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
+                    };
+                } else {
+                    db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
+                }
+                currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Maintenance');
             } else if (currentBackendModuleType === 'Dispatch') {
                 if(!db.dispatchLogs) db.dispatchLogs = [];
-                const dispatchRec = { unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments };
-                db.dispatchLogs.push(dispatchRec);
-                await insertDispatchLogToSupabase(dispatchRec);
+                if (currentEditingRecordIndex !== null && db.dispatchLogs[currentEditingRecordIndex]) {
+                    const existing = db.dispatchLogs[currentEditingRecordIndex];
+                    db.dispatchLogs[currentEditingRecordIndex] = {
+                        ...existing,
+                        unit: val1,
+                        route: val2,
+                        driver: val3,
+                        attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
+                    };
+                } else {
+                    const dispatchRec = { unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments };
+                    db.dispatchLogs.push(dispatchRec);
+                    await insertDispatchLogToSupabase(dispatchRec);
+                }
+                currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('GPS & Dispatch');
             } else if (currentBackendModuleType === 'Expense') {
                 if(!db.expenseLogs) db.expenseLogs = [];
-                db.expenseLogs.push({ trip: val1, fuel: val2 || '₱0', tolls: '₱0', maintenance: '₱0', total: val3, attachments: stagedBackendAttachments });
+                const tollsVal = document.getElementById('beInputTolls') ? document.getElementById('beInputTolls').value : '₱0.00';
+                const maintVal = document.getElementById('beInputMaint') ? document.getElementById('beInputMaint').value : '₱0.00';
+
+                if (currentEditingRecordIndex !== null && db.expenseLogs[currentEditingRecordIndex]) {
+                    const existing = db.expenseLogs[currentEditingRecordIndex];
+                    const updatedRecord = {
+                        ...existing,
+                        trip: val1,
+                        fuel: val2 || '₱0.00',
+                        tolls: tollsVal || '₱0.00',
+                        maintenance: maintVal || '₱0.00',
+                        total: val3,
+                        attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
+                    };
+                    db.expenseLogs[currentEditingRecordIndex] = updatedRecord;
+                    if (existing.id) {
+                        await updateFleetExpenseInSupabase(existing.id, updatedRecord);
+                    }
+                } else {
+                    const expRec = {
+                        trip: val1,
+                        fuel: val2 || '₱0.00',
+                        tolls: tollsVal || '₱0.00',
+                        maintenance: maintVal || '₱0.00',
+                        total: val3,
+                        attachments: stagedBackendAttachments
+                    };
+                    db.expenseLogs.unshift(expRec);
+                    await insertFleetExpenseToSupabase(expRec);
+                }
+                currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fleet Expenses');
@@ -3782,7 +4240,7 @@
                         <td class="p-3 font-mono text-[11px]">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-mono text-[11px]">${c.gateOutDate ? new Date(c.gateOutDate).toLocaleString() : 'Active'}</td>
                         <td class="p-3 font-mono text-[11px]">In: ₱${c.vanInAmount || 0} (${c.vanInStats || 'PAID'})<br>Out: ₱${c.vanOutAmount || 0}</td>
-                        <td class="p-3">
+                        <td class="p-3 text-right">
                             <button onclick="deleteContainerEntry(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
                         </td>
                     </tr>
@@ -3791,6 +4249,7 @@
         }
 
         async function deleteContainerEntry(idx) {
+            if (!requireAdminExecution("delete a container inventory record")) return;
             if(confirm('Are you sure you want to delete this container inventory record?')) {
                 yardDb.containers.splice(idx, 1);
                 await saveCloudData();
@@ -3997,7 +4456,7 @@
                         <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                     </tr>
                 `;
-            }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No revenue records found for selected filter.</td></tr>';
+            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No revenue records found for selected filter.</td></tr>';
 
             const totalRevDisplay = document.getElementById('totalRevenueDisplay');
             if(totalRevDisplay) totalRevDisplay.innerText = '₱' + totalRev.toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -4185,6 +4644,8 @@
 
         async function handleYardExpenseSubmit(e) {
             e.preventDefault();
+            if (!requireAdminExecution("record or update a Yard Operating Expense")) return;
+
             const form = document.getElementById('yardExpenseForm');
             const formData = new FormData(form);
             const expenseRecord = {
@@ -4195,11 +4656,29 @@
             };
 
             if(!yardDb.expenses) yardDb.expenses = [];
-            yardDb.expenses.unshift(expenseRecord);
+
+            if (currentEditingYardExpenseIndex !== null && yardDb.expenses[currentEditingYardExpenseIndex]) {
+                const existing = yardDb.expenses[currentEditingYardExpenseIndex];
+                const updatedRecord = {
+                    ...existing,
+                    ...expenseRecord
+                };
+                yardDb.expenses[currentEditingYardExpenseIndex] = updatedRecord;
+
+                if (existing.id) {
+                    await updateYardExpenseInSupabase(existing.id, updatedRecord);
+                }
+                alert('✅ Yard operating expense successfully updated and synced to Supabase!');
+            } else {
+                yardDb.expenses.unshift(expenseRecord);
+                await insertYardExpenseToSupabase(expenseRecord);
+                alert('✅ Yard operating expense successfully recorded and synced to Supabase!');
+            }
+
             await saveCloudData();
-            form.reset();
-            alert('✅ Yard operating expense successfully recorded!');
+            clearYardExpenseForm();
             renderYardExpenses();
+            renderYardRevenue();
         }
 
         function renderYardExpenses() {
@@ -4208,17 +4687,21 @@
             const expenses = yardDb.expenses || [];
             let totalExp = 0;
 
-            tbody.innerHTML = expenses.length ? expenses.map(ex => {
+            tbody.innerHTML = expenses.length ? expenses.map((ex, idx) => {
                 totalExp += Number(ex.amount || 0);
                 return `
-                    <tr class="border-b">
+                    <tr class="border-b hover:bg-slate-50">
                         <td class="p-3 font-mono text-[11px]">${ex.date ? new Date(ex.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-bold text-slate-800">${ex.category}</td>
                         <td class="p-3">${ex.description}</td>
                         <td class="p-3 text-right font-extrabold text-rose-700">₱${Number(ex.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editYardExpenseEntry(${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteYardExpenseEntry(${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
                     </tr>
                 `;
-            }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500">No expense records logged.</td></tr>';
+            }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No expense records logged.</td></tr>';
 
             const totalExpDisplay = document.getElementById('totalExpenseDisplay');
             if(totalExpDisplay) totalExpDisplay.innerText = '₱' + totalExp.toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -4269,8 +4752,9 @@
                         <td class="p-3 font-mono">₱${m.amount || 0}</td>
                         <td class="p-3 font-extrabold text-emerald-700">₱${m.totalAmount || m.amount || 0}</td>
                         <td class="p-3 font-mono">${m.eir || '—'}</td>
+                        <td class="p-3 text-right">—</td>
                     </tr>
-                `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">No movement history logged.</td></tr>';
+                `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500">No movement history logged.</td></tr>';
             }
         }
 
@@ -4283,6 +4767,7 @@
         }
 
         function exportExpensesCSV() {
+            if (!requireAdminExecution("export Yard Expenses CSV")) return;
             const csvRows = [
                 ['Date / Time', 'Category', 'Description', 'Amount (PHP)'],
                 ...(yardDb.expenses || []).map(ex => [ex.date, ex.category, `"${(ex.description || '').replace(/"/g, '""')}"`, ex.amount])
@@ -4298,6 +4783,7 @@
         }
 
         function exportYardMovements() {
+            if (!requireAdminExecution("export Yard Movements CSV")) return;
             const csvRows = [
                 ['Date / Time', 'Movement', 'Container No.', 'Plate', 'Storage Days', 'Amount', 'Total Amount', 'EIR'],
                 ...(yardDb.movements || []).map(m => [m.date, m.kind, m.container, m.plate || '', m.storageDays || '', m.amount || 0, m.totalAmount || m.amount || 0, m.eir || ''])
@@ -4313,6 +4799,7 @@
         }
 
         function backupUnifiedEnterpriseData() {
+            if (!requireAdminExecution("download Unified Enterprise Backup")) return;
             const unifiedData = { managementBackend: db, emptyYard: yardDb, exportedAt: new Date().toISOString() };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unifiedData, null, 2));
             const dlAnchorElem = document.createElement('a');
@@ -4324,6 +4811,7 @@
         }
 
         async function restoreUnifiedEnterpriseData(event) {
+            if (!requireAdminExecution("restore Unified Enterprise Backup")) return;
             const fileReader = new FileReader();
             if(event.target.files && event.target.files[0]) {
                 fileReader.readAsText(event.target.files[0], "UTF-8");
@@ -4366,6 +4854,7 @@
 
         async function handleTransSubmit(e) {
             e.preventDefault();
+            if (!requireAdminExecution("post a new transshipment order")) return;
             const origin = document.getElementById('transOrigin').value;
             const container = document.getElementById('transContainer').value;
             const commission = document.getElementById('transCommission').value;
@@ -4384,6 +4873,7 @@
         }
 
         async function acceptTransshipmentOrder(idx) {
+            if (!requireAdminExecution("accept a transshipment order")) return;
             if(db.transshipments && db.transshipments[idx]) {
                 db.transshipments[idx].status = 'Hub Accepted';
                 await saveCloudData();
@@ -4393,6 +4883,7 @@
         }
 
         async function rejectTransshipmentOrder(idx) {
+            if (!requireAdminExecution("reject a transshipment order")) return;
             if(db.transshipments && db.transshipments[idx]) {
                 db.transshipments[idx].status = 'Rejected';
                 await saveCloudData();
