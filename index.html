@@ -350,7 +350,7 @@
                                     <th class="p-3">Gate-In</th>
                                     <th class="p-3">Gate-Out</th>
                                     <th class="p-3">Van In / Out</th>
-                                    <th class="p-3">Actions</th>
+                                    <th class="p-3 text-right">Actions (Admin Only)</th>
                                 </tr>
                             </thead>
                             <tbody id="yardInventoryRows" class="divide-y divide-slate-200"></tbody>
@@ -554,7 +554,7 @@
                         </div>
                         <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold" onclick="exportRevenueCSV()">Export Revenue CSV</button>
                     </div>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Source Type</th><th class="p-3">Container No.</th><th class="p-3">Reference / EIR</th><th class="p-3 text-right">Amount (₱)</th></tr></thead><tbody id="revenueTableBody" class="divide-y divide-slate-200"></tbody></table></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Source Type</th><th class="p-3">Container No.</th><th class="p-3">Reference / EIR</th><th class="p-3 text-right">Amount (₱)</th><th class="p-3 text-right">Actions (Admin)</th></tr></thead><tbody id="revenueTableBody" class="divide-y divide-slate-200"></tbody></table></div>
                 </div>
             </div>
 
@@ -589,7 +589,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div class="card bg-rose-50 text-slate-900 p-4 rounded-xl border border-rose-200"><div class="text-xs font-bold text-rose-900">TOTAL EXPENSES INCURRED</div><div class="text-2xl font-extrabold text-rose-800 my-1" id="totalExpenseDisplay">₱0.00</div></div>
                     </div>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Category</th><th class="p-3">Description</th><th class="p-3 text-right">Amount (₱)</th></tr></thead><tbody id="expenseTableBody" class="divide-y divide-slate-200"></tbody></table></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Category</th><th class="p-3">Description</th><th class="p-3 text-right">Amount (₱)</th><th class="p-3 text-right">Actions (Admin)</th></tr></thead><tbody id="expenseTableBody" class="divide-y divide-slate-200"></tbody></table></div>
                 </div>
             </div>
 
@@ -615,7 +615,7 @@
                             <button class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded text-xs font-semibold text-slate-800" onclick="exportYardMovements()">Export Movements CSV</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Movement</th><th class="p-3">Container No.</th><th class="p-3">Plate</th><th class="p-3">Storage Days</th><th class="p-3">Van In / Out</th><th class="p-3">Total Amount</th><th class="p-3">EIR / Ref.</th></tr></thead><tbody id="yardMovementRows" class="divide-y divide-slate-200"></tbody></table></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-900 font-medium"><thead class="bg-slate-100 text-slate-800"><tr><th class="p-3">Date / Time</th><th class="p-3">Movement</th><th class="p-3">Container No.</th><th class="p-3">Plate</th><th class="p-3">Storage Days</th><th class="p-3">Van In / Out</th><th class="p-3">Total Amount</th><th class="p-3">EIR / Ref.</th><th class="p-3 text-right">Actions (Admin)</th></tr></thead><tbody id="yardMovementRows" class="divide-y divide-slate-200"></tbody></table></div>
                 </div>
             </div>
 
@@ -635,7 +635,7 @@
                     <div class="flex flex-wrap gap-2">
                         <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-semibold" onclick="backupUnifiedEnterpriseData()">Download Unified Backup</button>
                         <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center">Restore Unified Backup<input type="file" id="unifiedRestoreFile" accept=".json,application/json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
-                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-bold" onclick="confirmResetAllDatabases()">Reset All Records</button>
+                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-lg text-xs font-bold" onclick="confirmResetAllDatabases()">Reset All Records</button>
                     </div>
                 </div>
             </div>
@@ -708,7 +708,7 @@
     <div id="driverRegModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeNewDriverRegistrationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-user-plus text-purple-400 mr-2"></i> New Driver Registration</h3>
+            <h3 id="driverRegModalTitle" class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-user-plus text-purple-400 mr-2"></i> New Driver Registration</h3>
             <form id="driverRegForm" onsubmit="handleNewDriverSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold">Driver's Full Name *</label>
@@ -750,7 +750,7 @@
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" id="regDriverSubmitBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition">Register Driver</button>
-                    <button type="button" onclick="document.getElementById('driverRegForm').reset(); stagedDriverAttachments=[]; document.getElementById('regDriverFilePreview').innerHTML='';" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Clear</button>
+                    <button type="button" onclick="document.getElementById('driverRegForm').reset(); stagedDriverAttachments=[]; currentEditingDriverIndex=null; document.getElementById('regDriverFilePreview').innerHTML='';" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Clear</button>
                 </div>
             </form>
         </div>
@@ -778,7 +778,7 @@
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
-                    <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-lg transition">Save Entry</button>
+                    <button type="submit" id="backendEntrySubmitBtn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-lg transition">Save Entry</button>
                     <button type="button" onclick="closeBackendEntryModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Cancel</button>
                 </div>
             </form>
@@ -869,15 +869,29 @@
         let currentUser = null;
         let currentUserRole = 'guest';
         let currentBackendModuleType = '';
+        let currentEditingRecordIndex = null;
+        let currentEditingDriverIndex = null;
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
         const STORAGE_BUCKET_NAME = "skymover-attachments";
 
         // ==========================================
+        // ADMIN-ONLY RBAC EXECUTION GUARD (ALL MODULES)
+        // ==========================================
+        function requireAdminExecution(actionLabel = "execute this operation") {
+            if (currentUserRole !== 'admin') {
+                alert(`⛔ RBAC Access Denied: Only an Administrator (admin) has execution rights to ${actionLabel}.`);
+                return false;
+            }
+            return true;
+        }
+
+        // ==========================================
         // FIXED UPLOAD & SAVE RECORD FUNCTION
         // ==========================================
         async function uploadAttachmentAndSaveRecord(fileObject, recordData) {
+            if (!requireAdminExecution("upload and save records")) return null;
             const STORAGE_BUCKET_NAME = "skymover-attachments";
             
             try {
@@ -1211,6 +1225,7 @@
                 switchYardTab('yardRevenue');
             } else if (role === 'dispatcher') {
                 if(resetBtn) resetBtn.style.display = 'none';
+                if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
                 restoreLastActiveViewOrLanding();
             } else if (role === 'admin') {
                 if(resetBtn) resetBtn.style.display = 'inline-block';
@@ -1371,10 +1386,7 @@
         }
 
         async function confirmResetAllDatabases() {
-            if(currentUserRole !== 'admin') {
-                alert('⛔ RBAC Access Denied: Administrator role required to reset databases.');
-                return;
-            }
+            if (!requireAdminExecution("reset all databases")) return;
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
             if(pwd !== 'Skymover_Transportation_2026') return;
     
@@ -1449,6 +1461,7 @@
         }
     
         function openGeofenceSmsModal() {
+            if (!requireAdminExecution("configure Geofence Zones & SMS Templates")) return;
             const modal = document.getElementById('geofenceSmsConfigModal');
             if(modal) modal.classList.remove('hidden');
             renderConfiguredZones();
@@ -1462,6 +1475,7 @@
 
         function handleSaveGeofenceZone(e) {
             e.preventDefault();
+            if (!requireAdminExecution("save Geofence Zones")) return;
             const name = document.getElementById('geoName').value;
             const lat = document.getElementById('geoLat').value;
             const lng = document.getElementById('geoLng').value;
@@ -1490,6 +1504,7 @@
         }
 
         function removeGeofenceZone(idx) {
+            if (!requireAdminExecution("delete a Geofence Zone")) return;
             if(!db.geofenceZones) return;
             db.geofenceZones.splice(idx, 1);
             saveCloudData();
@@ -1511,6 +1526,7 @@
         }
 
         function broadcastCustomTemplateSms() {
+            if (!requireAdminExecution("broadcast SMS templates")) return;
             const txt = document.getElementById('smsTemplateText');
             if(!txt || !txt.value) return;
             const customMsg = txt.value;
@@ -1523,6 +1539,7 @@
         }
 
         function triggerGeofenceScan() {
+            if (!requireAdminExecution("trigger a Geofence Scan")) return;
             const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
                 { name: "Manila North Harbor Terminal", radius: 5 },
                 { name: "Valenzuela Empty Container Depot", radius: 3 }
@@ -1614,6 +1631,7 @@
         }
 
         function plotAutomatedMapCoordinates() {
+            if (!requireAdminExecution("plot automated map coordinates")) return;
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
 
             if (registeredUnits.length === 0) {
@@ -1832,6 +1850,7 @@
         }
 
         function generateModulePDFReport(moduleName) {
+            if (!requireAdminExecution(`export PDF Report for ${moduleName}`)) return;
             const element = document.createElement('div');
             element.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
             
@@ -1882,6 +1901,7 @@
         }
 
         function generateModuleExcelReport(moduleName) {
+            if (!requireAdminExecution(`export Excel Spreadsheet for ${moduleName}`)) return;
             let csvRows = [];
             
             if (moduleName === 'Vehicle Masterlist') {
@@ -2152,6 +2172,7 @@
         }
 
         async function submitDriverProofOfDelivery() {
+            if (!requireAdminExecution("submit Proof of Delivery")) return;
             if(stagedDriverProofPhotos.length > 0) {
                 if(!db.uploads) db.uploads = [];
                 stagedDriverProofPhotos.forEach(p => {
@@ -2162,16 +2183,48 @@
             document.getElementById('uploadSuccessMsg').classList.remove('hidden');
         }
 
-        function openNewDriverRegistrationModal() { document.getElementById('driverRegModal').classList.remove('hidden'); }
-        function closeNewDriverRegistrationModal() { document.getElementById('driverRegModal').classList.add('hidden'); }
+        function openNewDriverRegistrationModal(editIndex = null) {
+            if (!requireAdminExecution("register or edit a driver")) return;
+            currentEditingDriverIndex = editIndex;
+            stagedDriverAttachments = [];
+            const modal = document.getElementById('driverRegModal');
+            const titleEl = document.getElementById('driverRegModalTitle');
+            const submitBtn = document.getElementById('regDriverSubmitBtn');
+            const previewEl = document.getElementById('regDriverFilePreview');
+            if (previewEl) previewEl.innerHTML = '';
 
-        // FIXED: New Driver Registration Form Handler
+            if (editIndex !== null && db.drivers && db.drivers[editIndex]) {
+                const d = db.drivers[editIndex];
+                if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-pen text-purple-400 mr-2"></i> Edit Driver Record';
+                if (submitBtn) submitBtn.textContent = 'Update Driver Record';
+                document.getElementById('regDriverName').value = d.driver_name || d.name || '';
+                document.getElementById('regDriverLicense').value = d.driver_license_number || d.driver_license || d.license || '';
+                document.getElementById('regDriverPhone').value = d.driver_phone || d.phone || '';
+                document.getElementById('regHelperName').value = d.helper_name || '';
+                document.getElementById('regHelperPhone').value = d.helper_phone || '';
+                document.getElementById('regDriverUnit').value = d.truck || '';
+            } else {
+                if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-plus text-purple-400 mr-2"></i> New Driver Registration';
+                if (submitBtn) submitBtn.textContent = 'Register Driver';
+                document.getElementById('driverRegForm').reset();
+            }
+
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeNewDriverRegistrationModal() {
+            currentEditingDriverIndex = null;
+            document.getElementById('driverRegModal').classList.add('hidden');
+        }
+
+        // FIXED: New Driver Registration & Edit Form Handler (Admin Only)
         async function handleNewDriverSubmit(e) {
             e.preventDefault();
+            if (!requireAdminExecution("save or update a driver record")) return;
             const submitBtn = document.getElementById('regDriverSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Registering...';
+                submitBtn.textContent = currentEditingDriverIndex !== null ? 'Updating...' : 'Registering...';
             }
 
             try {
@@ -2182,24 +2235,38 @@
                 const helper_phone = document.getElementById('regHelperPhone').value.trim();
                 const truck = document.getElementById('regDriverUnit').value.trim() || 'Unassigned';
 
-                const newDriverRecord = {
-                    driver_name,
-                    driver_license_number,
-                    driver_phone,
-                    helper_name,
-                    helper_phone,
-                    truck,
-                    status: 'Available',
-                    rating: '5.0 ★',
-                    attachments: [...stagedDriverAttachments],
-                    created_at: new Date().toISOString()
-                };
-
                 if (!db.drivers) db.drivers = [];
-                db.drivers.push(newDriverRecord);
 
-                // Attempt dedicated Supabase drivers table insert if available, and always sync unified cloud DB
-                await insertDriverToSupabase(newDriverRecord);
+                if (currentEditingDriverIndex !== null && db.drivers[currentEditingDriverIndex]) {
+                    const existing = db.drivers[currentEditingDriverIndex];
+                    const updatedRecord = {
+                        ...existing,
+                        driver_name,
+                        driver_license_number,
+                        driver_phone,
+                        helper_name,
+                        helper_phone,
+                        truck,
+                        attachments: stagedDriverAttachments.length > 0 ? [...stagedDriverAttachments] : (existing.attachments || [])
+                    };
+                    db.drivers[currentEditingDriverIndex] = updatedRecord;
+                } else {
+                    const newDriverRecord = {
+                        driver_name,
+                        driver_license_number,
+                        driver_phone,
+                        helper_name,
+                        helper_phone,
+                        truck,
+                        status: 'Available',
+                        rating: '5.0 ★',
+                        attachments: [...stagedDriverAttachments],
+                        created_at: new Date().toISOString()
+                    };
+                    db.drivers.push(newDriverRecord);
+                    await insertDriverToSupabase(newDriverRecord);
+                }
+
                 await saveCloudData();
 
                 closeNewDriverRegistrationModal();
@@ -2207,15 +2274,14 @@
                 stagedDriverAttachments = [];
                 document.getElementById('regDriverFilePreview').innerHTML = '';
 
-                // Refresh Driver Management view if it is currently open
                 if (currentBackendModuleType === 'Driver Management') {
                     openSubModule('Driver Management');
                 }
 
-                alert('✅ New driver and helper successfully registered and synced!');
+                alert('✅ Driver & Helper record successfully saved and synced!');
             } catch (err) {
                 console.error('Driver registration error:', err);
-                alert('❌ Error registering driver: ' + (err.message || err));
+                alert('❌ Error saving driver: ' + (err.message || err));
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -2225,6 +2291,7 @@
         }
 
         async function loadAuditLogsModal() {
+            if (!requireAdminExecution("view or manage the System Audit Trail")) return;
             if (!supabaseClient) return;
 
             const { data: logs, error } = await supabaseClient
@@ -2280,6 +2347,7 @@
         }
 
         async function exportAuditLogsCSV() {
+            if (!requireAdminExecution("export Audit Trail CSV")) return;
             if (!supabaseClient) return;
             const { data: logs, error } = await supabaseClient
                 .from('v_audit_logs')
@@ -2313,10 +2381,7 @@
         }
 
         function openNewUserRegistrationModal() {
-            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
-                alert('⛔ RBAC Restricted: Only administrators and dispatchers can provision new users.');
-                return;
-            }
+            if (!requireAdminExecution("provision new RBAC users")) return;
             const modal = document.getElementById('subModuleModal');
             const content = document.getElementById('subModuleContent');
             if(!modal || !content) return;
@@ -2353,6 +2418,7 @@
 
         async function handleNewUserSubmit(e) {
             e.preventDefault();
+            if (!requireAdminExecution("create or modify user accounts")) return;
             const emailInput = document.getElementById('newUserEmail');
             const passwordInput = document.getElementById('newUserPassword');
             const roleSelect = document.getElementById('newUserRole');
@@ -2415,11 +2481,25 @@
             openSubModule('User Management');
         }
 
-        async function deleteSystemUser(index) {
-            if(!['admin', 'dispatcher'].includes(currentUserRole)) {
-                alert('⛔ RBAC Restricted: Only administrators and dispatchers can delete users.');
+        async function editSystemUserRole(index) {
+            if (!requireAdminExecution("edit a user's assigned role")) return;
+            const users = db.systemUsers || [];
+            if (!users[index]) return;
+            const u = users[index];
+            const newRole = prompt(`Update RBAC Role for ${u.email} (admin, dispatcher, yard_manager, accounting_reports, driver):`, u.role);
+            if (!newRole) return;
+            const cleanRole = newRole.trim().toLowerCase();
+            if (!['admin', 'dispatcher', 'yard_manager', 'accounting_reports', 'driver'].includes(cleanRole)) {
+                alert('Invalid role entered. Allowed roles: admin, dispatcher, yard_manager, accounting_reports, driver');
                 return;
             }
+            db.systemUsers[index].role = cleanRole;
+            await saveCloudData();
+            openSubModule('User Management');
+        }
+
+        async function deleteSystemUser(index) {
+            if (!requireAdminExecution("delete a user account")) return;
             const users = db.systemUsers || [];
             if(users[index]) {
                 const targetEmail = users[index].email;
@@ -2468,7 +2548,7 @@
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">Ready</div></div>
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Cloud Storage Queue</span><div class="text-lg font-bold text-amber-400 mt-1">${(db.uploads || []).length} Attached</div></div>
                         </div>
-                        <button onclick="alert('LogiLENS optical scan complete.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
+                        <button onclick="if(requireAdminExecution('run optical scan')) alert('LogiLENS optical scan complete.')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">Run Full Optical Scan</button>
                     </div>
                 `;
             } else if(tab === 'track') {
@@ -2510,11 +2590,46 @@
         }
 
         function runAiAnalysis() {
+            if (!requireAdminExecution("generate AI Fleet & Yard Report")) return;
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
             log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB...\n";
             setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + ((db.vehicles && db.vehicles.length) ? db.vehicles.length : 0) + " trucks.\n"; }, 400);
             setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified successfully."; }, 900);
+        }
+
+        // ==========================================
+        // ADMIN DELETE RECORD ACROSS BACKEND MODULES
+        // ==========================================
+        async function deleteBackendRecord(moduleType, index) {
+            if (!requireAdminExecution(`delete ${moduleType} record`)) return;
+            if (!confirm(`Are you sure you want to permanently delete this ${moduleType} record?`)) return;
+
+            if (moduleType === 'Vehicle' && db.vehicles) {
+                db.vehicles.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Vehicle Management');
+            } else if (moduleType === 'Driver' && db.drivers) {
+                db.drivers.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Driver Management');
+            } else if (moduleType === 'Fuel' && db.fuelLogs) {
+                db.fuelLogs.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Fuel Monitoring');
+            } else if (moduleType === 'Maintenance' && db.maintenanceLogs) {
+                db.maintenanceLogs.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Maintenance');
+            } else if (moduleType === 'Dispatch' && db.dispatchLogs) {
+                db.dispatchLogs.splice(index, 1);
+                await saveCloudData();
+                openSubModule('GPS & Dispatch');
+            } else if (moduleType === 'Expense' && db.expenseLogs) {
+                db.expenseLogs.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Fleet Expenses');
+            }
         }
 
         function openSubModule(title) {
@@ -2556,10 +2671,20 @@
                     </div>
                 `;
             } else if (title === 'Vehicle Management') {
-                let rows = vehicles.length ? vehicles.map(v => {
+                let rows = vehicles.length ? vehicles.map((v, idx) => {
                     let atts = (v.attachments && v.attachments.length) ? v.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-sky-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No files</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold font-mono">' + v.id + '</td><td class="p-3">' + v.model + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">' + v.status + '</span></td><td class="p-3 font-semibold">' + (v.driver || 'Unassigned') + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-medium">No vehicles registered.</td></tr>';
+                    return `<tr class="border-b font-medium text-slate-900">
+                        <td class="p-3 font-bold font-mono">${v.id}</td>
+                        <td class="p-3">${v.model}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-sky-100 text-sky-900">${v.status}</span></td>
+                        <td class="p-3 font-semibold">${v.driver || 'Unassigned'}</td>
+                        <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Vehicle', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Vehicle', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No vehicles registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-truck text-blue-400 mr-2"></i> Vehicle Masterlist</h3>
@@ -2569,10 +2694,10 @@
                             <button onclick="openBackendEntryModal('Vehicle')" class="bg-blue-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Add Vehicle</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Status</th><th class="p-3">Assigned Driver</th><th class="p-3">Attached Photo / Files</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Model</th><th class="p-3">Status</th><th class="p-3">Assigned Driver</th><th class="p-3">Attached Photo / Files</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Driver Management') {
-                let rows = drivers.length ? drivers.map(d => {
+                let rows = drivers.length ? drivers.map((d, idx) => {
                     let atts = (d.attachments && d.attachments.length) ? d.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-purple-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No ID attached</span>';
                     const dName = d.driver_name || d.name || '—';
                     const dLic = d.driver_license_number || d.driver_license || d.license || '—';
@@ -2587,8 +2712,12 @@
                         <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">${d.status || 'Available'}</span></td>
                         <td class="p-3 font-bold text-amber-700">${d.rating || '5.0 ★'}</td>
                         <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openNewDriverRegistrationModal(${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Driver', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
                     </tr>`;
-                }).join('') : '<tr><td colspan="7" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
+                }).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-users text-indigo-400 mr-2"></i> Driver Management</h3>
@@ -2598,16 +2727,18 @@
                             <button onclick="openNewDriverRegistrationModal()" class="bg-indigo-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Register New Driver</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Driver Mobile</th><th class="p-3">Helper & Mobile</th><th class="p-3">Status</th><th class="p-3">Rating</th><th class="p-3">ID / Photo Files</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Driver Mobile</th><th class="p-3">Helper & Mobile</th><th class="p-3">Status</th><th class="p-3">Rating</th><th class="p-3">ID / Photo Files</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'User Management') {
+                if (!requireAdminExecution("access RBAC User Management")) { closeSubModule(); return; }
                 let users = db.systemUsers || [];
                 let userRows = users.length ? users.map((u, index) => `
                     <tr class="border-b font-medium text-slate-900">
                         <td class="p-3 font-bold">${u.email}</td>
                         <td class="p-3 uppercase"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-900' : (u.role === 'dispatcher' ? 'bg-sky-100 text-sky-900' : (u.role === 'yard_manager' ? 'bg-amber-100 text-amber-900' : (u.role === 'accounting_reports' ? 'bg-teal-100 text-teal-900' : 'bg-purple-100 text-purple-900')))}">${u.role.replace('_', ' ')}</span></td>
                         <td class="p-3">${new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td class="p-3 text-right">
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editSystemUserRole(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded text-[10px] font-bold transition">Edit Role</button>
                             <button onclick="deleteSystemUser(${index})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">Delete</button>
                         </td>
                     </tr>
@@ -2623,16 +2754,27 @@
                     </div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3">
                         <table class="w-full text-left text-xs">
-                            <tr class="border-b text-slate-800 font-bold"><th class="p-3">User Email</th><th class="p-3">Assigned Role</th><th class="p-3">Date Provisioned</th><th class="p-3 text-right">Actions</th></tr>
+                            <tr class="border-b text-slate-800 font-bold"><th class="p-3">User Email</th><th class="p-3">Assigned Role</th><th class="p-3">Date Provisioned</th><th class="p-3 text-right">Actions (Admin)</th></tr>
                             ${userRows}
                         </table>
                     </div>
                 `;
             } else if (title === 'Fuel Monitoring') {
-                let rows = fuelLogs.length ? fuelLogs.map(f => {
+                let rows = fuelLogs.length ? fuelLogs.map((f, idx) => {
                     let atts = (f.attachments && f.attachments.length) ? f.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-amber-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No receipt</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + f.unit + '</td><td class="p-3">' + f.liters + '</td><td class="p-3 font-bold text-emerald-700">' + f.cost + '</td><td class="p-3">' + f.station + '</td><td class="p-3">' + f.date + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No fuel logs.</td></tr>';
+                    return `<tr class="border-b font-medium text-slate-900">
+                        <td class="p-3 font-mono font-bold text-sky-800">${f.unit}</td>
+                        <td class="p-3">${f.liters}</td>
+                        <td class="p-3 font-bold text-emerald-700">${f.cost}</td>
+                        <td class="p-3">${f.station}</td>
+                        <td class="p-3">${f.date}</td>
+                        <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Fuel', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Fuel', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="7" class="p-4 text-center text-slate-500 font-medium">No fuel logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-gas-pump text-amber-400 mr-2"></i> Fuel Monitoring</h3>
@@ -2642,13 +2784,24 @@
                             <button onclick="openBackendEntryModal('Fuel')" class="bg-amber-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Fuel Fill</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Volume</th><th class="p-3">Cost</th><th class="p-3">Station</th><th class="p-3">Date</th><th class="p-3">Receipt / Photo</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Volume</th><th class="p-3">Cost</th><th class="p-3">Station</th><th class="p-3">Date</th><th class="p-3">Receipt / Photo</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'Maintenance') {
-                let rows = maintenanceLogs.length ? maintenanceLogs.map(m => {
+                let rows = maintenanceLogs.length ? maintenanceLogs.map((m, idx) => {
                     let atts = (m.attachments && m.attachments.length) ? m.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-rose-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No report</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-mono font-bold text-sky-800">' + m.unit + '</td><td class="p-3">' + m.issue + '</td><td class="p-3 font-bold text-rose-700">' + m.cost + '</td><td class="p-3 font-bold text-slate-900">' + m.status + '</td><td class="p-3">' + m.date + '</td><td class="p-3">' + atts + '</td></tr>';
-                }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No maintenance logs.</td></tr>';
+                    return `<tr class="border-b font-medium text-slate-900">
+                        <td class="p-3 font-mono font-bold text-sky-800">${m.unit}</td>
+                        <td class="p-3">${m.issue}</td>
+                        <td class="p-3 font-bold text-rose-700">${m.cost}</td>
+                        <td class="p-3 font-bold text-slate-900">${m.status}</td>
+                        <td class="p-3">${m.date}</td>
+                        <td class="p-3">${atts}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Maintenance', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Maintenance', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="7" class="p-4 text-center text-slate-500 font-medium">No maintenance logs.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-screwdriver-wrench text-rose-400 mr-2"></i> Fleet Maintenance</h3>
@@ -2658,7 +2811,7 @@
                             <button onclick="openBackendEntryModal('Maintenance')" class="bg-rose-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Schedule Maintenance</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Issue</th><th class="p-3">Cost</th><th class="p-3">Status</th><th class="p-3">Date</th><th class="p-3">Photo / Attached File</th></tr>` + rows + `</table></div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Unit ID</th><th class="p-3">Issue</th><th class="p-3">Cost</th><th class="p-3">Status</th><th class="p-3">Date</th><th class="p-3">Photo / Attached File</th><th class="p-3 text-right">Actions (Admin)</th></tr>` + rows + `</table></div>
                 `;
             } else if (title === 'GPS & Dispatch') {
                 let rows = dispatchLogs.length ? dispatchLogs.map(d => {
