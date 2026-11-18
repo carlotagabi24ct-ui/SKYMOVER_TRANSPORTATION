@@ -1333,35 +1333,110 @@
             if(!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).single();
-                if(error) {
-                    saveCloudData();
-                    return;
-                }
-                if(data && data.payload) {
+                if(!error && data && data.payload) {
                     db = data.payload.managementBackend || db;
                     yardDb = data.payload.emptyYard || yardDb;
-                    refreshYard();
-                    renderTransshipmentTable();
+                } else {
+                    saveCloudData();
                 }
+
+                // Fetch live LogiTRACK tables directly from Supabase
+                await fetchLogiTrackDataFromSupabase();
+
+                refreshYard();
+                renderTransshipmentTable();
+                refreshDriverSmsInbox();
             } catch(e) {
                 saveCloudData();
             }
         }
 
+        // ==========================================
+        // UPDATED: LIVE SUPABASE REALTIME LISTENERS FOR LOGITRACK & ENTERPRISE DB
+        // ==========================================
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
             try {
-                const channel = supabaseClient.channel('public:skymover_enterprise_db');
+                const channel = supabaseClient.channel('skymover-logitrack-live');
+
+                // 1. Unified Enterprise DB Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
                     if(payload && payload.new && payload.new.payload) {
                         db = payload.new.payload.managementBackend || db;
                         yardDb = payload.new.payload.emptyYard || yardDb;
+                        saveDB();
+                        localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
                         refreshYard();
                         renderTransshipmentTable();
+                        refreshDriverSmsInbox();
+                        const trackContainer = document.getElementById('geofenceAlertsContainer');
+                        if(trackContainer) renderGeofenceLogs(trackContainer);
+                        renderConfiguredZones();
                     }
                 });
+
+                // 2. Live LogiTRACK Geofence Alerts & GPS Telemetry Stream
+                channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'geofence_alerts' }, payload => {
+                    if (payload && payload.new) {
+                        const newAlert = {
+                            id: payload.new.id,
+                            message: payload.new.message,
+                            time: payload.new.created_at || new Date().toISOString(),
+                            lat: payload.new.latitude,
+                            lng: payload.new.longitude,
+                            unitId: payload.new.unit_id,
+                            nearestHub: payload.new.nearest_hub,
+                            distanceKm: payload.new.distance_km
+                        };
+                        if (!db.geofenceAlerts) db.geofenceAlerts = [];
+                        if (!db.geofenceAlerts.some(a => a.id && a.id === newAlert.id)) {
+                            db.geofenceAlerts.unshift(newAlert);
+                        }
+                        const trackContainer = document.getElementById('geofenceAlertsContainer');
+                        if (trackContainer) renderGeofenceLogs(trackContainer);
+
+                        if (newAlert.lat && newAlert.lng && skymoverLeafletMap && skymoverMapMarkersLayer) {
+                            const liveMarker = L.marker([newAlert.lat, newAlert.lng], {
+                                icon: L.divIcon({
+                                    className: 'custom-fleet-marker',
+                                    html: '<div style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">📡 ' + (newAlert.unitId || 'UNIT') + '</div>'
+                                })
+                            });
+                            liveMarker.bindPopup(`<b>Live Telemetry Alert:</b> ${newAlert.unitId || 'Fleet Unit'}<br>${newAlert.message}`);
+                            skymoverMapMarkersLayer.addLayer(liveMarker);
+                            skymoverLeafletMap.setView([newAlert.lat, newAlert.lng], 12);
+                        }
+                    }
+                });
+
+                // 3. Live LogiTRACK Geofence Zones Polygon Sync
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_zones' }, () => {
+                    fetchLogiTrackDataFromSupabase();
+                });
+
+                // 4. Live Driver SMS Dispatch Inbox Listener
+                channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sms_logs' }, payload => {
+                    if (payload && payload.new) {
+                        if (!db.smsLogs) db.smsLogs = [];
+                        db.smsLogs.unshift({
+                            id: payload.new.id,
+                            unit: payload.new.unit_id || payload.new.unit || 'ALL',
+                            message: payload.new.message,
+                            time: payload.new.created_at || new Date().toISOString()
+                        });
+                        refreshDriverSmsInbox();
+                    }
+                });
+
+                // 5. Live GPS & Dispatch Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_logs' }, () => {
+                    fetchDispatchLogsFromSupabase();
+                });
+
                 channel.subscribe((status, err) => {
-                    if (status === 'CHANNEL_ERROR' || status === 'TIMEDOUT' || (err && err.message && err.message.includes('SecurityError'))) {
+                    if (status === 'SUBSCRIBED') {
+                        updateSyncBadge('connected', 'LogiTRACK Live Realtime Active');
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMEDOUT' || (err && err.message && err.message.includes('SecurityError'))) {
                         console.warn('Realtime websocket notice: running in restricted Canvas mode, falling back to HTTP data fetch sync.');
                     }
                 });
@@ -1473,7 +1548,10 @@
             if(modal) modal.classList.add('hidden');
         }
 
-        function handleSaveGeofenceZone(e) {
+        // ==========================================
+        // UPDATED: LOGITRACK LIVE SUPABASE GEOFENCE ZONE HANDLERS
+        // ==========================================
+        async function handleSaveGeofenceZone(e) {
             e.preventDefault();
             if (!requireAdminExecution("save Geofence Zones")) return;
             const name = document.getElementById('geoName').value;
@@ -1481,9 +1559,15 @@
             const lng = document.getElementById('geoLng').value;
             const radius = parseFloat(document.getElementById('geoRadius').value) || 5;
 
+            const newZoneObj = { name, lat, lng, radius };
+            const inserted = await insertGeofenceZoneToSupabase(newZoneObj);
+            if (inserted && inserted.id) {
+                newZoneObj.id = inserted.id;
+            }
+
             if(!db.geofenceZones) db.geofenceZones = [];
-            db.geofenceZones.push({ name, lat, lng, radius });
-            saveCloudData();
+            db.geofenceZones.push(newZoneObj);
+            await saveCloudData();
             document.getElementById('geofenceForm').reset();
             renderConfiguredZones();
         }
@@ -1503,11 +1587,23 @@
             `).join('') : '<div class="text-slate-500 italic">No custom zones configured.</div>';
         }
 
-        function removeGeofenceZone(idx) {
+        async function removeGeofenceZone(idx) {
             if (!requireAdminExecution("delete a Geofence Zone")) return;
             if(!db.geofenceZones) return;
+            const targetZone = db.geofenceZones[idx];
+            if (supabaseClient && targetZone) {
+                try {
+                    if (targetZone.id) {
+                        await supabaseClient.from('geofence_zones').delete().eq('id', targetZone.id);
+                    } else if (targetZone.name) {
+                        await supabaseClient.from('geofence_zones').delete().eq('name', targetZone.name);
+                    }
+                } catch(err) {
+                    console.warn("Supabase geofence_zones delete fallback:", err.message);
+                }
+            }
             db.geofenceZones.splice(idx, 1);
-            saveCloudData();
+            await saveCloudData();
             renderConfiguredZones();
         }
 
@@ -1525,33 +1621,43 @@
             txt.value = smsPresets[sel.value] || "";
         }
 
-        function broadcastCustomTemplateSms() {
+        async function broadcastCustomTemplateSms() {
             if (!requireAdminExecution("broadcast SMS templates")) return;
             const txt = document.getElementById('smsTemplateText');
             if(!txt || !txt.value) return;
             const customMsg = txt.value;
 
-            (db.vehicles || []).forEach(v => {
-                sendDriverSms(v.id, customMsg);
-            });
+            const units = (db.vehicles && db.vehicles.length) ? db.vehicles : [{ id: 'ALL-FLEET' }];
+            for (const v of units) {
+                await sendDriverSms(v.id, customMsg);
+            }
             closeGeofenceSmsModal();
             refreshDriverSmsInbox();
         }
 
-        function triggerGeofenceScan() {
+        // ==========================================
+        // UPDATED: LOGITRACK REALTIME GEOFENCE SCAN
+        // ==========================================
+        async function triggerGeofenceScan() {
             if (!requireAdminExecution("trigger a Geofence Scan")) return;
             const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
-                { name: "Manila North Harbor Terminal", radius: 5 },
-                { name: "Valenzuela Empty Container Depot", radius: 3 }
+                { id: null, name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667, radius: 5 },
+                { id: null, name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830, radius: 3 }
             ];
 
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
 
             if (registeredUnits.length === 0) {
                 const alertMsg = `[GEOFENCE SYSTEM] Scan executed: No registered active units found in fleet masterlist.`;
+                await insertGeofenceAlertToSupabase({
+                    unitId: 'SYSTEM',
+                    zoneId: null,
+                    alertType: 'SYSTEM_SCAN',
+                    message: alertMsg
+                });
                 if(!db.geofenceAlerts) db.geofenceAlerts = [];
                 db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
-                saveCloudData();
+                await saveCloudData();
                 const trackContainer = document.getElementById('geofenceAlertsContainer');
                 if(trackContainer) renderGeofenceLogs(trackContainer);
                 return;
@@ -1562,11 +1668,22 @@
 
             const alertMsg = `[GEOFENCE ALERT] Registered unit ${randomUnit} crossed boundary: ${randomZone.name} at ${new Date().toLocaleTimeString()}`;
 
+            await insertGeofenceAlertToSupabase({
+                unitId: randomUnit,
+                zoneId: randomZone.id || null,
+                alertType: 'GEOFENCE_BREACH',
+                message: alertMsg,
+                lat: parseFloat(randomZone.lat) || 14.7011,
+                lng: parseFloat(randomZone.lng) || 120.9830,
+                nearestHub: randomZone.name,
+                distanceKm: parseFloat(randomZone.radius) || 5
+            });
+
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
 
-            sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe transit protocols.`);
-            saveCloudData();
+            await sendDriverSms(randomUnit, `Skymover Dispatch: Geofence alert registered for ${randomZone.name}. Maintain safe transit protocols.`);
+            await saveCloudData();
 
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) renderGeofenceLogs(trackContainer);
@@ -1576,7 +1693,7 @@
         let skymoverMapMarkersLayer = null;
 
         // ==========================================
-        // FETCH ACTUAL GPS POSITION & DISTANCE TO NEAREST HUB
+        // UPDATED: FETCH ACTUAL GPS POSITION & SYNC LIVE TO SUPABASE LOGITRACK
         // ==========================================
         async function fetchDriverLiveLocation() {
             const statusDiv = document.getElementById('driverGeoStatus');
@@ -1608,9 +1725,19 @@
                         if(statusDiv) {
                             statusDiv.innerHTML = `✅ <b>GPS Position & Distance Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><i class="fa-solid fa-route text-sky-400 mr-1"></i> <b>Nearest Destination Hub:</b> ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km away)<br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
                         }
+                        const liveMsg = `[DRIVER GPS & DISTANCE] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`;
+                        await insertGeofenceAlertToSupabase({
+                            unitId: (currentUser && currentUser.email) ? currentUser.email : 'DRIVER-UNIT',
+                            alertType: 'DRIVER_LIVE_GPS',
+                            message: liveMsg,
+                            lat: lat,
+                            lng: lng,
+                            nearestHub: nearestHubInfo.hub,
+                            distanceKm: parseFloat(nearestHubInfo.distanceKm)
+                        });
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
-                        db.geofenceAlerts.unshift({ message: `[DRIVER GPS & DISTANCE] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`, time: new Date().toISOString() });
-                        saveCloudData();
+                        db.geofenceAlerts.unshift({ message: liveMsg, time: new Date().toISOString() });
+                        await saveCloudData();
                     },
                     (error) => {
                         const fallbackLat = 14.7011;
@@ -1630,15 +1757,23 @@
             }
         }
 
-        function plotAutomatedMapCoordinates() {
+        // ==========================================
+        // UPDATED: PLOT MAP COORDINATES & STREAM TO SUPABASE LOGITRACK
+        // ==========================================
+        async function plotAutomatedMapCoordinates() {
             if (!requireAdminExecution("plot automated map coordinates")) return;
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
 
             if (registeredUnits.length === 0) {
                 const alertMsg = `[GPS PLOT] Scan executed: No registered active units found in fleet masterlist.`;
+                await insertGeofenceAlertToSupabase({
+                    unitId: 'SYSTEM',
+                    alertType: 'GPS_PLOT',
+                    message: alertMsg
+                });
                 if(!db.geofenceAlerts) db.geofenceAlerts = [];
                 db.geofenceAlerts.unshift({ message: alertMsg, time: new Date().toISOString() });
-                saveCloudData();
+                await saveCloudData();
                 const trackContainer = document.getElementById('geofenceAlertsContainer');
                 if(trackContainer) renderGeofenceLogs(trackContainer);
                 return;
@@ -1660,9 +1795,19 @@
 
             const plotMsg = `[GPS PLOT] Unit ${activeUnit} plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km) (${new Date().toLocaleTimeString()})`;
 
+            await insertGeofenceAlertToSupabase({
+                unitId: activeUnit,
+                alertType: 'GPS_PLOT',
+                message: plotMsg,
+                lat: jitterLat,
+                lng: jitterLng,
+                nearestHub: nearestHubInfo.hub,
+                distanceKm: parseFloat(nearestHubInfo.distanceKm)
+            });
+
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
             db.geofenceAlerts.unshift({ message: plotMsg, time: new Date().toISOString() });
-            saveCloudData();
+            await saveCloudData();
 
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if(trackContainer) {
@@ -1723,10 +1868,24 @@
             }, 150);
         }
 
-        function sendDriverSms(unitId, messageText) {
+        async function sendDriverSms(unitId, messageText) {
             if(!db.smsLogs) db.smsLogs = [];
-            db.smsLogs.unshift({ unit: unitId, message: messageText, time: new Date().toISOString() });
-            saveCloudData();
+            const smsItem = { unit: unitId, message: messageText, time: new Date().toISOString() };
+            db.smsLogs.unshift(smsItem);
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('sms_logs').insert({
+                        unit_id: unitId,
+                        message: messageText,
+                        created_at: smsItem.time
+                    });
+                } catch (e) {
+                    console.warn("Supabase sms_logs table sync fallback to enterprise payload:", e.message);
+                }
+            }
+
+            await saveCloudData();
             refreshDriverSmsInbox();
         }
 
@@ -2586,6 +2745,7 @@
                     </div>
                 `;
                 renderGeofenceLogs(document.getElementById('geofenceAlertsContainer'));
+                fetchLogiTrackDataFromSupabase();
             }
         }
 
@@ -3068,6 +3228,92 @@
             await fetchDispatchLogsFromSupabase();
             return true;
         }
+
+        // Load Geofence Zones & Alerts on startup
+        async function fetchLogiTrackDataFromSupabase() {
+            if (!supabaseClient) return;
+        
+            try {
+                const [zonesRes, alertsRes] = await Promise.all([
+                    supabaseClient.from('geofence_zones').select('*').order('created_at', { ascending: true }),
+                    supabaseClient.from('geofence_alerts').select('*').order('created_at', { ascending: false }).limit(50)
+                ]);
+            
+                if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
+                    db.geofenceZones = zonesRes.data.map(z => ({
+                        id: z.id,
+                        name: z.name,
+                        lat: z.latitude,
+                        lng: z.longitude,
+                        radius: z.radius_km
+                    }));
+                }
+            
+                if (!alertsRes.error && alertsRes.data && alertsRes.data.length > 0) {
+                    db.geofenceAlerts = alertsRes.data.map(a => ({
+                        id: a.id,
+                        message: a.message,
+                        time: a.created_at
+                    }));
+                }
+            } catch (err) {
+                console.warn("LogiTRACK direct table fetch notice:", err.message);
+            }
+        
+            const trackContainer = document.getElementById('geofenceAlertsContainer');
+            if (trackContainer) renderGeofenceLogs(trackContainer);
+            renderConfiguredZones();
+        }
+        
+        // Save a new Geofence Zone to Supabase
+        async function insertGeofenceZoneToSupabase(zoneObj) {
+            if (!supabaseClient) return null;
+        
+            try {
+                const { data, error } = await supabaseClient
+                    .from('geofence_zones')
+                    .insert({
+                        name: zoneObj.name,
+                        latitude: parseFloat(zoneObj.lat),
+                        longitude: parseFloat(zoneObj.lng),
+                        radius_km: parseFloat(zoneObj.radius) || 5.0
+                    })
+                    .select()
+                    .single();
+            
+                if (error) {
+                    console.warn("Notice saving geofence zone to standalone table:", error.message);
+                    return null;
+                }
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        // Log a GPS plot, Driver live location, or Geofence boundary alert
+        async function insertGeofenceAlertToSupabase({ unitId = null, zoneId = null, alertType = 'GEOFENCE', message, lat = null, lng = null, nearestHub = null, distanceKm = null }) {
+            if (!supabaseClient) return;
+        
+            try {
+                const { error } = await supabaseClient
+                    .from('geofence_alerts')
+                    .insert({
+                        unit_id: unitId,
+                        zone_id: zoneId,
+                        alert_type: alertType,
+                        message: message,
+                        latitude: lat,
+                        longitude: lng,
+                        nearest_hub: nearestHub,
+                        distance_km: distanceKm
+                    });
+            
+                if (error) {
+                    console.warn("Notice logging geofence alert to standalone table:", error.message);
+                }
+            } catch (e) {}
+        }
         
         function openBackendEntryModal(type) {
             currentBackendModuleType = type;
@@ -3214,7 +3460,9 @@
                 openSubModule('Maintenance');
             } else if (currentBackendModuleType === 'Dispatch') {
                 if(!db.dispatchLogs) db.dispatchLogs = [];
-                db.dispatchLogs.push({ unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments });
+                const dispatchRec = { unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments };
+                db.dispatchLogs.push(dispatchRec);
+                await insertDispatchLogToSupabase(dispatchRec);
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('GPS & Dispatch');
