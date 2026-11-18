@@ -872,6 +872,8 @@
         let currentEditingRecordIndex = null;
         let currentEditingDriverIndex = null;
         let currentEditingYardExpenseIndex = null;
+        let currentEditingYardContainerIndex = null;
+        let currentEditingYardRevenueIndex = null;
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
@@ -1341,12 +1343,14 @@
                     saveCloudData();
                 }
 
-                // Fetch live LogiTRACK & Expense tables directly from Supabase
+                // Fetch live LogiTRACK, Expenses, Maintenance & Yard tables directly from Supabase
                 await fetchLogiTrackDataFromSupabase();
                 await fetchFleetExpensesFromSupabase();
                 await fetchYardExpensesFromSupabase();
                 await fetchMaintenanceLogsFromSupabase();
                 await fetchYardContainersFromSupabase();
+                await fetchYardRevenuesFromSupabase();
+                await fetchYardMovementsFromSupabase();
                 
                 refreshYard();
                 renderTransshipmentTable();
@@ -1456,7 +1460,17 @@
                 // 9. Live Empty Yard Containers Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_containers' }, () => {
                     fetchYardContainersFromSupabase();
-                });                
+                });
+
+                // 10. Live Yard Revenues Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_revenues' }, () => {
+                    fetchYardRevenuesFromSupabase();
+                });
+
+                // 11. Live Yard Movements Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_movements' }, () => {
+                    fetchYardMovementsFromSupabase();
+                });
                 
                 channel.subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
@@ -1781,7 +1795,7 @@
                 }
             }
         }
-// ==========================================
+	// ==========================================
         // UPDATED: PLOT MAP COORDINATES & STREAM TO SUPABASE LOGITRACK
         // ==========================================
         async function plotAutomatedMapCoordinates() {
@@ -2132,7 +2146,19 @@
         
         function clearGateInPhotos() { stagedGateInPhotos = []; document.getElementById('gateInPhotoPreviewContainer').innerHTML = ''; }
         function clearGateOutPhotos() { stagedGateOutPhotos = []; document.getElementById('gateOutPhotoPreviewContainer').innerHTML = ''; }
-        function clearGateInFormAndPhotos() { document.getElementById('yardGateInForm').reset(); clearGateInPhotos(); }
+        function clearGateInFormAndPhotos() {
+            currentEditingYardContainerIndex = null;
+            const form = document.getElementById('yardGateInForm');
+            if (form) {
+                form.reset();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = 'Save Gate-In Entry';
+                    submitBtn.className = 'bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-bold';
+                }
+            }
+            clearGateInPhotos();
+        }
         function clearGateOutFormAndPhotos() { document.getElementById('yardGateOutForm').reset(); clearGateOutPhotos(); containerSelectedForGateOut(); }
         function clearYardExpenseForm() {
             currentEditingYardExpenseIndex = null;
@@ -3779,8 +3805,318 @@
                 return false;
             }
         }
-        
-        // Load Geofence Zones & Alerts on startup
+
+        // ==========================================================
+        // SUPABASE YARD REVENUES & MOVEMENTS SYNC FUNCTIONS
+        // ==========================================================
+
+        async function fetchYardRevenuesFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_revenues')
+                    .select('*')
+                    .order('transaction_date', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    yardDb.revenues = data.map(r => ({
+                        id: r.id,
+                        date: r.transaction_date ? r.transaction_date.slice(0, 16) : '',
+                        source: r.source_type,
+                        container: r.container_number,
+                        eir: r.eir_ref || '—',
+                        amount: Number(r.amount || 0)
+                    }));
+                    renderYardRevenue();
+                }
+            } catch (e) {
+                console.warn("fetchYardRevenuesFromSupabase fallback:", e.message);
+            }
+        }
+
+        async function insertYardRevenueToSupabase(r) {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_revenues')
+                    .insert({
+                        source_type: r.source,
+                        container_number: r.container,
+                        eir_ref: r.eir || null,
+                        amount: parseFloat(r.amount) || 0,
+                        transaction_date: r.date ? new Date(r.date).toISOString() : new Date().toISOString(),
+                        logged_by: currentUser ? currentUser.email : 'system'
+                    })
+                    .select()
+                    .single();
+
+                if (!error && data && data.id) r.id = data.id;
+                return !error;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function fetchYardMovementsFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_movements')
+                    .select('*')
+                    .order('movement_date', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    yardDb.movements = data.map(m => ({
+                        id: m.id,
+                        date: m.movement_date ? m.movement_date.slice(0, 16) : '',
+                        kind: m.movement_kind,
+                        container: m.container_number,
+                        plate: m.truck_plate || '',
+                        eir: m.eir_ref || '',
+                        storageDays: m.storage_days || 0,
+                        amount: Number(m.amount || 0),
+                        totalAmount: Number(m.total_amount || m.amount || 0)
+                    }));
+                    refreshYardDashboard();
+                    renderYardReports();
+                }
+            } catch (e) {
+                console.warn("fetchYardMovementsFromSupabase fallback:", e.message);
+            }
+        }
+
+        async function insertYardMovementToSupabase(m) {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_movements')
+                    .insert({
+                        movement_kind: m.kind,
+                        container_number: m.container,
+                        truck_plate: m.plate || null,
+                        eir_ref: m.eir || null,
+                        storage_days: parseInt(m.storageDays) || 0,
+                        amount: parseFloat(m.amount) || 0,
+                        total_amount: parseFloat(m.totalAmount || m.amount) || 0,
+                        movement_date: m.date ? new Date(m.date).toISOString() : new Date().toISOString(),
+                        logged_by: currentUser ? currentUser.email : 'system'
+                    })
+                    .select()
+                    .single();
+
+                if (!error && data && data.id) m.id = data.id;
+                return !error;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function deleteYardRevenueEntry(index) {
+            if (!requireAdminExecution("delete a Yard Revenue record")) return;
+            const revenues = yardDb.revenues || [];
+            const target = revenues[index];
+            if (!target) return;
+
+            if (!confirm(`Are you sure you want to permanently delete this revenue record for Container ${target.container} (₱${Number(target.amount || 0).toLocaleString()})?`)) {
+                return;
+            }
+
+            if (supabaseClient) {
+                try {
+                    if (target.id) {
+                        await supabaseClient.from('yard_revenues').delete().eq('id', target.id);
+                    } else if (target.container && target.amount !== undefined) {
+                        await supabaseClient
+                            .from('yard_revenues')
+                            .delete()
+                            .eq('container_number', target.container)
+                            .eq('amount', parseFloat(target.amount) || 0);
+                    }
+                } catch (err) {
+                    console.warn("Supabase yard_revenues delete fallback:", err.message);
+                }
+            }
+
+            yardDb.revenues.splice(index, 1);
+            await saveCloudData();
+            renderYardRevenue();
+            refreshYardDashboard();
+        }
+
+        async function deleteYardMovementEntry(index) {
+            if (!requireAdminExecution("delete a Yard Movement record")) return;
+            const movements = yardDb.movements || [];
+            const target = movements[index];
+            if (!target) return;
+
+            if (!confirm(`Are you sure you want to permanently delete the ${target.kind} movement log for Container ${target.container}?`)) {
+                return;
+            }
+
+            if (supabaseClient) {
+                try {
+                    if (target.id) {
+                        await supabaseClient.from('yard_movements').delete().eq('id', target.id);
+                    } else if (target.container && target.kind) {
+                        await supabaseClient
+                            .from('yard_movements')
+                            .delete()
+                            .eq('container_number', target.container)
+                            .eq('movement_kind', target.kind);
+                    }
+                } catch (err) {
+                    console.warn("Supabase yard_movements delete fallback:", err.message);
+                }
+            }
+
+            yardDb.movements.splice(index, 1);
+            await saveCloudData();
+            renderYardReports();
+            refreshYardDashboard();
+        }
+
+        // Open Yard Container in the Gate-In Form for Editing
+        function editContainerEntry(index) {
+            if (!requireAdminExecution("edit a container inventory record")) return;
+            const containers = yardDb.containers || [];
+            const target = containers[index];
+            if (!target) return;
+
+            currentEditingYardContainerIndex = index;
+            switchYardTab('yardGateIn');
+
+            const form = document.getElementById('yardGateInForm');
+            if (!form) return;
+
+            form.elements['number'].value = target.number || '';
+            form.elements['size'].value = target.size || '20FT';
+            form.elements['type'].value = target.type || 'Dry';
+            form.elements['line'].value = target.line || 'TS LINE';
+            form.elements['truckingName'].value = target.truckingName || 'SKYMOVER';
+            form.elements['plate'].value = target.plate || '';
+            form.elements['driver'].value = target.driver || '';
+            form.elements['eir'].value = target.eir || '';
+            form.elements['condition'].value = target.condition || 'Good';
+            form.elements['status'].value = target.status || 'Available';
+            form.elements['block'].value = target.block || 'A';
+            form.elements['bay'].value = target.bay || 'BAY-1';
+            form.elements['row'].value = target.row || 'GROUND';
+            form.elements['vanInAmount'].value = target.vanInAmount || 0;
+            form.elements['vanInStats'].value = target.vanInStats || 'PAID';
+            form.elements['tier'].value = target.tier || '1';
+            form.elements['date'].value = target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16);
+            form.elements['etaDate'].value = target.etaDate ? target.etaDate.slice(0, 16) : (target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16));
+            form.elements['remarks'].value = target.remarks || '';
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.textContent = 'Update Container Entry';
+                submitBtn.className = 'bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-bold';
+            }
+
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Open Yard Revenue Edit Modal inside #subModuleModal
+        function editYardRevenueEntry(index) {
+            if (!requireAdminExecution("edit a Yard Revenue record")) return;
+            const revenues = yardDb.revenues || [];
+            const target = revenues[index];
+            if (!target) return;
+
+            currentEditingYardRevenueIndex = index;
+
+            const modal = document.getElementById('subModuleModal');
+            const content = document.getElementById('subModuleContent');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+
+            const formattedDate = target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16);
+
+            content.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-pen-to-square text-emerald-400 mr-2"></i> Edit Yard Revenue Transaction</h3>
+                <form id="editYardRevenueForm" onsubmit="handleUpdateYardRevenueSubmit(event)" class="space-y-4 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-300 mb-1 font-semibold">Transaction Date & Time *</label>
+                            <input type="datetime-local" id="editRevDate" required value="${formattedDate}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-1 font-semibold">Source Type *</label>
+                            <input type="text" id="editRevSource" required value="${target.source || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Gate-In Van In Fee">
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-1 font-semibold">Container No. *</label>
+                            <input type="text" id="editRevContainer" required value="${target.container || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-1 font-semibold">Reference / EIR</label>
+                            <input type="text" id="editRevEir" value="${target.eir || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-slate-300 mb-1 font-semibold">Amount (₱) *</label>
+                            <input type="number" step="any" id="editRevAmount" required value="${target.amount || 0}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-emerald-400 font-bold text-sm">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg transition">Update Revenue Record</button>
+                        <button type="button" onclick="closeSubModule()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-lg font-semibold">Cancel</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        // Save Yard Revenue Edit to Local State & public.yard_revenues in Supabase
+        async function handleUpdateYardRevenueSubmit(e) {
+            e.preventDefault();
+            if (!requireAdminExecution("update a Yard Revenue record")) return;
+            if (currentEditingYardRevenueIndex === null || !yardDb.revenues[currentEditingYardRevenueIndex]) return;
+
+            const existing = yardDb.revenues[currentEditingYardRevenueIndex];
+            const updatedRev = {
+                ...existing,
+                date: document.getElementById('editRevDate').value,
+                source: document.getElementById('editRevSource').value.trim(),
+                container: document.getElementById('editRevContainer').value.trim().toUpperCase(),
+                eir: document.getElementById('editRevEir').value.trim() || '—',
+                amount: parseFloat(document.getElementById('editRevAmount').value) || 0
+            };
+
+            yardDb.revenues[currentEditingYardRevenueIndex] = updatedRev;
+
+            if (supabaseClient) {
+                try {
+                    const updatePayload = {
+                        source_type: updatedRev.source,
+                        container_number: updatedRev.container,
+                        eir_ref: updatedRev.eir,
+                        amount: updatedRev.amount,
+                        transaction_date: updatedRev.date ? new Date(updatedRev.date).toISOString() : new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    if (existing.id) {
+                        await supabaseClient.from('yard_revenues').update(updatePayload).eq('id', existing.id);
+                    } else if (existing.container && existing.amount !== undefined) {
+                        await supabaseClient
+                            .from('yard_revenues')
+                            .update(updatePayload)
+                            .eq('container_number', existing.container)
+                            .eq('amount', parseFloat(existing.amount) || 0);
+                    }
+                } catch (err) {
+                    console.warn("Supabase yard_revenues update fallback:", err.message);
+                }
+            }
+
+            currentEditingYardRevenueIndex = null;
+            await saveCloudData();
+            closeSubModule();
+            renderYardRevenue();
+            refreshYardDashboard();
+            alert('✅ Yard revenue record successfully updated and synced to Supabase!');
+        }
+	// Load Geofence Zones & Alerts on startup
         async function fetchLogiTrackDataFromSupabase() {
             if (!supabaseClient) return;
         
@@ -4054,7 +4390,7 @@
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fuel Monitoring');
-                } else if (currentBackendModuleType === 'Maintenance') {
+            } else if (currentBackendModuleType === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
                 if (currentEditingRecordIndex !== null && db.maintenanceLogs[currentEditingRecordIndex]) {
                     const existing = db.maintenanceLogs[currentEditingRecordIndex];
@@ -4423,12 +4759,14 @@
             const tbody = document.getElementById('yardInventoryRows');
             if(!tbody) return;
             const search = (document.getElementById('yardSearchInput') ? document.getElementById('yardSearchInput').value : '').toLowerCase();
-            const containers = (yardDb.containers || []).filter(c => {
+
+            const allContainers = (yardDb.containers || []).map((c, idx) => ({ ...c, originalIdx: idx }));
+            const containers = allContainers.filter(c => {
                 if (!search) return true;
                 return c.number.toLowerCase().includes(search) || c.line.toLowerCase().includes(search) || (c.plate && c.plate.toLowerCase().includes(search));
             });
 
-            tbody.innerHTML = containers.length ? containers.map((c, index) => {
+            tbody.innerHTML = containers.length ? containers.map(c => {
                 let badgeClass = 'Available';
                 if(c.status === 'Reserved') badgeClass = 'Reserved';
                 else if(c.status === 'Hold' || c.condition === 'Damaged') badgeClass = 'Hold';
@@ -4444,8 +4782,9 @@
                         <td class="p-3 font-mono text-[11px]">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-mono text-[11px]">${c.gateOutDate ? new Date(c.gateOutDate).toLocaleString() : 'Active'}</td>
                         <td class="p-3 font-mono text-[11px]">In: ₱${c.vanInAmount || 0} (${c.vanInStats || 'PAID'})<br>Out: ₱${c.vanOutAmount || 0}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="deleteContainerEntry(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editContainerEntry(${c.originalIdx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteContainerEntry(${c.originalIdx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -4478,8 +4817,50 @@
 
         async function handleYardGateIn(e) {
             e.preventDefault();
+            if (!requireAdminExecution("record or update container Gate-In")) return;
+
             const form = document.getElementById('yardGateInForm');
             const formData = new FormData(form);
+
+            if(!yardDb.containers) yardDb.containers = [];
+
+            // Branch 1: Updating an existing Container Inventory record
+            if (currentEditingYardContainerIndex !== null && yardDb.containers[currentEditingYardContainerIndex]) {
+                const existing = yardDb.containers[currentEditingYardContainerIndex];
+                const updatedContainer = {
+                    ...existing,
+                    number: formData.get('number').toUpperCase(),
+                    size: formData.get('size'),
+                    type: formData.get('type'),
+                    line: formData.get('line'),
+                    truckingName: formData.get('truckingName'),
+                    plate: formData.get('plate').toUpperCase(),
+                    driver: formData.get('driver'),
+                    eir: formData.get('eir'),
+                    condition: formData.get('condition'),
+                    status: formData.get('status'),
+                    block: formData.get('block'),
+                    bay: formData.get('bay'),
+                    row: formData.get('row'),
+                    tier: formData.get('tier'),
+                    date: formData.get('date'),
+                    etaDate: formData.get('etaDate'),
+                    remarks: formData.get('remarks'),
+                    vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
+                    vanInStats: formData.get('vanInStats'),
+                    photos: stagedGateInPhotos.length > 0 ? stagedGateInPhotos : (existing.photos || [])
+                };
+
+                yardDb.containers[currentEditingYardContainerIndex] = updatedContainer;
+                await syncYardContainerToSupabase(updatedContainer);
+                await saveCloudData();
+                clearGateInFormAndPhotos();
+                alert('✅ Container inventory record successfully updated and synced to Supabase!');
+                switchYardTab('yardInventory');
+                return;
+            }
+
+            // Branch 2: Creating a new Container Gate-In record
             const containerData = {
                 number: formData.get('number').toUpperCase(),
                 size: formData.get('size'),
@@ -4504,34 +4885,38 @@
                 photos: stagedGateInPhotos
             };
 
-            if(!yardDb.containers) yardDb.containers = [];
             yardDb.containers.unshift(containerData);
             await syncYardContainerToSupabase(containerData);
             
-            if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
+            const movementRecord = {
                 date: containerData.date,
                 kind: 'GATE-IN',
                 container: containerData.number,
                 plate: containerData.plate,
                 eir: containerData.eir,
-                amount: containerData.vanInAmount
-            });
+                amount: containerData.vanInAmount,
+                totalAmount: containerData.vanInAmount
+            };
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift(movementRecord);
+            await insertYardMovementToSupabase(movementRecord);
 
             if (containerData.vanInAmount > 0 && containerData.vanInStats === 'PAID') {
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
+                const revenueRecord = {
                     date: containerData.date,
                     source: 'Gate-In Van In Fee',
                     container: containerData.number,
                     eir: containerData.eir || '—',
                     amount: containerData.vanInAmount
-                });
+                };
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift(revenueRecord);
+                await insertYardRevenueToSupabase(revenueRecord);
             }
 
             await saveCloudData();
-            form.reset();
-            clearGateInPhotos();
+            clearGateInFormAndPhotos();
             alert('✅ Container Gate-In successfully recorded and synced with Supabase storage & cloud database!');
             switchYardTab('yardInventory');
         }
@@ -4600,6 +4985,8 @@
 
         async function handleYardGateOut(e) {
             e.preventDefault();
+            if (!requireAdminExecution("confirm container Gate-Out")) return;
+
             const containerNo = document.getElementById('yardOutContainer').value;
             const match = (yardDb.containers || []).find(c => c.number === containerNo);
             if(!match) {
@@ -4612,6 +4999,7 @@
             const gateOutDate = formData.get('date');
             const totalAmount = parseFloat(formData.get('totalAmount')) || 0;
             const storageDays = parseInt(formData.get('storageDays')) || 1;
+            const eirRef = formData.get('eir');
 
             match.status = 'Released';
             match.gateOutDate = gateOutDate;
@@ -4619,28 +5007,33 @@
             match.releasePhotos = stagedGateOutPhotos;
             await syncYardContainerToSupabase(match);
             
-            if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift({
+            const movementRecord = {
                 date: gateOutDate,
                 kind: 'GATE-OUT',
                 container: containerNo,
                 plate: match.plate,
-                eir: formData.get('eir'),
+                eir: eirRef,
                 storageDays: storageDays,
                 totalAmount: totalAmount,
                 amount: totalAmount,
                 photos: stagedGateOutPhotos
-            });
+            };
+
+            if(!yardDb.movements) yardDb.movements = [];
+            yardDb.movements.unshift(movementRecord);
+            await insertYardMovementToSupabase(movementRecord);
 
             if (totalAmount > 0) {
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift({
+                const revenueRecord = {
                     date: gateOutDate,
                     source: 'Gate-Out & Storage Fee',
                     container: containerNo,
-                    eir: formData.get('eir') || '—',
+                    eir: eirRef || '—',
                     amount: totalAmount
-                });
+                };
+                if(!yardDb.revenues) yardDb.revenues = [];
+                yardDb.revenues.unshift(revenueRecord);
+                await insertYardRevenueToSupabase(revenueRecord);
             }
 
             await saveCloudData();
@@ -4657,7 +5050,9 @@
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
 
-            let revs = yardDb.revenues || [];
+            const allRevs = (yardDb.revenues || []).map((r, idx) => ({ ...r, originalIdx: idx }));
+            let revs = allRevs;
+
             if(dateFrom) {
                 revs = revs.filter(r => r.date && r.date.substring(0, 10) >= dateFrom);
             }
@@ -4669,12 +5064,16 @@
             tbody.innerHTML = revs.length ? revs.map(r => {
                 totalRev += Number(r.amount || 0);
                 return `
-                    <tr class="border-b">
+                    <tr class="border-b hover:bg-slate-50">
                         <td class="p-3 font-mono text-[11px]">${r.date ? new Date(r.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-semibold">${r.source}</td>
                         <td class="p-3 font-mono font-bold">${r.container}</td>
                         <td class="p-3 font-mono">${r.eir}</td>
                         <td class="p-3 text-right font-extrabold text-emerald-700">₱${Number(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editYardRevenueEntry(${r.originalIdx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteYardRevenueEntry(${r.originalIdx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
                     </tr>
                 `;
             }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No revenue records found for selected filter.</td></tr>';
@@ -4963,17 +5362,19 @@
             const movementRows = document.getElementById('yardMovementRows');
             if(movementRows) {
                 const movements = yardDb.movements || [];
-                movementRows.innerHTML = movements.length ? movements.map(m => `
-                    <tr class="border-b">
+                movementRows.innerHTML = movements.length ? movements.map((m, idx) => `
+                    <tr class="border-b hover:bg-slate-50">
                         <td class="p-3 font-mono text-[11px]">${m.date ? new Date(m.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-bold ${m.kind === 'GATE-IN' ? 'text-sky-700' : 'text-purple-700'}">${m.kind}</td>
                         <td class="p-3 font-mono font-bold">${m.container}</td>
                         <td class="p-3 font-mono">${m.plate || '—'}</td>
                         <td class="p-3 font-mono">${m.storageDays || '—'}</td>
-                        <td class="p-3 font-mono">₱${m.amount || 0}</td>
-                        <td class="p-3 font-extrabold text-emerald-700">₱${m.totalAmount || m.amount || 0}</td>
+                        <td class="p-3 font-mono">₱${Number(m.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 font-extrabold text-emerald-700">₱${Number(m.totalAmount || m.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                         <td class="p-3 font-mono">${m.eir || '—'}</td>
-                        <td class="p-3 text-right">—</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteYardMovementEntry(${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
                     </tr>
                 `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500">No movement history logged.</td></tr>';
             }
