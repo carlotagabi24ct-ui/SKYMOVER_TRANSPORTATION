@@ -1069,15 +1069,15 @@
             });
         }
 
-        // INACTIVITY AUTO-LOGOUT TIMER (5 MINUTES)
+        // INACTIVITY AUTO-LOGOUT TIMER (10 MINUTES)
         let inactivityTimer = null;
-        const INACTIVITY_LIMIT = 5 * 60 * 1000;
+        const INACTIVITY_LIMIT = 10 * 60 * 1000;
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
             if (currentUser && currentUserRole !== 'guest') {
                 inactivityTimer = setTimeout(() => {
-                    alert('⚠️ Inactivity detected for 5 minutes. For security, you have been automatically logged out.');
+                    alert('⚠️ Inactivity detected for 10 minutes. For security, you have been automatically logged out.');
                     handleSupabaseSignOut();
                 }, INACTIVITY_LIMIT);
             }
