@@ -1345,7 +1345,9 @@
                 await fetchLogiTrackDataFromSupabase();
                 await fetchFleetExpensesFromSupabase();
                 await fetchYardExpensesFromSupabase();
-
+                await fetchMaintenanceLogsFromSupabase();
+                await fetchYardContainersFromSupabase();
+                
                 refreshYard();
                 renderTransshipmentTable();
                 refreshDriverSmsInbox();
@@ -1446,6 +1448,16 @@
                     fetchYardExpensesFromSupabase();
                 });
 
+                // 8. Live Fleet Maintenance Logs Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_logs' }, () => {
+                    fetchMaintenanceLogsFromSupabase();
+                });
+
+                // 9. Live Empty Yard Containers Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_containers' }, () => {
+                    fetchYardContainersFromSupabase();
+                });                
+                
                 channel.subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
                         updateSyncBadge('connected', 'LogiTRACK Live Realtime Active');
@@ -2812,6 +2824,10 @@
                 await saveCloudData();
                 openSubModule('Fuel Monitoring');
             } else if (moduleType === 'Maintenance' && db.maintenanceLogs) {
+                const targetMaint = db.maintenanceLogs[index];
+                if (targetMaint && targetMaint.id) {
+                    await deleteMaintenanceLogFromSupabase(targetMaint.id);
+                }
                 db.maintenanceLogs.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Maintenance');
@@ -3581,6 +3597,188 @@
             renderYardExpenses();
             renderYardRevenue();
         }
+
+        // ==========================================================
+        // SUPABASE MAINTENANCE LOGS & YARD CONTAINERS SYNC FUNCTIONS
+        // ==========================================================
+
+        // 1. Fetch Fleet Maintenance Logs from Supabase
+        async function fetchMaintenanceLogsFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('maintenance_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    db.maintenanceLogs = data.map(m => ({
+                        id: m.id,
+                        unit: m.unit_id,
+                        issue: m.issue,
+                        cost: `₱${Number(m.cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+                        status: m.status || 'In Shop',
+                        date: m.service_date || (m.created_at ? m.created_at.substring(0, 10) : ''),
+                        attachments: m.attachments || []
+                    }));
+                    if (typeof openSubModule === 'function' && currentBackendModuleType === 'Maintenance') {
+                        openSubModule('Maintenance');
+                    }
+                }
+            } catch (e) {
+                console.warn("fetchMaintenanceLogsFromSupabase fallback:", e.message);
+            }
+        }
+
+        // 2. Insert a Fleet Maintenance Log into Supabase
+        async function insertMaintenanceLogToSupabase(maintRecord) {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('maintenance_logs')
+                    .insert({
+                        unit_id: maintRecord.unit,
+                        issue: maintRecord.issue,
+                        cost: parsePesoNumber(maintRecord.cost),
+                        status: maintRecord.status || 'In Shop',
+                        service_date: maintRecord.date || new Date().toISOString().substring(0, 10),
+                        attachments: maintRecord.attachments || [],
+                        logged_by: currentUser ? currentUser.email : 'system'
+                    })
+                    .select()
+                    .single();
+
+                if (!error && data && data.id) {
+                    maintRecord.id = data.id;
+                }
+                return !error;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 3. Update a Fleet Maintenance Log in Supabase
+        async function updateMaintenanceLogInSupabase(recordId, maintRecord) {
+            if (!supabaseClient || !recordId) return false;
+            try {
+                const { error } = await supabaseClient
+                    .from('maintenance_logs')
+                    .update({
+                        unit_id: maintRecord.unit,
+                        issue: maintRecord.issue,
+                        cost: parsePesoNumber(maintRecord.cost),
+                        status: maintRecord.status || 'In Shop',
+                        attachments: maintRecord.attachments || [],
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', recordId);
+                return !error;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 4. Delete a Fleet Maintenance Log from Supabase
+        async function deleteMaintenanceLogFromSupabase(recordId) {
+            if (!supabaseClient || !recordId) return false;
+            try {
+                const { error } = await supabaseClient
+                    .from('maintenance_logs')
+                    .delete()
+                    .eq('id', recordId);
+                return !error;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 5. Fetch Yard Containers from Supabase
+        async function fetchYardContainersFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_containers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    yardDb.containers = data.map(c => ({
+                        id: c.id,
+                        number: c.container_number,
+                        size: c.size,
+                        type: c.container_type || 'Dry',
+                        line: c.shipping_line,
+                        truckingName: c.trucking_name || '',
+                        plate: c.truck_plate,
+                        driver: c.driver_name || '',
+                        eir: c.eir_ref || '',
+                        condition: c.condition || 'Good',
+                        status: c.status || 'Available',
+                        block: c.block || 'A',
+                        bay: c.bay || 'BAY-1',
+                        row: c.yard_row || 'GROUND',
+                        tier: c.tier || '1',
+                        vanInAmount: Number(c.van_in_amount || 0),
+                        vanInStats: c.van_in_status || 'PAID',
+                        vanOutAmount: Number(c.van_out_amount || 0),
+                        date: c.gate_in_date ? c.gate_in_date.slice(0, 16) : '',
+                        etaDate: c.eta_date ? c.eta_date.slice(0, 16) : '',
+                        gateOutDate: c.gate_out_date ? c.gate_out_date.slice(0, 16) : null,
+                        remarks: c.remarks || '',
+                        photos: c.photos || [],
+                        releasePhotos: c.release_photos || []
+                    }));
+                    refreshYard();
+                }
+            } catch (e) {
+                console.warn("fetchYardContainersFromSupabase fallback:", e.message);
+            }
+        }
+
+        // 6. Insert / Upsert a Yard Container Record into Supabase
+        async function syncYardContainerToSupabase(c) {
+            if (!supabaseClient) return false;
+            try {
+                const payload = {
+                    container_number: c.number,
+                    size: c.size,
+                    container_type: c.type || 'Dry',
+                    shipping_line: c.line,
+                    trucking_name: c.truckingName || null,
+                    truck_plate: c.plate,
+                    driver_name: c.driver || null,
+                    eir_ref: c.eir || null,
+                    condition: c.condition || 'Good',
+                    status: c.status || 'Available',
+                    block: c.block || 'A',
+                    bay: c.bay || 'BAY-1',
+                    yard_row: c.row || 'GROUND',
+                    tier: c.tier || '1',
+                    van_in_amount: parseFloat(c.vanInAmount) || 0,
+                    van_in_status: c.vanInStats || 'PAID',
+                    van_out_amount: parseFloat(c.vanOutAmount) || 0,
+                    gate_in_date: c.date ? new Date(c.date).toISOString() : null,
+                    eta_date: c.etaDate ? new Date(c.etaDate).toISOString() : null,
+                    gate_out_date: c.gateOutDate ? new Date(c.gateOutDate).toISOString() : null,
+                    remarks: c.remarks || null,
+                    photos: c.photos || [],
+                    release_photos: c.releasePhotos || [],
+                    logged_by: currentUser ? currentUser.email : 'system',
+                    updated_at: new Date().toISOString()
+                };
+
+                if (c.id) {
+                    await supabaseClient.from('yard_containers').update(payload).eq('id', c.id);
+                } else {
+                    const { data } = await supabaseClient.from('yard_containers').insert(payload).select().single();
+                    if (data && data.id) c.id = data.id;
+                }
+                return true;
+            } catch (e) {
+                console.warn("syncYardContainerToSupabase fallback:", e.message);
+                return false;
+            }
+        }
         
         // Load Geofence Zones & Alerts on startup
         async function fetchLogiTrackDataFromSupabase() {
@@ -3856,19 +4054,25 @@
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('Fuel Monitoring');
-            } else if (currentBackendModuleType === 'Maintenance') {
+                } else if (currentBackendModuleType === 'Maintenance') {
                 if(!db.maintenanceLogs) db.maintenanceLogs = [];
                 if (currentEditingRecordIndex !== null && db.maintenanceLogs[currentEditingRecordIndex]) {
                     const existing = db.maintenanceLogs[currentEditingRecordIndex];
-                    db.maintenanceLogs[currentEditingRecordIndex] = {
+                    const updatedMaint = {
                         ...existing,
                         unit: val1,
                         issue: val2,
                         cost: val3 || '₱0',
                         attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
                     };
+                    db.maintenanceLogs[currentEditingRecordIndex] = updatedMaint;
+                    if (existing.id) {
+                        await updateMaintenanceLogInSupabase(existing.id, updatedMaint);
+                    }
                 } else {
-                    db.maintenanceLogs.push({ unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments });
+                    const newMaint = { unit: val1, issue: val2, cost: val3 || '₱0', status: 'In Shop', date: new Date().toISOString().substring(0, 10), attachments: stagedBackendAttachments };
+                    db.maintenanceLogs.unshift(newMaint);
+                    await insertMaintenanceLogToSupabase(newMaint);
                 }
                 currentEditingRecordIndex = null;
                 await saveCloudData();
@@ -4250,7 +4454,22 @@
 
         async function deleteContainerEntry(idx) {
             if (!requireAdminExecution("delete a container inventory record")) return;
-            if(confirm('Are you sure you want to delete this container inventory record?')) {
+            const target = (yardDb.containers || [])[idx];
+            if (!target) return;
+
+            if (confirm(`Are you sure you want to permanently delete container ${target.number} from inventory?`)) {
+                if (supabaseClient) {
+                    try {
+                        if (target.id) {
+                            await supabaseClient.from('yard_containers').delete().eq('id', target.id);
+                        } else if (target.number) {
+                            await supabaseClient.from('yard_containers').delete().eq('container_number', target.number);
+                        }
+                    } catch (err) {
+                        console.warn("Supabase yard_containers delete fallback:", err.message);
+                    }
+                }
+
                 yardDb.containers.splice(idx, 1);
                 await saveCloudData();
                 refreshYard();
@@ -4287,7 +4506,8 @@
 
             if(!yardDb.containers) yardDb.containers = [];
             yardDb.containers.unshift(containerData);
-
+            await syncYardContainerToSupabase(containerData);
+            
             if(!yardDb.movements) yardDb.movements = [];
             yardDb.movements.unshift({
                 date: containerData.date,
@@ -4397,7 +4617,8 @@
             match.gateOutDate = gateOutDate;
             match.vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
             match.releasePhotos = stagedGateOutPhotos;
-
+            await syncYardContainerToSupabase(match);
+            
             if(!yardDb.movements) yardDb.movements = [];
             yardDb.movements.unshift({
                 date: gateOutDate,
