@@ -724,11 +724,11 @@
                 </div>
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold">Helper's Full Name *</label>
-                    <input type="text" id="regDriverName" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos">
+                    <input type="text" id="regHelperName" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos">
                 </div>
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold">Helper's Mobile Number *</label>
-                    <input type="text" id="regDriverPhone" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="+63 912 345 6789">
+                    <input type="text" id="regHelperPhone" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="+63 912 345 6789">
                 </div>                
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold">Assigned Unit / Truck</label>
@@ -2167,9 +2167,11 @@
 
         async function handleNewDriverSubmit(e) {
             e.preventDefault();
-            const name = document.getElementById('regDriverName').value;
-            const license = document.getElementById('regDriverLicense').value;
-            const phone = document.getElementById('regDriverPhone').value;
+            const driver_name = document.getElementById('regDriverName').value;
+            const driver_license = document.getElementById('regDriverLicense').value;
+            const driver_phone = document.getElementById('regDriverPhone').value;
+            const helper_name = document.getElementById('regHelperName').value;
+            const helper_phone = document.getElementById('regHelperPhone').value;
             const truck = document.getElementById('regDriverUnit').value || 'Unassigned';
 
             if(!db.drivers) db.drivers = [];
@@ -2687,10 +2689,10 @@
                 .from('drivers')
                 .insert({
                     driver_name: driverRecord.driver_name,
-                    driver_license_number: driverRecord.license,
-                    driver_phone: driverRecord.phone,
-                    helper_name: helperRecord.name,
-                    helper_phone: helperRecord.phone,
+                    driver_license_number: driverRecord.driver_license,
+                    driver_phone: driverRecord.driver_phone,
+                    helper_name: helperRecord.helper_name,
+                    helper_phone: helperRecord.helper_phone,
                     assigned_unit: driverRecord.truck || 'Unassigned',
                     status: driverRecord.status || 'Available',
                     rating: 5.00,
