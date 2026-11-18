@@ -2537,6 +2537,7 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3"><table class="w-full text-left text-xs"><tr class="border-b text-slate-800 font-bold"><th class="p-3">Driver Name</th><th class="p-3">License Number</th><th class="p-3">Mobile No.</th><th class="p-3">Status</th><th class="p-3">Rating</th><th class="p-3">ID / Photo Files</th></tr>` + rows + `</table></div>
+                    
                 `;
             } else if (title === 'User Management') {
                 let users = db.systemUsers || [];
@@ -2645,6 +2646,67 @@
             }
         }
 
+        // Fetch all drivers from Supabase
+        async function fetchDriversFromSupabase() {
+            if (!supabaseClient) return;
+            
+            const { data, error } = await supabaseClient
+                .from('drivers')
+                .select('*')
+                .order('created_at', { ascending: false });
+        
+            if (error) {
+                console.error("Error fetching drivers:", error.message);
+                return;
+            }
+        
+            // Sync to local DB state
+            db.drivers = data.map(d => ({
+                name: d.name,
+                license: d.license_number,
+                phone: d.phone,
+                truck: d.assigned_unit,
+                status: d.status,
+                rating: `${d.rating.toFixed(1)} ★`,
+                attachments: d.attachments || []
+            }));
+        
+            // Re-render UI if driver module is open
+            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Driver Management') {
+                openSubModule('Driver Management');
+            }
+        }
+        
+        // Insert a new driver into Supabase table (replaces handleNewDriverSubmit)
+        async function insertDriverToSupabase(driverRecord) {
+            if (!supabaseClient) return false;
+        
+            const { data, error } = await supabaseClient
+                .from('drivers')
+                .insert({
+                    name: driverRecord.name,
+                    license_number: driverRecord.license,
+                    phone: driverRecord.phone,
+                    assigned_unit: driverRecord.truck || 'Unassigned',
+                    status: driverRecord.status || 'Available',
+                    rating: 5.00,
+                    attachments: driverRecord.attachments || []
+                });
+        
+            if (error) {
+                console.error("Error saving driver to Supabase:", error.message);
+                alert("Failed to register driver in cloud: " + error.message);
+                return false;
+            }
+        
+            // Update local state and sync
+            if (!db.drivers) db.drivers = [];
+            db.drivers.push(driverRecord);
+            await saveCloudData();
+            
+            return true;
+        }
+        
         function openBackendEntryModal(type) {
             currentBackendModuleType = type;
             stagedBackendAttachments = [];
@@ -2695,6 +2757,68 @@
                 `;
             }
             fieldsContainer.innerHTML = html;
+        }
+
+        // Fetch all vehicles from Supabase
+        async function fetchVehiclesFromSupabase() {
+            if (!supabaseClient) return;
+            
+            const { data, error } = await supabaseClient
+                .from('vehicles')
+                .select('*')
+                .order('created_at', { ascending: false });
+        
+            if (error) {
+                console.error("Error fetching vehicles:", error.message);
+                return;
+            }
+        
+            // Sync to local DB state
+            db.vehicles = data.map(v => ({
+                id: v.id,
+                model: v.model,
+                status: v.status,
+                driver: v.driver,
+                attachments: v.attachments || []
+            }));
+        
+            // Re-render UI if on vehicle module
+            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Vehicle Management') {
+                openSubModule('Vehicle Management');
+            }
+        }
+        
+        // Insert a new vehicle into Supabase table
+        async function insertVehicleToSupabase(vehicleRecord) {
+            if (!supabaseClient) return;
+        
+            const { data, error } = await supabaseClient
+                .from('vehicles')
+                .upsert({
+                    id: vehicleRecord.id,
+                    model: vehicleRecord.model,
+                    status: vehicleRecord.status || 'Active',
+                    driver: vehicleRecord.driver || 'Unassigned',
+                    attachments: vehicleRecord.attachments || []
+                }, { onConflict: 'id' });
+        
+            if (error) {
+                console.error("Error saving vehicle:", error.message);
+                alert("Failed to save vehicle to cloud: " + error.message);
+                return false;
+            }
+        
+            // Also update local unified DB JSON payload
+            if (!db.vehicles) db.vehicles = [];
+            const idx = db.vehicles.findIndex(v => v.id === vehicleRecord.id);
+            if (idx >= 0) {
+                db.vehicles[idx] = vehicleRecord;
+            } else {
+                db.vehicles.push(vehicleRecord);
+            }
+            
+            saveCloudData();
+            return true;
         }
 
         function closeBackendEntryModal() {
