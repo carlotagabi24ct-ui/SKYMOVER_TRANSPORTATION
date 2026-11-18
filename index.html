@@ -2525,7 +2525,7 @@
             } else if (title === 'Driver Management') {
                 let rows = drivers.length ? drivers.map(d => {
                     let atts = (d.attachments && d.attachments.length) ? d.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-purple-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No ID attached</span>';
-                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.name + '</td><td class="p-3 font-mono">' + d.license + '</td><td class="p-3 font-mono text-[11px]">' + (d.phone || '—') + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td><td class="p-3">' + atts + '</td></tr>';
+                    return '<tr class="border-b font-medium text-slate-900"><td class="p-3 font-bold">' + d.driver_name + '</td><td class="p-3 font-mono">' + d.driver_license_number + '</td><td class="p-3 font-mono text-[11px]">' + (d.driver_phone || '—') + d.helper_name + '</td><td class="p-3 font-mono">' + (d.helper_phone || '—') + '</td><td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-900">' + d.status + '</span></td><td class="p-3 font-bold text-amber-700">' + d.rating + '</td><td class="p-3">' + atts + '</td></tr>';
                 }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No drivers registered.</td></tr>';
                 content.innerHTML = `
                     <div class="flex justify-between items-center mb-4 text-white">
@@ -2662,9 +2662,11 @@
         
             // Sync to local DB state
             db.drivers = data.map(d => ({
-                name: d.name,
-                license: d.license_number,
-                phone: d.phone,
+                driver_name: d.driver_name,
+                driver_license: d.driver_license_number,
+                driver_phone: d.driver_phone,
+                helper_name: d.helper_name,
+                helper_phone: d.helper_phone,
                 truck: d.assigned_unit,
                 status: d.status,
                 rating: `${d.rating.toFixed(1)} ★`,
@@ -2684,9 +2686,11 @@
             const { data, error } = await supabaseClient
                 .from('drivers')
                 .insert({
-                    name: driverRecord.name,
-                    license_number: driverRecord.license,
-                    phone: driverRecord.phone,
+                    driver_name: driverRecord.driver_name,
+                    driver_license_number: driverRecord.license,
+                    driver_phone: driverRecord.phone,
+                    helper_name: helperRecord.name,
+                    helper_phone: helperRecord.phone,
                     assigned_unit: driverRecord.truck || 'Unassigned',
                     status: driverRecord.status || 'Available',
                     rating: 5.00,
@@ -2704,6 +2708,93 @@
             db.drivers.push(driverRecord);
             await saveCloudData();
             
+            return true;
+        }
+
+        // Fetch all fuel logs from Supabase cloud table
+        async function fetchFuelLogsFromSupabase() {
+            if (!supabaseClient) return;
+            
+            const { data, error } = await supabaseClient
+                .from('fuel_logs')
+                .select('*')
+                .order('logged_at', { ascending: false });
+        
+            if (error) {
+                console.error("Error fetching fuel logs:", error.message);
+                return;
+            }
+        
+            // Sync to local DB state
+            db.fuelLogs = data.map(f => ({
+                id: f.id,
+                unit: f.unit_id,
+                liters: `${f.liters} L`,
+                cost: `₱${Number(f.cost).toLocaleString('en-US', {minimumFractionDigits: 2})}`,
+                station: f.station,
+                date: f.logged_at ? f.logged_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
+                attachments: f.receipt_url ? [{ name: 'Receipt.jpg', dataUrl: f.receipt_url, type: 'image/jpeg' }] : []
+            }));
+        
+            // Re-render UI if Fuel module is currently open
+            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Fuel Monitoring') {
+                openSubModule('Fuel Monitoring');
+            }
+        }
+
+        // Insert new fuel fill log into Supabase and Storage Bucket
+        async function insertFuelLogToSupabase(fuelRecord, receiptFileObj) {
+            if (!supabaseClient) return false;
+        
+            let receiptUrl = null;
+        
+            // 1. Upload receipt photo to Supabase storage bucket if provided
+            if (receiptFileObj && receiptFileObj.dataUrl) {
+                try {
+                    const response = await fetch(receiptFileObj.dataUrl);
+                    const blob = await response.blob();
+                    const safeFileName = `fuel_${Date.now()}_${receiptFileObj.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                    const filePath = `fuel-receipts/${safeFileName}`;
+        
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from(STORAGE_BUCKET_NAME)
+                        .upload(filePath, blob, { upsert: true });
+        
+                    if (!uploadError) {
+                        const { data: publicUrlData } = supabaseClient.storage
+                            .from(STORAGE_BUCKET_NAME)
+                            .getPublicUrl(filePath);
+                        receiptUrl = publicUrlData ? publicUrlData.publicUrl : receiptFileObj.dataUrl;
+                    }
+                } catch (storageErr) {
+                    console.warn("Receipt storage upload fallback to dataUrl:", storageErr);
+                    receiptUrl = receiptFileObj.dataUrl;
+                }
+            }
+        
+            // 2. Insert record into PostgreSQL fuel_logs table
+            const { error: insertError } = await supabaseClient
+                .from('fuel_logs')
+                .insert({
+                    unit_id: fuelRecord.unit,
+                    liters: parseFloat(fuelRecord.liters),
+                    cost: parseFloat(fuelRecord.cost.replace(/[^\d.]/g, '')),
+                    station: fuelRecord.station,
+                    receipt_url: receiptUrl,
+                    logged_at: new Date().toISOString()
+                });
+        
+            if (insertError) {
+                alert("Failed to save fuel log to cloud: " + insertError.message);
+                return false;
+            }
+        
+            // 3. Update local state and trigger sync
+            if (!db.fuelLogs) db.fuelLogs = [];
+            db.fuelLogs.unshift(fuelRecord);
+            await saveCloudData();
+        
+            alert('✅ Fuel log successfully recorded and synced to Supabase cloud!');
             return true;
         }
         
