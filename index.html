@@ -94,11 +94,26 @@
                 <p class="text-[10px] text-slate-400" data-i18n="topNavSubtitle">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
             <div id="syncStatusBadge" class="hidden sm:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-[11px]">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" id="syncDot"></span>
                 <span id="syncText" class="text-slate-300 font-medium" data-i18n="syncConnecting">Connecting to Cloud DB...</span>
             </div>
+
+            <!-- WEB AUDIO CHIME TOGGLE -->
+            <button type="button" id="audioAlertToggleBtn" onclick="toggleAudioAlerts()" title="Toggle Web Audio Chime Alerts"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-emerald-400">
+                <i id="audioAlertIcon" class="fa-solid fa-volume-high"></i>
+                <span class="hidden md:inline" id="audioAlertLabel">Sound On</span>
+            </button>
+
+            <!-- DESKTOP BROWSER NOTIFICATION TOGGLE -->
+            <button type="button" id="desktopNotifToggleBtn" onclick="toggleDesktopNotifications()" title="Enable or Toggle Browser Desktop Notifications"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-slate-300">
+                <i id="desktopNotifIcon" class="fa-solid fa-bell-slash text-slate-400"></i>
+                <span class="hidden md:inline" id="desktopNotifLabel">Desktop Off</span>
+            </button>
+
             <button onclick="toggleLanguage()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
                 <i class="fa-solid fa-globe text-sky-400"></i>
                 <span id="langLabel">Chinese/English</span>
@@ -175,7 +190,7 @@
                     <button onclick="openSubModule('Report Templates')" class="bg-purple-700 hover:bg-purple-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-file-invoice mr-1"></i> <span data-i18n="btnReportTemplates">Report Templates</span></button>
                     <button onclick="loadAuditLogsModal()" id="auditLogBtn" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Audit Trail</button>
                     <button onclick="openSubModule('Data Backup')" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded-lg font-semibold text-white" data-i18n="btnBackup">Backup / Restore</button>
-                    <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> <span data-i18n="btnReset">Reset DB</span></button>
+                    <button onclick="confirmResetBackendAndDriverDB()" id="resetDbBtn" title="Reset Management Backend & Driver's Side records only" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> <span data-i18n="btnReset">Reset DB</span></button>
                 </div>
             </div>
 
@@ -729,12 +744,12 @@
                 </div>
 
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border">
-                    <h3 class="font-bold text-base text-slate-900 mb-2">Unified Enterprise Backup (Management Backend & Empty Yard)</h3>
-                    <p class="text-xs text-slate-600 mb-4">Download a complete JSON snapshot of both your Management Backend database and your Empty Yard database together.</p>
+                    <h3 class="font-bold text-base text-slate-900 mb-2">Unified Enterprise Backup & Empty Yard Reset</h3>
+                    <p class="text-xs text-slate-600 mb-4">Download a complete JSON snapshot of both databases, restore from backup, or clear Empty Yard records independently.</p>
                     <div class="flex flex-wrap gap-2">
                         <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-semibold" onclick="backupUnifiedEnterpriseData()">Download Unified Backup</button>
                         <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center">Restore Unified Backup<input type="file" id="unifiedRestoreFile" accept=".json,application/json" hidden onchange="restoreUnifiedEnterpriseData(event)"></label>
-                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-lg text-xs font-bold" onclick="confirmResetAllDatabases()">Reset All Records</button>
+                        <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-lg text-xs font-bold" title="Reset Empty Yard records only (preserves Management Backend & Driver's Side)" onclick="confirmResetEmptyYardDB()">Reset All Records</button>
                     </div>
                 </div>
             </div>
@@ -1063,12 +1078,10 @@
                     throw new Error("No file provided for upload.");
                 }
 
-                // Generate a unique file path to prevent naming collisions
                 const fileExt = fileObject.name ? fileObject.name.split('.').pop() : 'png';
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
                 const filePath = `uploads/${fileName}`;
 
-                // 1. Upload file to Supabase Storage if client is ready
                 let filePublicUrl = fileObject.dataUrl || null;
                 if (supabaseClient && typeof supabaseClient.storage !== 'undefined') {
                     const response = await fetch(fileObject.dataUrl);
@@ -1085,7 +1098,6 @@
                         throw uploadError;
                     }
 
-                    // 2. Retrieve the public URL for reference/display
                     const { data: publicUrlData } = supabaseClient.storage
                         .from(STORAGE_BUCKET_NAME)
                         .getPublicUrl(filePath);
@@ -1093,7 +1105,6 @@
                     filePublicUrl = publicUrlData ? publicUrlData.publicUrl : fileObject.dataUrl;
                 }
 
-                // 3. Attach file metadata to your record data
                 const completeRecord = {
                     ...recordData,
                     filePath: filePath,
@@ -1101,7 +1112,6 @@
                     uploadedAt: new Date().toISOString()
                 };
 
-                // 4. Push to your local database uploads array and persist
                 db.uploads = db.uploads || [];
                 db.uploads.push(completeRecord);
                 await saveCloudData();
@@ -1118,7 +1128,6 @@
 
         // ==========================================
         // DYNAMIC ADMIN-ASSIGNED HUB LOCATIONS & DISTANCE CALCULATION (HAVERSINE)
-        // (Zero hardcoded hubs — Admin has full authority to add/edit/delete hubs)
         // ==========================================
         function getActiveHubLocations() {
             if (!db || !Array.isArray(db.hubLocations)) return [];
@@ -1133,7 +1142,7 @@
         }
 
         function calculateDistanceKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of the earth in km
+            const R = 6371;
             const dLat = deg2rad(lat2 - lat1);
             const dLon = deg2rad(lon2 - lon1);
             const a = 
@@ -1453,8 +1462,243 @@
             window.addEventListener(evt, resetInactivityTimer, true);
         });
 
+        // ==========================================
+        // WEB AUDIO CHIMES & BROWSER DESKTOP NOTIFICATIONS
+        // ==========================================
+        let skymoverAudioCtx = null;
+        let audioAlertsEnabled = localStorage.getItem('skymover_audio_alerts') !== 'false';
+        let desktopNotifsEnabled = localStorage.getItem('skymover_desktop_notifs') === 'true';
+
+        function initSkymoverAlertSystem() {
+            const unlockAudio = () => {
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx && !skymoverAudioCtx) {
+                        skymoverAudioCtx = new AudioCtx();
+                    }
+                    if (skymoverAudioCtx && skymoverAudioCtx.state === 'suspended') {
+                        skymoverAudioCtx.resume();
+                    }
+                } catch (e) {}
+            };
+            ['click', 'keydown', 'touchstart'].forEach(evt => {
+                document.addEventListener(evt, unlockAudio, { once: true, passive: true });
+            });
+
+            if ('Notification' in window && Notification.permission !== 'granted') {
+                desktopNotifsEnabled = false;
+            }
+            updateAlertPreferenceButtonsUI();
+        }
+
+        function updateAlertPreferenceButtonsUI() {
+            const audioBtn = document.getElementById('audioAlertToggleBtn');
+            const audioIcon = document.getElementById('audioAlertIcon');
+            const audioLabel = document.getElementById('audioAlertLabel');
+
+            if (audioBtn && audioIcon && audioLabel) {
+                if (audioAlertsEnabled) {
+                    audioBtn.className = 'bg-slate-800 hover:bg-slate-700 border border-emerald-700/60 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-emerald-400';
+                    audioIcon.className = 'fa-solid fa-volume-high';
+                    audioLabel.textContent = 'Sound On';
+                } else {
+                    audioBtn.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-slate-400';
+                    audioIcon.className = 'fa-solid fa-volume-xmark';
+                    audioLabel.textContent = 'Muted';
+                }
+            }
+
+            const notifBtn = document.getElementById('desktopNotifToggleBtn');
+            const notifIcon = document.getElementById('desktopNotifIcon');
+            const notifLabel = document.getElementById('desktopNotifLabel');
+
+            if (notifBtn && notifIcon && notifLabel) {
+                const isGranted = ('Notification' in window) && Notification.permission === 'granted' && desktopNotifsEnabled;
+                if (isGranted) {
+                    notifBtn.className = 'bg-slate-800 hover:bg-slate-700 border border-sky-700/60 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-sky-400';
+                    notifIcon.className = 'fa-solid fa-bell text-sky-400';
+                    notifLabel.textContent = 'Desktop On';
+                } else {
+                    notifBtn.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-slate-400';
+                    notifIcon.className = 'fa-solid fa-bell-slash text-slate-400';
+                    notifLabel.textContent = 'Desktop Off';
+                }
+            }
+        }
+
+        function playSkymoverAlertChime(alertCategory = 'sms') {
+            if (!audioAlertsEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!skymoverAudioCtx) skymoverAudioCtx = new AudioCtx();
+                if (skymoverAudioCtx.state === 'suspended') {
+                    skymoverAudioCtx.resume();
+                }
+
+                const now = skymoverAudioCtx.currentTime;
+
+                if (alertCategory === 'geofence') {
+                    const notes = [
+                        { freq: 880.0, start: 0.00, dur: 0.14 },
+                        { freq: 698.46, start: 0.16, dur: 0.14 },
+                        { freq: 880.0, start: 0.34, dur: 0.24 }
+                    ];
+                    notes.forEach(n => {
+                        const osc = skymoverAudioCtx.createOscillator();
+                        const gain = skymoverAudioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(n.freq, now + n.start);
+
+                        gain.gain.setValueAtTime(0.0001, now + n.start);
+                        gain.gain.exponentialRampToValueAtTime(0.22, now + n.start + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+
+                        osc.connect(gain);
+                        gain.connect(skymoverAudioCtx.destination);
+                        osc.start(now + n.start);
+                        osc.stop(now + n.start + n.dur + 0.02);
+                    });
+                } else {
+                    const notes = [
+                        { freq: 523.25, start: 0.00, dur: 0.16 },
+                        { freq: 659.25, start: 0.13, dur: 0.16 },
+                        { freq: 783.99, start: 0.26, dur: 0.28 }
+                    ];
+                    notes.forEach(n => {
+                        const osc = skymoverAudioCtx.createOscillator();
+                        const gain = skymoverAudioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(n.freq, now + n.start);
+
+                        gain.gain.setValueAtTime(0.0001, now + n.start);
+                        gain.gain.exponentialRampToValueAtTime(0.20, now + n.start + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+
+                        osc.connect(gain);
+                        gain.connect(skymoverAudioCtx.destination);
+                        osc.start(now + n.start);
+                        osc.stop(now + n.start + n.dur + 0.02);
+                    });
+                }
+            } catch (err) {
+                console.warn('Web Audio chime skipped:', err.message);
+            }
+        }
+
+        function sendSkymoverDesktopNotification(title, body, targetView = 'driver', tag = 'skymover-alert') {
+            if (!desktopNotifsEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
+                return;
+            }
+            try {
+                const notif = new Notification(title, {
+                    body: body,
+                    tag: tag,
+                    renotify: true
+                });
+                notif.onclick = () => {
+                    window.focus();
+                    if (targetView === 'driver') {
+                        switchView('driver');
+                    } else if (targetView === 'track') {
+                        switchView('backend');
+                        switchAiTab('track');
+                    }
+                    notif.close();
+                };
+            } catch (err) {
+                console.warn('Desktop notification skipped:', err.message);
+            }
+        }
+
+        function toggleAudioAlerts() {
+            audioAlertsEnabled = !audioAlertsEnabled;
+            localStorage.setItem('skymover_audio_alerts', String(audioAlertsEnabled));
+            updateAlertPreferenceButtonsUI();
+            if (audioAlertsEnabled) {
+                playSkymoverAlertChime('sms');
+            }
+        }
+
+        async function toggleDesktopNotifications() {
+            if (!('Notification' in window)) {
+                alert('This browser does not support desktop notifications.');
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                alert('Desktop notifications are blocked in your browser site settings. Please allow notifications for this site and try again.');
+                updateAlertPreferenceButtonsUI();
+                return;
+            }
+
+            if (Notification.permission !== 'granted') {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    desktopNotifsEnabled = true;
+                    localStorage.setItem('skymover_desktop_notifs', 'true');
+                    updateAlertPreferenceButtonsUI();
+                    playSkymoverAlertChime('sms');
+                    sendSkymoverDesktopNotification(
+                        'SKYMOVER Desktop Alerts Enabled',
+                        'You will now receive live desktop notifications for dispatch SMS messages and geofence alerts.',
+                        currentUserRole === 'driver' ? 'driver' : 'track',
+                        'skymover-test'
+                    );
+                } else {
+                    desktopNotifsEnabled = false;
+                    localStorage.setItem('skymover_desktop_notifs', 'false');
+                    updateAlertPreferenceButtonsUI();
+                }
+                return;
+            }
+
+            desktopNotifsEnabled = !desktopNotifsEnabled;
+            localStorage.setItem('skymover_desktop_notifs', String(desktopNotifsEnabled));
+            updateAlertPreferenceButtonsUI();
+
+            if (desktopNotifsEnabled) {
+                playSkymoverAlertChime('sms');
+            }
+        }
+
+        function triggerDispatchSmsRealtimeAlertFeedback(smsObj) {
+            if (!smsObj) return;
+
+            if (currentUserRole === 'driver' && typeof resolveLoggedInDriverProfile === 'function') {
+                const profile = resolveLoggedInDriverProfile();
+                const recipient = (smsObj.recipient || smsObj.driver || '').trim().toLowerCase();
+                const smsUnit = (smsObj.unit || smsObj.unit_id || '').trim().toLowerCase();
+                const smsMsg = (smsObj.message || '').toLowerCase();
+
+                const matchesDriver = recipient !== '' && profile.names.some(n => recipient === n || recipient.includes(n));
+                const matchesUnit = profile.units.some(u => (smsUnit !== '' && smsUnit === u) || (u !== '' && smsMsg.includes(`unit ${u}`)));
+                if (!matchesDriver && !matchesUnit) return;
+            }
+
+            playSkymoverAlertChime('sms');
+            sendSkymoverDesktopNotification(
+                `📲 New Dispatch SMS • Unit ${smsObj.unit || 'Fleet'}`,
+                smsObj.message || 'You have received a new dispatch notification.',
+                'driver',
+                `skymover-sms-${smsObj.id || Date.now()}`
+            );
+        }
+
+        function triggerGeofenceRealtimeAlertFeedback(alertObj) {
+            if (!alertObj) return;
+            playSkymoverAlertChime('geofence');
+            sendSkymoverDesktopNotification(
+                `📡 LogiTRACK Geofence Alert • ${alertObj.unitId || 'Fleet Unit'}`,
+                alertObj.message || 'New GPS geofence telemetry event logged.',
+                'track',
+                `skymover-geo-${alertObj.id || Date.now()}`
+            );
+        }
+        
         function initSupabase() {
             try {
+                initSkymoverAlertSystem();
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 updateSyncBadge('connected', 'Cloud DB & Storage Bucket Active');
                 checkActiveAuthSession();
@@ -1733,20 +1977,95 @@
             }
         }
 
+        let skymoverRealtimeChannel = null;
+        let realtimePulseTimeout = null;
+
+        function pulseRealtimeSyncStatus(eventLabel) {
+            updateSyncBadge('connected', eventLabel);
+            clearTimeout(realtimePulseTimeout);
+            realtimePulseTimeout = setTimeout(() => {
+                updateSyncBadge('connected', 'LogiTRACK Live Realtime Active');
+            }, 4000);
+        }
+
+        function isSubModuleModalVisible(moduleTitle) {
+            const modal = document.getElementById('subModuleModal');
+            return Boolean(modal && !modal.classList.contains('hidden') && currentBackendModuleType === moduleTitle);
+        }
+
+        function mapSupabaseDispatchRow(row) {
+            return {
+                id: row.id,
+                unit: row.unit_id || row.unit || '',
+                route: row.route || '',
+                driver: row.driver_name || row.driver || '',
+                status: row.status || 'In Transit',
+                lat: row.latitude !== undefined ? row.latitude : (row.lat ?? null),
+                lng: row.longitude !== undefined ? row.longitude : (row.lng ?? null),
+                nearestHub: row.nearest_hub || row.nearestHub || null,
+                attachments: Array.isArray(row.attachments) ? row.attachments : [],
+                updatedAt: row.updated_at || row.created_at || new Date().toISOString()
+            };
+        }
+
+        function mapSupabaseAlertRow(row) {
+            const ts = row.created_at || new Date().toISOString();
+            return {
+                id: row.id,
+                unit: row.unit_id || row.unit || '',
+                unitId: row.unit_id || row.unit || '',
+                driver: row.driver_name || row.driver || '',
+                zone: row.zone_name || row.nearest_hub || '',
+                type: row.alert_type || 'Geofence Alert',
+                message: row.message || '',
+                lat: row.latitude !== undefined ? row.latitude : (row.lat ?? null),
+                lng: row.longitude !== undefined ? row.longitude : (row.lng ?? null),
+                nearestHub: row.nearest_hub || null,
+                distanceKm: row.distance_km ?? null,
+                status: row.status || 'Active',
+                time: ts,
+                timestamp: ts
+            };
+        }
+
+        function mapSupabaseSmsRow(row) {
+            const ts = row.sent_at || row.created_at || new Date().toISOString();
+            return {
+                id: row.id,
+                recipient: row.recipient || row.driver_name || row.driver || 'Driver',
+                driver: row.recipient || row.driver_name || row.driver || 'Driver',
+                driver_name: row.driver_name || row.recipient || 'Driver',
+                unit: row.unit_id || row.unit || 'ALL',
+                unit_id: row.unit_id || row.unit || 'ALL',
+                phone: row.phone || 'In-App Driver Inbox',
+                message: row.message || '',
+                status: row.status || 'Delivered',
+                timestamp: ts,
+                sent_at: ts,
+                time: ts
+            };
+        }
+
         // ==========================================
-        // LIVE SUPABASE REALTIME LISTENERS WITH ECHO GUARD
+        // LIVE SUPABASE REALTIME LISTENERS (DISPATCH, GEOFENCE ALERTS, SMS & YARD)
         // ==========================================
         function subscribeToRealtimeChanges() {
-            if(!supabaseClient) return;
+            if (!supabaseClient) return;
             try {
+                if (skymoverRealtimeChannel) {
+                    supabaseClient.removeChannel(skymoverRealtimeChannel);
+                    skymoverRealtimeChannel = null;
+                }
+
                 const channel = supabaseClient.channel('skymover-logitrack-live');
+                skymoverRealtimeChannel = channel;
 
                 // 1. Unified Enterprise DB Listener (Protected against self-echo overwrites)
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
                     if (isSavingCloudData || (Date.now() - lastLocalSaveTimestamp < 2500)) {
-                        return; // Ignore our own immediate save echo so in-flight rows are never reverted
+                        return;
                     }
-                    if(payload && payload.new && payload.new.payload) {
+                    if (payload && payload.new && payload.new.payload) {
                         const cb = payload.new.payload.managementBackend || {};
                         const cy = payload.new.payload.emptyYard || {};
                         db = {
@@ -1766,80 +2085,144 @@
                         renderTransshipmentTable();
                         refreshDriverSmsInbox();
                         renderDriverGeofenceAlerts();
+                        if (typeof refreshDriverPortal === 'function') refreshDriverPortal();
                         const trackContainer = document.getElementById('geofenceAlertsContainer');
-                        if(trackContainer) renderGeofenceLogs(trackContainer);
+                        if (trackContainer) renderGeofenceLogs(trackContainer);
                         renderConfiguredZones();
                     }
                 });
 
-                // 2. Live LogiTRACK Geofence Alerts & GPS Telemetry Stream
-                channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'geofence_alerts' }, payload => {
-                    if (payload && payload.new) {
-                        const newAlert = {
-                            id: payload.new.id,
-                            unit: payload.new.unit_id,
-                            driver: payload.new.driver_name,
-                            zone: payload.new.zone_name || payload.new.nearest_hub,
-                            type: payload.new.alert_type,
-                            message: payload.new.message,
-                            time: payload.new.created_at || new Date().toISOString(),
-                            timestamp: payload.new.created_at || new Date().toISOString(),
-                            lat: payload.new.latitude,
-                            lng: payload.new.longitude,
-                            unitId: payload.new.unit_id,
-                            nearestHub: payload.new.nearest_hub,
-                            distanceKm: payload.new.distance_km
-                        };
-                        if (!db.geofenceAlerts) db.geofenceAlerts = [];
-                        if (!db.geofenceAlerts.some(a => a.id && a.id === newAlert.id)) {
-                            db.geofenceAlerts.unshift(newAlert);
-                        }
-                        const trackContainer = document.getElementById('geofenceAlertsContainer');
-                        if (trackContainer) renderGeofenceLogs(trackContainer);
-                        renderDriverGeofenceAlerts();
+                // 2. Live GPS & Dispatch Listener (INSERT / UPDATE / DELETE across Driver & Admin views)
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_logs' }, payload => {
+                    if (!db.dispatchLogs) db.dispatchLogs = [];
 
-                        if (newAlert.lat && newAlert.lng && skymoverLeafletMap && skymoverMapMarkersLayer) {
-                            const liveMarker = L.marker([newAlert.lat, newAlert.lng], {
+                    if (payload.eventType === 'INSERT' && payload.new) {
+                        const mapped = mapSupabaseDispatchRow(payload.new);
+                        const existingIdx = db.dispatchLogs.findIndex(d =>
+                            (d.id && mapped.id && String(d.id) === String(mapped.id)) ||
+                            (!d.id && d.unit === mapped.unit && d.route === mapped.route && d.driver === mapped.driver)
+                        );
+                        if (existingIdx >= 0) {
+                            db.dispatchLogs[existingIdx] = { ...db.dispatchLogs[existingIdx], ...mapped };
+                        } else {
+                            db.dispatchLogs.unshift(mapped);
+                        }
+                        pulseRealtimeSyncStatus(`Live Dispatch: Unit ${mapped.unit}`);
+                    } else if (payload.eventType === 'UPDATE' && payload.new) {
+                        const mapped = mapSupabaseDispatchRow(payload.new);
+                        const existingIdx = db.dispatchLogs.findIndex(d =>
+                            (d.id && mapped.id && String(d.id) === String(mapped.id)) ||
+                            (d.unit === mapped.unit && d.driver === mapped.driver)
+                        );
+                        if (existingIdx >= 0) {
+                            db.dispatchLogs[existingIdx] = { ...db.dispatchLogs[existingIdx], ...mapped };
+                        } else {
+                            db.dispatchLogs.unshift(mapped);
+                        }
+
+                        if (mapped.lat && mapped.lng && skymoverLeafletMap && skymoverMapMarkersLayer) {
+                            const tripMarker = L.marker([Number(mapped.lat), Number(mapped.lng)], {
                                 icon: L.divIcon({
                                     className: 'custom-fleet-marker',
-                                    html: '<div style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">📡 ' + (newAlert.unitId || 'UNIT') + '</div>'
+                                    html: `<div style="background-color: #0284c7; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🚛 ${mapped.unit} (${mapped.status})</div>`
+                                })
+                            });
+                            tripMarker.bindPopup(`<b>Live Trip Update:</b> ${mapped.unit}<br><b>Driver:</b> ${mapped.driver}<br><b>Status:</b> ${mapped.status}<br><b>Route:</b> ${mapped.route}`);
+                            skymoverMapMarkersLayer.addLayer(tripMarker);
+                        }
+
+                        pulseRealtimeSyncStatus(`Live Trip Status: ${mapped.unit} → ${mapped.status}`);
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        const oldId = payload.old.id;
+                        if (oldId !== undefined && oldId !== null) {
+                            db.dispatchLogs = db.dispatchLogs.filter(d => String(d.id) !== String(oldId));
+                            pulseRealtimeSyncStatus('Live Sync: Dispatch Removed');
+                        }
+                    }
+
+                    saveDB();
+                    if (typeof refreshDriverPortal === 'function') refreshDriverPortal();
+                    if (isSubModuleModalVisible('GPS & Dispatch')) {
+                        openSubModule('GPS & Dispatch');
+                    }
+                });
+
+                // 3. Live LogiTRACK & Driver Geofence Alerts Stream (INSERT / UPDATE / DELETE)
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_alerts' }, payload => {
+                    if (!db.geofenceAlerts) db.geofenceAlerts = [];
+
+                    if (payload.eventType === 'INSERT' && payload.new) {
+                        const newAlert = mapSupabaseAlertRow(payload.new);
+                        const existingIdx = db.geofenceAlerts.findIndex(a =>
+                            (a.id && newAlert.id && String(a.id) === String(newAlert.id)) ||
+                            (!a.id && a.message === newAlert.message)
+                        );
+                        if (existingIdx >= 0) {
+                            db.geofenceAlerts[existingIdx] = { ...db.geofenceAlerts[existingIdx], ...newAlert };
+                        } else {
+                            db.geofenceAlerts.unshift(newAlert);
+                            triggerGeofenceRealtimeAlertFeedback(newAlert);
+                        }
+
+                        if (newAlert.lat && newAlert.lng && skymoverLeafletMap && skymoverMapMarkersLayer) {
+                            const liveMarker = L.marker([Number(newAlert.lat), Number(newAlert.lng)], {
+                                icon: L.divIcon({
+                                    className: 'custom-fleet-marker',
+                                    html: `<div style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">📡 ${newAlert.unitId || 'UNIT'}</div>`
                                 })
                             });
                             liveMarker.bindPopup(`<b>Live Telemetry Alert:</b> ${newAlert.unitId || 'Fleet Unit'}<br>${newAlert.message}`);
                             skymoverMapMarkersLayer.addLayer(liveMarker);
-                            skymoverLeafletMap.setView([newAlert.lat, newAlert.lng], 12);
+                            skymoverLeafletMap.setView([Number(newAlert.lat), Number(newAlert.lng)], 12);
                         }
+
+                        pulseRealtimeSyncStatus(`Live GPS Alert: ${newAlert.unitId || 'Fleet'}`);
+                    } else if (payload.eventType === 'UPDATE' && payload.new) {
+                        const updatedAlert = mapSupabaseAlertRow(payload.new);
+                        const idx = db.geofenceAlerts.findIndex(a => a.id && String(a.id) === String(updatedAlert.id));
+                        if (idx >= 0) db.geofenceAlerts[idx] = { ...db.geofenceAlerts[idx], ...updatedAlert };
+                    } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id !== undefined) {
+                        db.geofenceAlerts = db.geofenceAlerts.filter(a => String(a.id) !== String(payload.old.id));
                     }
+
+                    saveDB();
+                    const trackContainer = document.getElementById('geofenceAlertsContainer');
+                    if (trackContainer) renderGeofenceLogs(trackContainer);
+                    renderDriverGeofenceAlerts();
                 });
 
-                // 3. Live LogiTRACK Geofence Zones Polygon Sync
+                // 4. Live Driver SMS Dispatch Inbox Listener (INSERT / UPDATE / DELETE, RLS-Filtered on Render)
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'sms_logs' }, payload => {
+                    if (!db.smsLogs) db.smsLogs = [];
+
+                    if (payload.eventType === 'INSERT' && payload.new) {
+                        const mappedSms = mapSupabaseSmsRow(payload.new);
+                        const existingIdx = db.smsLogs.findIndex(s =>
+                            (s.id && mappedSms.id && String(s.id) === String(mappedSms.id)) ||
+                            (!s.id && s.message === mappedSms.message && s.unit === mappedSms.unit)
+                        );
+                        if (existingIdx >= 0) {
+                            db.smsLogs[existingIdx] = { ...db.smsLogs[existingIdx], ...mappedSms };
+                        } else {
+                            db.smsLogs.unshift(mappedSms);
+                            triggerDispatchSmsRealtimeAlertFeedback(mappedSms);
+                        }
+                        pulseRealtimeSyncStatus(`Live SMS Alert: Unit ${mappedSms.unit}`);
+                    } else if (payload.eventType === 'UPDATE' && payload.new) {
+                        const mappedSms = mapSupabaseSmsRow(payload.new);
+                        const idx = db.smsLogs.findIndex(s => s.id && String(s.id) === String(mappedSms.id));
+                        if (idx >= 0) db.smsLogs[idx] = { ...db.smsLogs[idx], ...mappedSms };
+                    } else if (payload.eventType === 'DELETE' && payload.old && payload.old.id !== undefined) {
+                        db.smsLogs = db.smsLogs.filter(s => String(s.id) !== String(payload.old.id));
+                    }
+
+                    saveDB();
+                    refreshDriverSmsInbox();
+                });
+
+                // 5. Live LogiTRACK Geofence Zones Polygon Sync
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_zones' }, () => {
                     if (!isSavingCloudData) fetchLogiTrackDataFromSupabase();
-                });
-
-                // 4. Live Driver SMS Dispatch Inbox Listener
-                channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sms_logs' }, payload => {
-                    if (payload && payload.new) {
-                        if (!db.smsLogs) db.smsLogs = [];
-                        if (!db.smsLogs.some(s => s.id && s.id === payload.new.id)) {
-                            db.smsLogs.unshift({
-                                id: payload.new.id,
-                                recipient: payload.new.recipient || payload.new.driver_name || 'Driver',
-                                unit: payload.new.unit_id || payload.new.unit || 'ALL',
-                                phone: payload.new.phone || 'In-App Driver Inbox',
-                                message: payload.new.message,
-                                status: payload.new.status || 'Delivered',
-                                timestamp: payload.new.sent_at || payload.new.created_at || new Date().toISOString(),
-                                time: payload.new.sent_at || payload.new.created_at || new Date().toISOString()
-                            });
-                            refreshDriverSmsInbox();
-                        }
-                    }
-                });
-
-                // 5. Live GPS & Dispatch Table Listener
-                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_logs' }, () => {
-                    if (!isSavingCloudData) fetchDispatchLogsFromSupabase();
                 });
 
                 // 6. Live Fleet Expenses Table Listener
@@ -1876,7 +2259,7 @@
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'hub_locations' }, () => {
                     if (!isSavingCloudData) fetchHubLocationsFromSupabase();
                 });
-                
+
                 channel.subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
                         updateSyncBadge('connected', 'LogiTRACK Live Realtime Active');
@@ -1884,7 +2267,7 @@
                         console.warn('Realtime websocket notice: running in restricted Canvas mode, falling back to HTTP data fetch sync.');
                     }
                 });
-            } catch(err) {
+            } catch (err) {
                 console.warn('Realtime subscription bypassed due to sandbox restriction:', err.message);
             }
         }
@@ -1916,28 +2299,31 @@
             }
         }
 
-        async function confirmResetAllDatabases() {
-            if (!requireAdminExecution("reset all databases")) return;
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records, Standalone Tables, Storage Files & Sync DB:');
+        // ==========================================
+        // 1. RESET DB: MANAGEMENT BACKEND & DRIVER'S SIDE ONLY
+        // (Preserves 100% of Empty Yard records and Admin RBAC accounts)
+        // ==========================================
+        async function confirmResetBackendAndDriverDB() {
+            if (!requireAdminExecution("reset Management Backend & Driver's Side records")) return;
+            const pwd = prompt('🔒 Enter Administrator Password to Reset Management Backend & Driver\'s Side Records (Empty Yard records will be preserved):');
             if (pwd !== 'Skymover_Transportation_2026') return;
 
             try {
                 const backupPayload = {
                     timestamp: new Date().toISOString(),
-                    systemName: "SKYMOVER_TRANSPORTATION",
-                    managementBackend: db,
-                    yardDatabase: yardDb
+                    scope: "MANAGEMENT_BACKEND_AND_DRIVER_PORTAL",
+                    managementBackend: db
                 };
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload, null, 2));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `Skymover_Emergency_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+                downloadAnchor.setAttribute("download", `Skymover_Backend_Driver_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
             } catch (backupErr) {
                 console.error("Automated backup generation failed:", backupErr);
-                if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with the database and storage reset?")) {
+                if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with resetting Management Backend & Driver's Side records?")) {
                     return;
                 }
             }
@@ -1945,15 +2331,14 @@
             isSavingCloudData = true;
             lastLocalSaveTimestamp = Date.now();
 
-            // 1. Purge all referenced & bucket files from skymover-attachments after emergency backup downloads
             let removedStorageCount = 0;
             let clearedTablesCount = 0;
 
             if (supabaseClient) {
                 try {
+                    // Collect attachments referenced ONLY by Management Backend & Driver records
                     const pathsToPurge = new Set();
-
-                    const allRecordCollections = [
+                    const backendCollections = [
                         ...(db.vehicles || []),
                         ...(db.drivers || []),
                         ...(db.fuelLogs || []),
@@ -1961,14 +2346,12 @@
                         ...(db.dispatchLogs || []),
                         ...(db.expenseLogs || []),
                         ...(db.transshipments || []),
-                        ...(db.uploads || []),
-                        ...(yardDb.containers || []),
-                        ...(yardDb.movements || [])
+                        ...(db.uploads || [])
                     ];
 
-                    allRecordCollections.forEach(rec => {
+                    backendCollections.forEach(rec => {
                         if (!rec || typeof rec !== 'object') return;
-                        ['attachments', 'photos', 'releasePhotos'].forEach(field => {
+                        ['attachments', 'photos'].forEach(field => {
                             if (Array.isArray(rec[field])) {
                                 rec[field].forEach(item => {
                                     const candidate = typeof item === 'string'
@@ -1977,7 +2360,9 @@
                                     const extracted = typeof extractBucketPathFromUrl === 'function'
                                         ? extractBucketPathFromUrl(candidate)
                                         : null;
-                                    if (extracted) pathsToPurge.add(extracted);
+                                    if (extracted && !extracted.startsWith('gate-in/') && !extracted.startsWith('gate-out/')) {
+                                        pathsToPurge.add(extracted);
+                                    }
                                 });
                             }
                         });
@@ -1985,19 +2370,26 @@
                             const extracted = typeof extractBucketPathFromUrl === 'function'
                                 ? extractBucketPathFromUrl(rec[field])
                                 : null;
-                            if (extracted) pathsToPurge.add(extracted);
+                            if (extracted && !extracted.startsWith('gate-in/') && !extracted.startsWith('gate-out/')) {
+                                pathsToPurge.add(extracted);
+                            }
                         });
                     });
 
-                    // Include any unreferenced/orphaned files across all subfolders in the bucket
+                    // Also include unreferenced files inside backend/driver subfolders only (preserving gate-in/ and gate-out/)
                     if (typeof listAllBucketFilesRecursive === 'function') {
+                        const yardCorpus = JSON.stringify(yardDb || {});
                         const bucketFiles = await listAllBucketFilesRecursive(STORAGE_BUCKET_NAME);
                         bucketFiles.forEach(f => {
-                            if (f && f.fullPath) pathsToPurge.add(f.fullPath);
+                            if (!f || !f.fullPath) return;
+                            const isBackendFolder = /^(drivers|backend|fuel-receipts|uploads)\//i.test(f.fullPath);
+                            const isReferencedByYard = yardCorpus.includes(f.fullPath) || yardCorpus.includes(encodeURI(f.fullPath));
+                            if (isBackendFolder && !isReferencedByYard) {
+                                pathsToPurge.add(f.fullPath);
+                            }
                         });
                     }
 
-                    // Delete storage objects in batches of 100
                     const allPaths = Array.from(pathsToPurge);
                     for (let i = 0; i < allPaths.length; i += 100) {
                         const batch = allPaths.slice(i, i + 100);
@@ -2007,15 +2399,14 @@
                         if (!removeErr) {
                             removedStorageCount += batch.length;
                         } else {
-                            console.warn("Storage batch purge notice:", removeErr.message);
+                            console.warn("Backend storage batch purge notice:", removeErr.message);
                         }
                     }
                 } catch (storageResetErr) {
-                    console.warn("Storage bucket purge notice during DB reset:", storageResetErr.message || storageResetErr);
+                    console.warn("Backend storage purge notice:", storageResetErr.message || storageResetErr);
                 }
 
-                // 2. Delete all rows across the 14 standalone Supabase tables
-                // Delete geofence_alerts first in case zone_id has a foreign key to geofence_zones
+                // Clear geofence_alerts first in case zone_id references geofence_zones
                 try {
                     const { error: alertsDelErr } = await supabaseClient
                         .from('geofence_alerts')
@@ -2026,23 +2417,19 @@
                     console.warn("geofence_alerts reset notice:", e.message);
                 }
 
-                const standaloneTables = [
+                const backendTables = [
                     'vehicles',
                     'drivers',
                     'fuel_logs',
                     'maintenance_logs',
                     'dispatch_logs',
                     'fleet_expenses',
-                    'yard_containers',
-                    'yard_revenues',
-                    'yard_movements',
-                    'yard_expenses',
                     'geofence_zones',
                     'sms_logs',
                     'hub_locations'
                 ];
 
-                await Promise.all(standaloneTables.map(async (tbl) => {
+                await Promise.all(backendTables.map(async (tbl) => {
                     try {
                         const { error } = await supabaseClient
                             .from(tbl)
@@ -2052,15 +2439,15 @@
                         if (!error) {
                             clearedTablesCount++;
                         } else {
-                            console.warn(`Standalone table reset notice (${tbl}):`, error.message);
+                            console.warn(`Backend table reset notice (${tbl}):`, error.message);
                         }
                     } catch (tblErr) {
-                        console.warn(`Standalone table reset skipped (${tbl}):`, tblErr.message);
+                        console.warn(`Backend table reset skipped (${tbl}):`, tblErr.message);
                     }
                 }));
             }
 
-            // 3. Reset local in-memory state (preserving admin RBAC accounts)
+            // Reset ONLY Management Backend & Driver's Side state (preserving admin RBAC users & yardDb)
             const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
 
             db = {
@@ -2080,24 +2467,12 @@
                 systemUsers: preservedAdmins
             };
 
-            yardDb = {
-                containers: [],
-                movements: [],
-                revenues: [],
-                expenses: []
-            };
-
-            // Clear any in-progress staged attachments in UI memory
-            stagedGateInPhotos = [];
-            stagedGateOutPhotos = [];
             stagedDriverAttachments = [];
             stagedBackendAttachments = [];
             stagedDriverProofPhotos = [];
 
             saveDB();
-            safeLocalStorageSet(YARD_KEY, yardDb);
 
-            // 4. Reset unified enterprise payload row in skymover_enterprise_db
             if (supabaseClient) {
                 try {
                     await supabaseClient.from('skymover_enterprise_db').upsert({
@@ -2106,7 +2481,7 @@
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'id' });
                 } catch (e) {
-                    console.error("Cloud DB reset sync error:", e);
+                    console.error("Cloud DB backend reset sync error:", e);
                 }
             }
 
@@ -2114,19 +2489,169 @@
             setTimeout(() => { isSavingCloudData = false; }, 1000);
 
             refreshHubDatalist();
-            refreshYard();
             renderTransshipmentTable();
             refreshDriverSmsInbox();
             renderDriverGeofenceAlerts();
+            if (typeof refreshDriverPortal === 'function') refreshDriverPortal();
             closeSubModule();
 
             if (currentBackendModuleType === 'Dashboard') {
                 openSubModule('Dashboard');
             }
-            alert(`🔄 Database successfully reset! A safety backup snapshot was downloaded, ${clearedTablesCount} standalone cloud table(s) and ${removedStorageCount} storage file(s) were cleared, admin accounts were preserved, and all operational logs were wiped.`);
+            alert(`🔄 Management Backend & Driver's Side reset complete! A safety backup was downloaded, ${clearedTablesCount} backend/driver cloud table(s) and ${removedStorageCount} backend storage file(s) were cleared, and all Empty Yard records remain untouched.`);
         }
-    
-        function openGeofenceSmsModal() {
+
+        // ==========================================
+        // 2. RESET ALL RECORDS: EMPTY CONTAINER YARD ONLY
+        // (Preserves 100% of Management Backend, Driver's Side, and Admin accounts)
+        // ==========================================
+        async function confirmResetEmptyYardDB() {
+            if (!requireAdminExecution("reset Empty Yard records")) return;
+            const pwd = prompt('🔒 Enter Administrator Password to Reset Empty Yard Records (Management Backend & Driver\'s Side records will be preserved):');
+            if (pwd !== 'Skymover_Transportation_2026') return;
+
+            try {
+                const backupPayload = {
+                    timestamp: new Date().toISOString(),
+                    scope: "EMPTY_CONTAINER_YARD",
+                    yardDatabase: yardDb
+                };
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `Skymover_EmptyYard_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            } catch (backupErr) {
+                console.error("Automated Empty Yard backup generation failed:", backupErr);
+                if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with resetting Empty Yard records?")) {
+                    return;
+                }
+            }
+
+            isSavingCloudData = true;
+            lastLocalSaveTimestamp = Date.now();
+
+            let removedStorageCount = 0;
+            let clearedTablesCount = 0;
+
+            if (supabaseClient) {
+                try {
+                    const pathsToPurge = new Set();
+                    const yardCollections = [
+                        ...(yardDb.containers || []),
+                        ...(yardDb.movements || [])
+                    ];
+
+                    yardCollections.forEach(rec => {
+                        if (!rec || typeof rec !== 'object') return;
+                        ['photos', 'releasePhotos', 'attachments'].forEach(field => {
+                            if (Array.isArray(rec[field])) {
+                                rec[field].forEach(item => {
+                                    const candidate = typeof item === 'string'
+                                        ? item
+                                        : (item && (item.filePath || item.path || item.dataUrl || item.fileUrl || item.url));
+                                    const extracted = typeof extractBucketPathFromUrl === 'function'
+                                        ? extractBucketPathFromUrl(candidate)
+                                        : null;
+                                    if (extracted) pathsToPurge.add(extracted);
+                                });
+                            }
+                        });
+                    });
+
+                    // Include any files inside gate-in/ or gate-out/ folders not referenced by backend records
+                    if (typeof listAllBucketFilesRecursive === 'function') {
+                        const backendCorpus = JSON.stringify(db || {});
+                        const bucketFiles = await listAllBucketFilesRecursive(STORAGE_BUCKET_NAME);
+                        bucketFiles.forEach(f => {
+                            if (!f || !f.fullPath) return;
+                            const isYardFolder = /^(gate-in|gate-out)\//i.test(f.fullPath);
+                            const isReferencedByBackend = backendCorpus.includes(f.fullPath) || backendCorpus.includes(encodeURI(f.fullPath));
+                            if (isYardFolder && !isReferencedByBackend) {
+                                pathsToPurge.add(f.fullPath);
+                            }
+                        });
+                    }
+
+                    const allPaths = Array.from(pathsToPurge);
+                    for (let i = 0; i < allPaths.length; i += 100) {
+                        const batch = allPaths.slice(i, i + 100);
+                        const { error: removeErr } = await supabaseClient.storage
+                            .from(STORAGE_BUCKET_NAME)
+                            .remove(batch);
+                        if (!removeErr) {
+                            removedStorageCount += batch.length;
+                        } else {
+                            console.warn("Yard storage batch purge notice:", removeErr.message);
+                        }
+                    }
+                } catch (storageResetErr) {
+                    console.warn("Yard storage purge notice:", storageResetErr.message || storageResetErr);
+                }
+
+                const yardTables = [
+                    'yard_containers',
+                    'yard_revenues',
+                    'yard_movements',
+                    'yard_expenses'
+                ];
+
+                await Promise.all(yardTables.map(async (tbl) => {
+                    try {
+                        const { error } = await supabaseClient
+                            .from(tbl)
+                            .delete()
+                            .not('id', 'is', null);
+
+                        if (!error) {
+                            clearedTablesCount++;
+                        } else {
+                            console.warn(`Yard table reset notice (${tbl}):`, error.message);
+                        }
+                    } catch (tblErr) {
+                        console.warn(`Yard table reset skipped (${tbl}):`, tblErr.message);
+                    }
+                }));
+            }
+
+            // Reset ONLY Empty Yard state (preserving Management Backend & Driver's Side)
+            yardDb = {
+                containers: [],
+                movements: [],
+                revenues: [],
+                expenses: []
+            };
+
+            stagedGateInPhotos = [];
+            stagedGateOutPhotos = [];
+
+            safeLocalStorageSet(YARD_KEY, yardDb);
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('skymover_enterprise_db').upsert({
+                        id: 1,
+                        payload: { managementBackend: db, emptyYard: yardDb },
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'id' });
+                } catch (e) {
+                    console.error("Cloud DB yard reset sync error:", e);
+                }
+            }
+
+            lastLocalSaveTimestamp = Date.now();
+            setTimeout(() => { isSavingCloudData = false; }, 1000);
+
+            refreshYard();
+            renderYardRevenue();
+            renderYardExpenses();
+            renderYardReports();
+
+            alert(`🔄 Empty Yard reset complete! A safety backup was downloaded, ${clearedTablesCount} Empty Yard cloud table(s) and ${removedStorageCount} yard storage file(s) were cleared, and all Management Backend & Driver's Side records remain untouched.`);
+        }
+	function openGeofenceSmsModal() {
             if (!requireAdminExecution("configure Geofence Zones & SMS Templates")) return;
             const modal = document.getElementById('geofenceSmsConfigModal');
             if(modal) modal.classList.remove('hidden');
@@ -2526,7 +3051,6 @@
             const matchedNames = new Set();
             const matchedUnits = new Set();
 
-            // 0. Check JWT user_metadata if present
             if (currentUser && currentUser.user_metadata) {
                 const mName = (currentUser.user_metadata.driver_name || currentUser.user_metadata.full_name || currentUser.user_metadata.name || '').trim().toLowerCase();
                 const mUnit = (currentUser.user_metadata.unit_id || currentUser.user_metadata.unit || currentUser.user_metadata.truck || '').trim().toLowerCase();
@@ -2534,7 +3058,6 @@
                 if (mUnit && mUnit !== 'unassigned') matchedUnits.add(mUnit);
             }
 
-            // 1. Check RBAC systemUsers entry matching currentUserEmail
             const sysUser = (db.systemUsers || []).find(u => (u.email || '').trim().toLowerCase() === emailLower);
             if (sysUser) {
                 const sysName = (sysUser.name || sysUser.fullName || sysUser.driverName || '').trim();
@@ -2543,7 +3066,6 @@
                 if (sysUnit) matchedUnits.add(sysUnit.toLowerCase());
             }
 
-            // 2. Match against db.drivers by email or resolved name to get exact name & assigned truck
             (db.drivers || []).forEach(d => {
                 const dEmail = (d.email || '').trim().toLowerCase();
                 const dName = (d.driver_name || d.name || '').trim();
@@ -2559,7 +3081,6 @@
                 }
             });
 
-            // 3. Fallback: derive name prefix from email (e.g. "roberto.santos@..." -> "roberto santos") if still unresolved
             if (matchedNames.size === 0 && emailLower.includes('@')) {
                 const localPart = emailLower.split('@')[0].replace(/[._-]+/g, ' ').trim();
                 if (localPart) {
@@ -2574,7 +3095,6 @@
                 }
             }
 
-            // 4. Also include any active truck unit assigned to this driver in db.dispatchLogs
             if (matchedNames.size > 0) {
                 (db.dispatchLogs || []).forEach(log => {
                     const logDriver = (log.driver || log.driver_name || '').trim().toLowerCase();
@@ -2603,7 +3123,6 @@
             let canonicalUnit = (preferredUnit || '').trim();
             const emailLower = (currentUserEmail || (currentUser && currentUser.email) || '').trim().toLowerCase();
 
-            // 1. Resolve exact-cased driver_name & assigned truck from db.drivers
             const matchedDriverRec = (db.drivers || []).find(d => {
                 const dName = (d.driver_name || d.name || '').trim().toLowerCase();
                 const dTruck = (d.truck || d.unit_id || d.unit || '').trim().toLowerCase();
@@ -2625,7 +3144,6 @@
                 }
             }
 
-            // 2. Fallback to active dispatch assignment in db.dispatchLogs
             if (!canonicalDriver || !canonicalUnit) {
                 const activeTrip = (db.dispatchLogs || []).find(log => {
                     const lDriver = (log.driver || log.driver_name || '').trim().toLowerCase();
@@ -2641,7 +3159,6 @@
                 }
             }
 
-            // 3. Final fallback from resolved profile sets
             if (!canonicalDriver && profile.names.length > 0) {
                 canonicalDriver = profile.names[0].replace(/\b\w/g, c => c.toUpperCase());
             }
@@ -2715,7 +3232,6 @@
 
             let query = supabaseClient.from('dispatch_logs').update(updatePayload);
 
-            // Target by primary key id when present; otherwise match by canonical unit_id + driver_name
             if (dispatchRec.id) {
                 query = query.eq('id', dispatchRec.id);
             } else {
@@ -2813,9 +3329,7 @@
                         currentLng = Number(pos.coords.longitude.toFixed(6));
                         if (latInputEl) latInputEl.value = currentLat;
                         if (lngInputEl) lngInputEl.value = currentLng;
-                    } catch (gpsErr) {
-                        // Proceed with status update even if browser GPS is unavailable
-                    }
+                    } catch (gpsErr) {}
                 }
 
                 const proximity = evaluateNearestGeofenceOrHub(currentLat, currentLng);
@@ -2836,7 +3350,6 @@
                 targetTrip.attachments = mergedAttachments;
                 targetTrip.updatedAt = new Date().toISOString();
 
-                // Persist directly to public.dispatch_logs under RLS policy rbac_update_dispatch_logs
                 await syncDriverTripStatusToSupabase(targetTrip);
 
                 stagedDriverProofPhotos = [];
@@ -2845,9 +3358,7 @@
 
                 try {
                     await saveCloudData();
-                } catch (syncErr) {
-                    // Standalone table update already succeeded
-                }
+                } catch (syncErr) {}
 
                 if (typeof refreshDriverPortal === 'function') {
                     refreshDriverPortal();
@@ -2928,7 +3439,6 @@
                     ? `${proximity.insideZone ? 'INSIDE' : `${proximity.distanceKm} km from`} ${proximity.zoneName} (${proximity.radiusKm} km radius)`
                     : proximity.zoneName;
 
-                // Explicitly include Unit <unit_id> and driver_name so RLS WITH CHECK passes cleanly
                 const alertMessage = `[${alertType}] Unit ${identity.unit_id} (${identity.driver_name}) at (${lat}, ${lng}) • ${distSummary}${noteText}`;
                 const nowIso = new Date().toISOString();
 
@@ -2946,7 +3456,6 @@
                     created_at: nowIso
                 };
 
-                // Persist directly to public.geofence_alerts under RLS policy rbac_insert_geofence_alerts
                 const { data, error } = await supabaseClient
                     .from('geofence_alerts')
                     .insert(insertPayload)
@@ -2977,9 +3486,7 @@
 
                 try {
                     await saveCloudData();
-                } catch (syncErr) {
-                    // Direct table insert already succeeded
-                }
+                } catch (syncErr) {}
 
                 renderDriverGeofenceAlerts();
                 alert(`📡 GPS Geofence Alert submitted for Unit ${identity.unit_id}!\nLocation: ${distSummary}`);
@@ -3049,7 +3556,6 @@
             let scopeBannerHtml = '';
 
             if (isElevatedRole) {
-                // Admins and Dispatchers see all fleet SMS logs
                 visibleLogs = [...allLogs];
                 scopeBannerHtml = `
                     <div class="flex items-center justify-between bg-sky-950/60 border border-sky-800/60 rounded-lg px-3 py-1.5 mb-2.5 text-[11px] text-sky-200">
@@ -3057,7 +3563,6 @@
                     </div>
                 `;
             } else {
-                // Drivers see ONLY SMS alerts addressed to their driver name or assigned truck unit
                 const profile = resolveLoggedInDriverProfile();
 
                 visibleLogs = allLogs.filter(sms => {
@@ -3153,7 +3658,8 @@
                 </div>
             `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts.</div>';
         }
-function handleDragOver(e, zoneId) {
+
+        function handleDragOver(e, zoneId) {
             e.preventDefault();
             e.stopPropagation();
             const zone = document.getElementById(zoneId);
@@ -3247,64 +3753,186 @@ function handleDragOver(e, zoneId) {
             }
         }
 
+        // ==========================================
+        // FULL-DETAIL PDF & EXCEL REPORT GENERATORS (ALL USER INPUTS INCLUDED)
+        // ==========================================
         function generateModulePDFReport(moduleName) {
             if (!requireAdminExecution(`export PDF Report for ${moduleName}`)) return;
             const element = document.createElement('div');
-            element.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
+            element.className = 'p-6 bg-white text-slate-900 font-sans space-y-4';
             
-            let reportTitle = `Skymover Transportation - ${moduleName} Report`;
+            let reportTitle = `Skymover Transportation - ${moduleName} Full Detailed Report`;
             let reportContentHTML = '';
+            let orientationMode = 'landscape';
         
-            if (moduleName === 'Vehicle Masterlist') {
+            if (moduleName === 'Dashboard') {
+                orientationMode = 'portrait';
+                const vehicles = db.vehicles || [];
+                const drivers = db.drivers || [];
+                const hubs = getActiveHubLocations();
+                const activeYard = (yardDb.containers || []).filter(c => c.status !== 'Released');
+                const trans = db.transshipments || [];
+                const dispatches = db.dispatchLogs || [];
+                reportContentHTML = `
+                    <div class="grid grid-cols-3 gap-3 mb-4 text-xs">
+                        <div class="border p-3 rounded bg-slate-50"><strong>Active Fleet Units:</strong> ${vehicles.length}</div>
+                        <div class="border p-3 rounded bg-slate-50"><strong>Registered Drivers:</strong> ${drivers.length}</div>
+                        <div class="border p-3 rounded bg-slate-50"><strong>Admin Hub Locations:</strong> ${hubs.length}</div>
+                        <div class="border p-3 rounded bg-slate-50"><strong>Active Dispatches:</strong> ${dispatches.length}</div>
+                        <div class="border p-3 rounded bg-slate-50"><strong>Yard Containers On-Hand:</strong> ${activeYard.length}</div>
+                        <div class="border p-3 rounded bg-slate-50"><strong>Transshipment Orders:</strong> ${trans.length}</div>
+                    </div>
+                    <h3 class="font-bold text-xs uppercase text-slate-700 mb-1">Active Fleet Dispatches</h3>
+                    <table class="w-full text-left text-[10px] border-collapse border border-slate-300 mb-4">
+                        <tr class="bg-slate-100 font-bold"><th class="border p-1.5">Unit ID</th><th class="border p-1.5">Origin Hub</th><th class="border p-1.5">Destination Hub</th><th class="border p-1.5">Route</th><th class="border p-1.5">Driver</th><th class="border p-1.5">Status</th></tr>
+                        ${dispatches.length ? dispatches.map(d => `<tr><td class="border p-1.5 font-bold">${d.unit}</td><td class="border p-1.5">${d.originHub || '—'}</td><td class="border p-1.5">${d.destinationHub || d.nearestHub || '—'}</td><td class="border p-1.5">${d.route}</td><td class="border p-1.5">${d.driver}</td><td class="border p-1.5">${d.status}</td></tr>`).join('') : '<tr><td colspan="6" class="border p-2 text-center text-slate-500">No dispatch records.</td></tr>'}
+                    </table>
+                `;
+            } else if (moduleName === 'Vehicle Masterlist') {
+                orientationMode = 'portrait';
                 const vehicles = db.vehicles || [];
                 reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Unit ID</th><th class="border p-2">Model</th><th class="border p-2">Status</th><th class="border p-2">Driver</th></tr>
-                    ${vehicles.map(v => `<tr><td class="border p-2 font-bold">${v.id}</td><td class="border p-2">${v.model}</td><td class="border p-2">${v.status}</td><td class="border p-2">${v.driver || 'Unassigned'}</td></tr>`).join('')}
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Unit ID</th><th class="border p-2">Model</th><th class="border p-2">Status</th><th class="border p-2">Assigned Driver</th><th class="border p-2">Attachments</th></tr>
+                    ${vehicles.length ? vehicles.map(v => `<tr><td class="border p-2 font-bold font-mono">${v.id}</td><td class="border p-2">${v.model}</td><td class="border p-2">${v.status}</td><td class="border p-2">${v.driver || 'Unassigned'}</td><td class="border p-2">${(v.attachments || []).length} file(s)</td></tr>`).join('') : '<tr><td colspan="5" class="border p-3 text-center text-slate-500">No vehicle records.</td></tr>'}
+                </table>`;
+            } else if (moduleName === 'Driver Management') {
+                const drivers = db.drivers || [];
+                reportContentHTML = `<table class="w-full text-left text-[10px] border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold">
+                        <th class="border p-1.5">Driver Name</th>
+                        <th class="border p-1.5">License No.</th>
+                        <th class="border p-1.5">Driver Mobile</th>
+                        <th class="border p-1.5">Helper Name</th>
+                        <th class="border p-1.5">Helper Mobile</th>
+                        <th class="border p-1.5">Assigned Unit</th>
+                        <th class="border p-1.5">Status</th>
+                        <th class="border p-1.5">Rating</th>
+                        <th class="border p-1.5">ID / Files</th>
+                    </tr>
+                    ${drivers.length ? drivers.map(d => `<tr>
+                        <td class="border p-1.5 font-bold">${d.driver_name || d.name || '—'}</td>
+                        <td class="border p-1.5 font-mono">${d.driver_license_number || d.driver_license || d.license || '—'}</td>
+                        <td class="border p-1.5 font-mono">${d.driver_phone || d.phone || '—'}</td>
+                        <td class="border p-1.5">${d.helper_name || '—'}</td>
+                        <td class="border p-1.5 font-mono">${d.helper_phone || '—'}</td>
+                        <td class="border p-1.5 font-mono font-bold">${d.truck || 'Unassigned'}</td>
+                        <td class="border p-1.5">${d.status || 'Available'}</td>
+                        <td class="border p-1.5">${d.rating || '5.0 ★'}</td>
+                        <td class="border p-1.5">${(d.attachments || []).length} file(s)</td>
+                    </tr>`).join('') : '<tr><td colspan="9" class="border p-3 text-center text-slate-500">No driver records.</td></tr>'}
+                </table>`;
+            } else if (moduleName === 'Fuel Monitoring') {
+                orientationMode = 'portrait';
+                const logs = db.fuelLogs || [];
+                reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Unit ID</th><th class="border p-2">Volume (Liters)</th><th class="border p-2">Total Cost</th><th class="border p-2">Station</th><th class="border p-2">Date</th><th class="border p-2">Receipts</th></tr>
+                    ${logs.length ? logs.map(f => `<tr><td class="border p-2 font-bold font-mono">${f.unit}</td><td class="border p-2">${f.liters}</td><td class="border p-2 font-bold">${f.cost}</td><td class="border p-2">${f.station || '—'}</td><td class="border p-2 font-mono">${f.date || '—'}</td><td class="border p-2">${(f.attachments || []).length} file(s)</td></tr>`).join('') : '<tr><td colspan="6" class="border p-3 text-center text-slate-500">No fuel logs.</td></tr>'}
+                </table>`;
+            } else if (moduleName === 'Fleet Maintenance') {
+                orientationMode = 'portrait';
+                const logs = db.maintenanceLogs || [];
+                reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Unit ID</th><th class="border p-2">Issue / Service Required</th><th class="border p-2">Estimated Cost</th><th class="border p-2">Status</th><th class="border p-2">Date</th><th class="border p-2">Attachments</th></tr>
+                    ${logs.length ? logs.map(m => `<tr><td class="border p-2 font-bold font-mono">${m.unit}</td><td class="border p-2">${m.issue}</td><td class="border p-2 font-bold">${m.cost}</td><td class="border p-2">${m.status}</td><td class="border p-2 font-mono">${m.date || '—'}</td><td class="border p-2">${(m.attachments || []).length} file(s)</td></tr>`).join('') : '<tr><td colspan="6" class="border p-3 text-center text-slate-500">No maintenance logs.</td></tr>'}
+                </table>`;
+            } else if (moduleName === 'GPS & Dispatch') {
+                const logs = db.dispatchLogs || [];
+                reportContentHTML = `<table class="w-full text-left text-[10px] border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold">
+                        <th class="border p-1.5">Unit ID</th>
+                        <th class="border p-1.5">Origin Hub</th>
+                        <th class="border p-1.5">Destination / Nearest Hub</th>
+                        <th class="border p-1.5">Route / Destination</th>
+                        <th class="border p-1.5">Assigned Driver</th>
+                        <th class="border p-1.5">Status</th>
+                        <th class="border p-1.5">GPS Coordinates</th>
+                        <th class="border p-1.5">Driver Notes / Remarks</th>
+                        <th class="border p-1.5">Files</th>
+                    </tr>
+                    ${logs.length ? logs.map(d => `<tr>
+                        <td class="border p-1.5 font-bold font-mono">${d.unit}</td>
+                        <td class="border p-1.5">${d.originHub || '—'}</td>
+                        <td class="border p-1.5">${d.destinationHub || d.nearestHub || '—'}</td>
+                        <td class="border p-1.5">${d.route}</td>
+                        <td class="border p-1.5 font-bold">${d.driver}</td>
+                        <td class="border p-1.5">${d.status}</td>
+                        <td class="border p-1.5 font-mono">${(d.lat !== null && d.lat !== undefined && d.lng !== null && d.lng !== undefined) ? `${d.lat}, ${d.lng}` : '—'}</td>
+                        <td class="border p-1.5">${d.driverNotes || '—'}</td>
+                        <td class="border p-1.5">${(d.attachments || []).length}</td>
+                    </tr>`).join('') : '<tr><td colspan="9" class="border p-3 text-center text-slate-500">No dispatch logs.</td></tr>'}
                 </table>`;
             } else if (moduleName === 'Empty Container Inventory') {
                 const containers = yardDb.containers || [];
-                reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Container No.</th><th class="border p-2">Size</th><th class="border p-2">Shipping Line</th><th class="border p-2">Status</th></tr>
-                    ${containers.map(c => `<tr><td class="border p-2 font-bold">${c.number}</td><td class="border p-2">${c.size}</td><td class="border p-2">${c.line}</td><td class="border p-2">${c.status}</td></tr>`).join('')}
+                reportContentHTML = `<table class="w-full text-left text-[9px] border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold">
+                        <th class="border p-1">Container No.</th>
+                        <th class="border p-1">Size / Type</th>
+                        <th class="border p-1">Shipping Line</th>
+                        <th class="border p-1">Trucking & Plate</th>
+                        <th class="border p-1">Driver & EIR</th>
+                        <th class="border p-1">Cond. / Status</th>
+                        <th class="border p-1">Block/Bay/Row/Tier</th>
+                        <th class="border p-1">Gate-In & ToD</th>
+                        <th class="border p-1">ETA Arrival</th>
+                        <th class="border p-1">Gate-Out</th>
+                        <th class="border p-1">Van In / Out</th>
+                        <th class="border p-1">Remarks</th>
+                    </tr>
+                    ${containers.length ? containers.map(c => `<tr>
+                        <td class="border p-1 font-bold font-mono">${c.number}</td>
+                        <td class="border p-1">${c.size} / ${c.type || 'Dry'}</td>
+                        <td class="border p-1 font-bold">${c.line}</td>
+                        <td class="border p-1">${c.truckingName || '—'}<br><span class="font-mono">${c.plate || '—'}</span></td>
+                        <td class="border p-1">${c.driver || '—'}<br><span class="font-mono">EIR: ${c.eir || '—'}</span></td>
+                        <td class="border p-1">${c.condition || 'Good'} / <strong>${c.status}</strong></td>
+                        <td class="border p-1 font-mono">${c.block || 'A'}/${c.bay || '1'}/${c.row || 'GROUND'}/T${c.tier || '1'}</td>
+                        <td class="border p-1 font-mono">${c.date || '—'}<br>${c.gateInToD || ''}</td>
+                        <td class="border p-1 font-mono">${c.etaDate || '—'}</td>
+                        <td class="border p-1 font-mono">${c.gateOutDate || 'Active'}</td>
+                        <td class="border p-1 font-mono">In: ₱${c.vanInAmount || 0} (${c.vanInStats || 'PAID'})<br>Out: ₱${c.vanOutAmount || 0}</td>
+                        <td class="border p-1">${c.remarks || '—'}</td>
+                    </tr>`).join('') : '<tr><td colspan="12" class="border p-3 text-center text-slate-500">No container records.</td></tr>'}
                 </table>`;
             } else if (moduleName === 'Fleet Expenses') {
+                orientationMode = 'portrait';
                 const expenses = db.expenseLogs || [];
                 reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Trip ID</th><th class="border p-2">Fuel</th><th class="border p-2">Tolls</th><th class="border p-2">Maintenance</th><th class="border p-2">Total Cost</th></tr>
-                    ${expenses.map(e => `<tr><td class="border p-2 font-bold">${e.trip}</td><td class="border p-2">${e.fuel}</td><td class="border p-2">${e.tolls}</td><td class="border p-2">${e.maintenance}</td><td class="border p-2 font-bold">${e.total}</td></tr>`).join('')}
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Trip ID</th><th class="border p-2">Fuel (₱)</th><th class="border p-2">Tolls (₱)</th><th class="border p-2">Maintenance (₱)</th><th class="border p-2">Total Cost (₱)</th><th class="border p-2">Receipts</th></tr>
+                    ${expenses.length ? expenses.map(e => `<tr><td class="border p-2 font-bold">${e.trip}</td><td class="border p-2">${e.fuel}</td><td class="border p-2">${e.tolls}</td><td class="border p-2">${e.maintenance}</td><td class="border p-2 font-bold">${e.total}</td><td class="border p-2">${(e.attachments || []).length} file(s)</td></tr>`).join('') : '<tr><td colspan="6" class="border p-3 text-center text-slate-500">No fleet expense records.</td></tr>'}
                 </table>`;
             } else if (moduleName === 'Hub Locations') {
                 const hubs = getActiveHubLocations();
                 reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Hub Name</th><th class="border p-2">Type</th><th class="border p-2">Address</th><th class="border p-2">Coordinates</th><th class="border p-2">Radius (km)</th></tr>
-                    ${hubs.map(h => `<tr><td class="border p-2 font-bold">${h.name}</td><td class="border p-2">${h.type || 'Hub'}</td><td class="border p-2">${h.address || '—'}</td><td class="border p-2">${h.lat}, ${h.lng}</td><td class="border p-2">${h.radius || 5} km</td></tr>`).join('')}
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Hub Name</th><th class="border p-2">Hub Type</th><th class="border p-2">Address / Corridor</th><th class="border p-2">Latitude</th><th class="border p-2">Longitude</th><th class="border p-2">Geofence Radius</th></tr>
+                    ${hubs.length ? hubs.map(h => `<tr><td class="border p-2 font-bold">${h.name}</td><td class="border p-2">${h.type || 'Hub'}</td><td class="border p-2">${h.address || '—'}</td><td class="border p-2 font-mono">${h.lat}</td><td class="border p-2 font-mono">${h.lng}</td><td class="border p-2 font-mono">${h.radius || 5} km</td></tr>`).join('') : '<tr><td colspan="6" class="border p-3 text-center text-slate-500">No hub locations assigned.</td></tr>'}
                 </table>`;
             } else {
+                orientationMode = 'portrait';
                 reportContentHTML = `<p class="text-sm">Comprehensive operational statement generated for ${moduleName} on ${new Date().toLocaleString()}.</p>`;
             }
         
             element.innerHTML = `
-                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <div class="flex justify-between items-center border-b pb-3 mb-3">
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
                         <p class="text-xs text-slate-600">${reportTitle}</p>
                     </div>
                     <div class="text-right text-[11px] text-slate-500 font-mono">
-                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified
+                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified • Complete Field Extract
                     </div>
                 </div>
                 ${reportContentHTML}
-                <div class="mt-8 text-center text-[10px] text-slate-400 border-t pt-4">
+                <div class="mt-6 text-center text-[10px] text-slate-400 border-t pt-3">
                     © 2026 Skymover Transport Corporation • Official Automated Statement
                 </div>
             `;
         
             const opt = {
-                margin:        10,
-                filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Report.pdf`,
+                margin:        8,
+                filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Full_Report.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: orientationMode }
             };
         
             html2pdf().from(element).set(opt).save();
@@ -3312,37 +3940,127 @@ function handleDragOver(e, zoneId) {
 
         function generateModuleExcelReport(moduleName) {
             if (!requireAdminExecution(`export Excel Spreadsheet for ${moduleName}`)) return;
+            const esc = (v) => `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
             let csvRows = [];
             
-            if (moduleName === 'Vehicle Masterlist') {
+            if (moduleName === 'Dashboard') {
                 csvRows = [
-                    ['Unit ID', 'Model', 'Status', 'Assigned Driver'],
-                    ...(db.vehicles || []).map(v => [v.id, v.model, v.status, v.driver || 'Unassigned'])
+                    ['Metric', 'Count / Value'],
+                    ['Active Fleet Units', (db.vehicles || []).length],
+                    ['Registered Drivers', (db.drivers || []).length],
+                    ['Admin Hub Locations', getActiveHubLocations().length],
+                    ['Fuel Logs', (db.fuelLogs || []).length],
+                    ['Maintenance Logs', (db.maintenanceLogs || []).length],
+                    ['Active Dispatches', (db.dispatchLogs || []).length],
+                    ['Fleet Expense Logs', (db.expenseLogs || []).length],
+                    ['Yard Containers On-Hand', (yardDb.containers || []).filter(c => c.status !== 'Released').length],
+                    ['Total Yard Containers Logged', (yardDb.containers || []).length],
+                    ['Transshipment Hub Orders', (db.transshipments || []).length]
+                ];
+            } else if (moduleName === 'Vehicle Masterlist') {
+                csvRows = [
+                    ['Unit ID', 'Model', 'Status', 'Assigned Driver', 'Attached Files Count'],
+                    ...(db.vehicles || []).map(v => [esc(v.id), esc(v.model), esc(v.status), esc(v.driver || 'Unassigned'), (v.attachments || []).length])
+                ];
+            } else if (moduleName === 'Driver Management') {
+                csvRows = [
+                    ['Driver Name', 'Professional License No.', 'Driver Mobile Number', 'Helper Name', 'Helper Mobile Number', 'Assigned Unit / Truck', 'Status', 'Rating', 'Attached Files Count'],
+                    ...(db.drivers || []).map(d => [
+                        esc(d.driver_name || d.name || ''),
+                        esc(d.driver_license_number || d.driver_license || d.license || ''),
+                        esc(d.driver_phone || d.phone || ''),
+                        esc(d.helper_name || ''),
+                        esc(d.helper_phone || ''),
+                        esc(d.truck || 'Unassigned'),
+                        esc(d.status || 'Available'),
+                        esc(d.rating || '5.0'),
+                        (d.attachments || []).length
+                    ])
+                ];
+            } else if (moduleName === 'Fuel Monitoring') {
+                csvRows = [
+                    ['Unit ID', 'Volume (Liters)', 'Total Cost (PHP)', 'Station', 'Date', 'Attached Receipts Count'],
+                    ...(db.fuelLogs || []).map(f => [esc(f.unit), esc(f.liters), esc(f.cost), esc(f.station || ''), esc(f.date || ''), (f.attachments || []).length])
+                ];
+            } else if (moduleName === 'Fleet Maintenance') {
+                csvRows = [
+                    ['Unit ID', 'Issue / Service Required', 'Estimated Cost (PHP)', 'Status', 'Date', 'Attached Files Count'],
+                    ...(db.maintenanceLogs || []).map(m => [esc(m.unit), esc(m.issue), esc(m.cost), esc(m.status), esc(m.date || ''), (m.attachments || []).length])
+                ];
+            } else if (moduleName === 'GPS & Dispatch') {
+                csvRows = [
+                    ['Unit ID', 'Origin Hub', 'Destination Hub', 'Nearest Hub', 'Route / Destination', 'Assigned Driver', 'Status', 'Latitude', 'Longitude', 'Driver Notes / Remarks', 'Updated At', 'Attached Files Count'],
+                    ...(db.dispatchLogs || []).map(d => [
+                        esc(d.unit),
+                        esc(d.originHub || ''),
+                        esc(d.destinationHub || ''),
+                        esc(d.nearestHub || ''),
+                        esc(d.route),
+                        esc(d.driver),
+                        esc(d.status),
+                        d.lat !== null && d.lat !== undefined ? d.lat : '',
+                        d.lng !== null && d.lng !== undefined ? d.lng : '',
+                        esc(d.driverNotes || ''),
+                        esc(d.updatedAt || ''),
+                        (d.attachments || []).length
+                    ])
                 ];
             } else if (moduleName === 'Empty Container Inventory') {
                 csvRows = [
-                    ['Container No.', 'Size', 'Type', 'Shipping Line', 'Status', 'Yard Location', 'Condition'],
-                    ...(yardDb.containers || []).map(c => [c.number, c.size, c.type || 'Dry', c.line, c.status, `${c.block}/${c.bay}/${c.row}`, c.condition])
+                    ['Container No.', 'Size', 'Type', 'Shipping Line', 'Trucking Name', 'Truck Plate No.', 'Driver Name', 'EIR / Reference No.', 'Condition', 'Status', 'Block', 'Bay', 'Row', 'Tier', 'Gate-In Date & Time', 'ETA Arrival Date & Time', 'Gate-In Time of Day', 'Gate-Out Date & Time', 'ETA Pull-out Date & Time', 'Gate-Out Time of Day', 'Release Customer', 'Storage Fee Type', 'Storage Rate/Day (PHP)', 'Storage Days', 'Van In Amount (PHP)', 'Van In Payment Status', 'Van Out Amount (PHP)', 'Total Billed Amount (PHP)', 'Remarks', 'Gate-In Photos', 'Gate-Out Photos'],
+                    ...(yardDb.containers || []).map(c => [
+                        esc(c.number),
+                        esc(c.size),
+                        esc(c.type || 'Dry'),
+                        esc(c.line),
+                        esc(c.truckingName || ''),
+                        esc(c.plate || ''),
+                        esc(c.driver || ''),
+                        esc(c.eir || ''),
+                        esc(c.condition || 'Good'),
+                        esc(c.status || 'Available'),
+                        esc(c.block || 'A'),
+                        esc(c.bay || 'BAY-1'),
+                        esc(c.row || 'GROUND'),
+                        esc(c.tier || '1'),
+                        esc(c.date || ''),
+                        esc(c.etaDate || ''),
+                        esc(c.gateInToD || ''),
+                        esc(c.gateOutDate || ''),
+                        esc(c.etaPulloutDate || ''),
+                        esc(c.gateOutToD || ''),
+                        esc(c.releaseCustomer || ''),
+                        esc(c.storageFeeType || ''),
+                        c.storageRate || '',
+                        c.storageDays || '',
+                        c.vanInAmount || 0,
+                        esc(c.vanInStats || 'PAID'),
+                        c.vanOutAmount || 0,
+                        c.totalBilledAmount || '',
+                        esc(c.remarks || ''),
+                        (c.photos || []).length,
+                        (c.releasePhotos || []).length
+                    ])
                 ];
             } else if (moduleName === 'Revenue & Billings') {
                 csvRows = [
                     ['Date / Time', 'Source Type', 'Container No.', 'Reference / EIR', 'Amount (PHP)'],
-                    ...(yardDb.revenues || []).map(r => [r.date, r.source, r.container, r.eir, r.amount])
+                    ...(yardDb.revenues || []).map(r => [esc(r.date), esc(r.source), esc(r.container), esc(r.eir), r.amount])
                 ];
             } else if (moduleName === 'Fleet Expenses') {
                 csvRows = [
-                    ['Trip ID', 'Fuel', 'Tolls', 'Maintenance', 'Total Cost'],
-                    ...(db.expenseLogs || []).map(e => [e.trip, `"${e.fuel}"`, `"${e.tolls}"`, `"${e.maintenance}"`, `"${e.total}"`])
+                    ['Trip ID', 'Fuel (PHP)', 'Tolls (PHP)', 'Maintenance (PHP)', 'Total Cost (PHP)', 'Attached Receipts Count'],
+                    ...(db.expenseLogs || []).map(e => [esc(e.trip), esc(e.fuel), esc(e.tolls), esc(e.maintenance), esc(e.total), (e.attachments || []).length])
                 ];
             } else if (moduleName === 'Hub Locations') {
                 csvRows = [
-                    ['Hub Name', 'Type', 'Address', 'Latitude', 'Longitude', 'Geofence Radius (km)'],
-                    ...getActiveHubLocations().map(h => [`"${(h.name || '').replace(/"/g, '""')}"`, h.type || 'Hub', `"${(h.address || '').replace(/"/g, '""')}"`, h.lat, h.lng, h.radius || 5])
+                    ['Hub Name', 'Type', 'Address / Corridor', 'Latitude', 'Longitude', 'Geofence Radius (km)'],
+                    ...getActiveHubLocations().map(h => [esc(h.name || ''), esc(h.type || 'Hub'), esc(h.address || ''), h.lat, h.lng, h.radius || 5])
                 ];
             } else {
                 csvRows = [
                     ['Module', 'Timestamp', 'Status'],
-                    [moduleName, new Date().toISOString(), 'Active']
+                    [esc(moduleName), new Date().toISOString(), 'Active']
                 ];
             }
         
@@ -3350,7 +4068,7 @@ function handleDragOver(e, zoneId) {
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Skymover_${moduleName.replace(/\s+/g, '_')}_Spreadsheet.csv`);
+            link.setAttribute("download", `Skymover_${moduleName.replace(/\s+/g, '_')}_Full_Spreadsheet.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -4084,7 +4802,6 @@ function handleDragOver(e, zoneId) {
             const trimmed = urlOrPath.trim();
             if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
 
-            // Match Supabase Storage public or signed URL patterns for this bucket
             const markers = [
                 `/object/public/${STORAGE_BUCKET_NAME}/`,
                 `/object/sign/${STORAGE_BUCKET_NAME}/`,
@@ -4103,7 +4820,6 @@ function handleDragOver(e, zoneId) {
                 }
             }
 
-            // Handle direct relative paths (e.g., "gate-in/1700000_photo.jpg")
             if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
                 return trimmed.replace(/^\/+/, '');
             }
@@ -4133,7 +4849,6 @@ function handleDragOver(e, zoneId) {
                 }
             });
 
-            // Also check single-value URL/path fields if present
             ['filePath', 'fileUrl', 'receipt_url'].forEach(field => {
                 if (typeof record[field] === 'string') {
                     candidateUrls.push(record[field]);
@@ -4240,7 +4955,6 @@ function handleDragOver(e, zoneId) {
                 totalFleetMaint += parsePesoNumber(e.maintenance);
             });
 
-            // Include standalone fuel & maintenance logs if trip expense logs are sparse
             let standaloneFuel = 0;
             fuelLogs.forEach(f => { standaloneFuel += parsePesoNumber(f.cost); });
             let standaloneMaint = 0;
@@ -4254,7 +4968,6 @@ function handleDragOver(e, zoneId) {
             const baseMaint = Math.max(totalFleetMaint, standaloneMaint);
             const baseYard = totalYardExp;
 
-            const activeDaysSpan = Math.max(1, Math.min(30, fleetExpenses.length + fuelLogs.length + yardExpenses.length || 1));
             const multiplier = (horizonDays / 30) * (1 + (growthPct / 100));
 
             const projFuel = baseFuel * multiplier;
@@ -4376,16 +5089,17 @@ function handleDragOver(e, zoneId) {
         }
 
         // ==========================================
-        // CUSTOM REPORT TEMPLATES ENGINE
+        // CUSTOM REPORT TEMPLATES ENGINE (ALL USER INPUT FIELDS)
         // ==========================================
         const REPORT_DATASET_SCHEMAS = {
             vehicles: { label: 'Vehicle Masterlist', columns: ['id', 'model', 'status', 'driver'], getRows: () => db.vehicles || [] },
-            drivers: { label: 'Driver Roster', columns: ['driver_name', 'driver_license_number', 'driver_phone', 'helper_name', 'truck', 'status'], getRows: () => db.drivers || [] },
+            drivers: { label: 'Driver Roster', columns: ['driver_name', 'driver_license_number', 'driver_phone', 'helper_name', 'helper_phone', 'truck', 'status', 'rating'], getRows: () => db.drivers || [] },
             hubLocations: { label: 'Admin Hub Locations', columns: ['name', 'type', 'address', 'lat', 'lng', 'radius'], getRows: () => getActiveHubLocations() },
+            dispatchLogs: { label: 'GPS & Dispatch Logs', columns: ['unit', 'originHub', 'destinationHub', 'nearestHub', 'route', 'driver', 'status', 'lat', 'lng', 'driverNotes'], getRows: () => db.dispatchLogs || [] },
             fuelLogs: { label: 'Fuel Monitoring', columns: ['unit', 'liters', 'cost', 'station', 'date'], getRows: () => db.fuelLogs || [] },
             maintenanceLogs: { label: 'Fleet Maintenance', columns: ['unit', 'issue', 'cost', 'status', 'date'], getRows: () => db.maintenanceLogs || [] },
             expenseLogs: { label: 'Fleet Trip Expenses', columns: ['trip', 'fuel', 'tolls', 'maintenance', 'total'], getRows: () => db.expenseLogs || [] },
-            yardContainers: { label: 'Empty Yard Inventory', columns: ['number', 'size', 'type', 'line', 'status', 'plate', 'date'], getRows: () => yardDb.containers || [] },
+            yardContainers: { label: 'Empty Yard Inventory', columns: ['number', 'size', 'type', 'line', 'truckingName', 'plate', 'driver', 'eir', 'condition', 'status', 'block', 'bay', 'row', 'tier', 'date', 'etaDate', 'gateInToD', 'gateOutDate', 'etaPulloutDate', 'gateOutToD', 'releaseCustomer', 'storageFeeType', 'storageRate', 'storageDays', 'vanInAmount', 'vanInStats', 'vanOutAmount', 'totalBilledAmount', 'remarks'], getRows: () => yardDb.containers || [] },
             yardRevenues: { label: 'Yard Revenue History', columns: ['date', 'source', 'container', 'eir', 'amount'], getRows: () => yardDb.revenues || [] },
             yardExpenses: { label: 'Yard Operating Expenses', columns: ['date', 'category', 'description', 'amount'], getRows: () => yardDb.expenses || [] }
         };
@@ -4492,17 +5206,17 @@ function handleDragOver(e, zoneId) {
                         Generated: ${new Date().toLocaleString()}<br>Records: ${rows.length}
                     </div>
                 </div>
-                <table class="w-full text-left text-xs border-collapse border border-slate-300">
-                    <thead><tr class="bg-slate-100 font-bold">${cols.map(c => `<th class="border p-2 uppercase">${c}</th>`).join('')}</tr></thead>
+                <table class="w-full text-left text-[10px] border-collapse border border-slate-300">
+                    <thead><tr class="bg-slate-100 font-bold">${cols.map(c => `<th class="border p-1.5 uppercase">${c}</th>`).join('')}</tr></thead>
                     <tbody>
-                        ${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="border p-2">${r[c] !== undefined && r[c] !== null ? r[c] : '—'}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="border p-4 text-center text-slate-500">No records available.</td></tr>`}
+                        ${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="border p-1.5">${r[c] !== undefined && r[c] !== null ? r[c] : '—'}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="border p-4 text-center text-slate-500">No records available.</td></tr>`}
                     </tbody>
                 </table>
                 <div class="mt-6 text-center text-[10px] text-slate-400 border-t pt-3">© 2026 Skymover Transport Corporation • Custom Report Template Output</div>
             `;
 
             html2pdf().from(el).set({
-                margin: 10,
+                margin: 8,
                 filename: `${tpl.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true },
@@ -4965,7 +5679,7 @@ function handleDragOver(e, zoneId) {
                 `;
             }
         }
-let scannedOrphanedFiles = [];
+	let scannedOrphanedFiles = [];
 
         async function collectAllDatabaseFileReferences() {
             const chunks = [
@@ -5489,7 +6203,6 @@ let scannedOrphanedFiles = [];
             return parseFloat(String(val).replace(/[^\d.-]/g, '')) || 0;
         }
         
-        // 1. Fetch Fleet Expenses from Supabase (non-destructive merge)
         async function fetchFleetExpensesFromSupabase() {
             if (!supabaseClient) return;
         
@@ -5525,7 +6238,6 @@ let scannedOrphanedFiles = [];
             }
         }
         
-        // 2. Insert a Fleet Expense into Supabase
         async function insertFleetExpenseToSupabase(expenseRecord) {
             if (!supabaseClient) return false;
         
@@ -5558,7 +6270,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 3. Update a Fleet Expense in Supabase
         async function updateFleetExpenseInSupabase(recordId, updatedExpense) {
             if (!supabaseClient || !recordId) return false;
 
@@ -5587,7 +6298,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 4. Delete a Fleet Expense from Supabase
         async function deleteFleetExpenseFromSupabase(recordId) {
             if (!supabaseClient || !recordId) return false;
 
@@ -5608,7 +6318,6 @@ let scannedOrphanedFiles = [];
             }
         }
         
-        // 5. Fetch Yard Operating Expenses from Supabase (non-destructive merge)
         async function fetchYardExpensesFromSupabase() {
             if (!supabaseClient) return;
         
@@ -5641,7 +6350,6 @@ let scannedOrphanedFiles = [];
             }
         }
         
-        // 6. Insert a Yard Operating Expense into Supabase
         async function insertYardExpenseToSupabase(expenseRecord) {
             if (!supabaseClient) return false;
         
@@ -5672,7 +6380,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 7. Edit a Yard Operating Expense in the Form
         function editYardExpenseEntry(index) {
             if (!requireAdminExecution("edit a Yard Operating Expense")) return;
             const expenses = yardDb.expenses || [];
@@ -5698,7 +6405,6 @@ let scannedOrphanedFiles = [];
             form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        // 8. Update a Yard Operating Expense in Supabase
         async function updateYardExpenseInSupabase(recordId, expenseRecord) {
             if (!supabaseClient || !recordId) return false;
 
@@ -5725,7 +6431,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 9. Delete a Yard Operating Expense from Local State & Supabase
         async function deleteYardExpenseEntry(index) {
             if (!requireAdminExecution("delete a Yard Operating Expense")) return;
             const expenses = yardDb.expenses || [];
@@ -5761,7 +6466,6 @@ let scannedOrphanedFiles = [];
         // SUPABASE MAINTENANCE LOGS & YARD CONTAINERS SYNC FUNCTIONS
         // ==========================================================
 
-        // 1. Fetch Fleet Maintenance Logs from Supabase (non-destructive merge)
         async function fetchMaintenanceLogsFromSupabase() {
             if (!supabaseClient) return;
             try {
@@ -5790,7 +6494,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 2. Insert a Fleet Maintenance Log into Supabase
         async function insertMaintenanceLogToSupabase(maintRecord) {
             if (!supabaseClient) return false;
             try {
@@ -5817,7 +6520,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 3. Update a Fleet Maintenance Log in Supabase
         async function updateMaintenanceLogInSupabase(recordId, maintRecord) {
             if (!supabaseClient || !recordId) return false;
             try {
@@ -5838,7 +6540,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 4. Delete a Fleet Maintenance Log from Supabase
         async function deleteMaintenanceLogFromSupabase(recordId) {
             if (!supabaseClient || !recordId) return false;
             try {
@@ -5852,7 +6553,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 5. Fetch Yard Containers from Supabase (non-destructive merge)
         async function fetchYardContainersFromSupabase() {
             if (!supabaseClient) return;
             try {
@@ -5896,7 +6596,6 @@ let scannedOrphanedFiles = [];
             }
         }
 
-        // 6. Insert / Upsert a Yard Container Record into Supabase
         async function syncYardContainerToSupabase(c) {
             if (!supabaseClient) return false;
             try {
@@ -6090,7 +6789,6 @@ let scannedOrphanedFiles = [];
                 return;
             }
 
-            // Purge attached Gate-In / Gate-Out photos from skymover-attachments
             if (typeof removeRecordAttachmentsFromStorage === 'function') {
                 await removeRecordAttachmentsFromStorage(target);
             }
@@ -6117,7 +6815,6 @@ let scannedOrphanedFiles = [];
             refreshYardDashboard();
         }
 
-        // Open Yard Container in the Gate-In Form for Editing
         function editContainerEntry(index) {
             if (!requireAdminExecution("edit a container inventory record")) return;
             const containers = yardDb.containers || [];
@@ -6148,6 +6845,7 @@ let scannedOrphanedFiles = [];
             form.elements['tier'].value = target.tier || '1';
             form.elements['date'].value = target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16);
             form.elements['etaDate'].value = target.etaDate ? target.etaDate.slice(0, 16) : (target.date ? target.date.slice(0, 16) : new Date().toISOString().slice(0, 16));
+            if (form.elements['gateInToD']) form.elements['gateInToD'].value = target.gateInToD || 'MORNING';
             form.elements['remarks'].value = target.remarks || '';
 
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -6159,7 +6857,6 @@ let scannedOrphanedFiles = [];
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // Open Yard Revenue Edit Modal inside #subModuleModal
         function editYardRevenueEntry(index) {
             if (!requireAdminExecution("edit a Yard Revenue record")) return;
             const revenues = yardDb.revenues || [];
@@ -6208,7 +6905,6 @@ let scannedOrphanedFiles = [];
             `;
         }
 
-        // Save Yard Revenue Edit to Local State & public.yard_revenues in Supabase
         async function handleUpdateYardRevenueSubmit(e) {
             e.preventDefault();
             if (!requireAdminExecution("update a Yard Revenue record")) return;
@@ -6259,7 +6955,6 @@ let scannedOrphanedFiles = [];
             alert('✅ Yard revenue record successfully updated and synced to Supabase!');
         }
 
-        // Load Geofence Zones & Alerts on startup (non-destructive merge)
         async function fetchLogiTrackDataFromSupabase() {
             if (!supabaseClient) return;
         
@@ -6305,7 +7000,6 @@ let scannedOrphanedFiles = [];
             renderConfiguredZones();
         }
         
-        // Save a new Geofence Zone to Supabase
         async function insertGeofenceZoneToSupabase(zoneObj) {
             if (!supabaseClient) return null;
         
@@ -6331,7 +7025,6 @@ let scannedOrphanedFiles = [];
             }
         }
         
-        // Log a GPS plot, Driver live location, or Geofence boundary alert
         async function insertGeofenceAlertToSupabase({ unitId = null, driverName = null, zoneId = null, alertType = 'GEOFENCE', message, lat = null, lng = null, nearestHub = null, distanceKm = null }) {
             if (!supabaseClient) return;
         
@@ -6382,7 +7075,7 @@ let scannedOrphanedFiles = [];
             const hasValidCoords = !isNaN(existingLat) && !isNaN(existingLng);
 
             const activeHubs = getActiveHubLocations();
-            let initialCenter = [14.6333, 120.9830]; // Default Metro Manila viewport
+            let initialCenter = [14.6333, 120.9830];
             let initialZoom = 11;
 
             if (hasValidCoords) {
@@ -6400,7 +7093,6 @@ let scannedOrphanedFiles = [];
                 maxZoom: 19
             }).addTo(hubPickerLeafletMap);
 
-            // Show existing configured hubs as subtle reference dots
             activeHubs.forEach(h => {
                 const hLat = parseFloat(h.lat);
                 const hLng = parseFloat(h.lng);
@@ -6415,7 +7107,6 @@ let scannedOrphanedFiles = [];
                 }
             });
 
-            // Click anywhere on the map to place/move the hub pin & auto-fill coordinates
             hubPickerLeafletMap.on('click', function (e) {
                 updateHubPickerPin(e.latlng.lat, e.latlng.lng, true);
             });
@@ -6476,7 +7167,6 @@ let scannedOrphanedFiles = [];
                 statusEl.innerHTML = `<i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Pin set at <span class="text-white font-bold">${latNum}, ${lngNum}</span> (${radiusKm} km radius)`;
             }
 
-            // Auto-populate address only if the field is still blank
             const addrInput = document.getElementById('beHubAddress');
             if (autoFillEmptyAddress && addrInput && !addrInput.value.trim()) {
                 resolveHubAddressFromPin(false);
@@ -6567,7 +7257,6 @@ let scannedOrphanedFiles = [];
             }
 
             try {
-                // Bias search toward the Philippines (viewbox) while still allowing any global query
                 const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&viewbox=116.9,21.1,126.6,4.5&q=${encodeURIComponent(query)}`;
                 const res = await fetch(url, {
                     headers: { 'Accept': 'application/json' }
@@ -6588,7 +7277,6 @@ let scannedOrphanedFiles = [];
                     return;
                 }
 
-                // Automatically jump to the top match immediately and show all matches to pick from
                 selectHubSearchResult(0, false);
 
                 resultsBox.classList.remove('hidden');
@@ -6748,7 +7436,6 @@ let scannedOrphanedFiles = [];
             const attSection = document.getElementById('backendAttachmentSection');
             if(!modal || !titleEl || !fieldsContainer) return;
 
-            // Widen modal card when showing the interactive Leaflet map for Hub Locations
             const modalBox = modal.firstElementChild;
             if (modalBox) {
                 modalBox.className = type === 'Hub'
@@ -6777,7 +7464,6 @@ let scannedOrphanedFiles = [];
                         <div><label class="block text-slate-300 mb-1 font-semibold">Geofence Radius (km)</label><input type="number" step="any" id="beInput3" oninput="syncHubPickerFromInputs()" value="${existing ? (existing.radius || 5) : 5}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="5"></div>
                     </div>
 
-                    <!-- INTERACTIVE LEAFLET MAP PICKER WITH NOMINATIM SEARCH -->
                     <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 space-y-2">
                         <div class="flex flex-wrap justify-between items-center gap-2">
                             <span class="text-[11px] font-bold text-sky-300"><i class="fa-solid fa-map-pin mr-1"></i> Interactive Map Picker (Search, click, or drag pin)</span>
@@ -6791,7 +7477,6 @@ let scannedOrphanedFiles = [];
                             </div>
                         </div>
 
-                        <!-- NOMINATIM LOCATION SEARCH BAR -->
                         <div class="relative">
                             <div class="flex gap-1.5">
                                 <input type="text" id="hubPickerSearchInput"
@@ -6851,7 +7536,6 @@ let scannedOrphanedFiles = [];
                 let preselectedOrigin = existing && existing.originHub ? existing.originHub : '';
                 let preselectedDest = existing && existing.destinationHub ? existing.destinationHub : '';
 
-                // If editing an older route formatted as "Hub A → Hub B", pre-match dropdown values
                 if (existing && existing.route && (!preselectedOrigin || !preselectedDest)) {
                     const parts = existing.route.split(/→|->/).map(s => s.trim());
                     if (parts.length === 2) {
@@ -6882,7 +7566,6 @@ let scannedOrphanedFiles = [];
                         <datalist id="dispatchVehiclesDatalist">${vehicleOptionsHtml}</datalist>
                     </div>
 
-                    <!-- ADMIN-ASSIGNED HUB ORIGIN & DESTINATION SELECTOR -->
                     <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 space-y-2.5">
                         <div class="flex justify-between items-center">
                             <span class="text-[11px] font-bold text-emerald-300"><i class="fa-solid fa-map-location-dot mr-1"></i> Select Admin-Assigned Hubs</span>
@@ -7038,7 +7721,6 @@ let scannedOrphanedFiles = [];
 
             if (!Array.isArray(db.smsLogs)) db.smsLogs = [];
 
-            // Match assigned driver in db.drivers to resolve contact number
             const normalizedDriverName = dispatchRec.driver.trim().toLowerCase();
             const matchedDriver = (db.drivers || []).find(d => {
                 const candidate = (d.driver_name || d.name || '').trim().toLowerCase();
@@ -7320,7 +8002,7 @@ let scannedOrphanedFiles = [];
         function closeSubModule() { document.getElementById('subModuleModal').classList.add('hidden'); }
 
         // ==========================================
-        // VISUAL EXTRACTION REPORT & PHOTO AUDIT
+        // VISUAL EXTRACTION REPORT & PHOTO AUDIT (FULL USER INPUT DETAILS)
         // ==========================================
         function openExtractionReport() {
             const modal = document.getElementById('subModuleModal');
@@ -7340,15 +8022,18 @@ let scannedOrphanedFiles = [];
         
                 return `
                     <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                        <td class="p-3 font-mono font-bold text-sky-800">${c.number}</td>
-                        <td class="p-3">${c.size} / ${c.type || 'Dry'}</td>
-                        <td class="p-3 font-bold">${c.line}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status === 'Available' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${c.status}</span></td>
-                        <td class="p-3 font-mono text-xs">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
-                        <td class="p-3">${photosHtml}</td>
+                        <td class="p-2.5 font-mono font-bold text-sky-800">${c.number}</td>
+                        <td class="p-2.5">${c.size} / ${c.type || 'Dry'}<br><span class="text-[10px] text-slate-600">${c.line}</span></td>
+                        <td class="p-2.5">${c.truckingName || '—'}<br><span class="font-mono text-[10px]">${c.plate || '—'} • ${c.driver || 'No Driver'}</span></td>
+                        <td class="p-2.5 font-mono text-[10px]">EIR: ${c.eir || '—'}<br>${c.block || 'A'}/${c.bay || '1'}/${c.row || 'GROUND'}/T${c.tier || '1'}</td>
+                        <td class="p-2.5">${c.condition || 'Good'}<br><span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status === 'Available' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${c.status}</span></td>
+                        <td class="p-2.5 font-mono text-[10px]">In: ${c.date ? new Date(c.date).toLocaleString() : '—'} (${c.gateInToD || '—'})<br>ETA: ${c.etaDate ? new Date(c.etaDate).toLocaleString() : '—'}</td>
+                        <td class="p-2.5 font-mono text-[10px]">₱${Number(c.vanInAmount || 0).toLocaleString()}<br><span class="font-bold">${c.vanInStats || 'PAID'}</span></td>
+                        <td class="p-2.5 text-[10px] max-w-[140px]">${c.remarks || '—'}</td>
+                        <td class="p-2.5">${photosHtml}</td>
                     </tr>
                 `;
-            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-In container inspection records found.</td></tr>';
+            }).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No Gate-In container inspection records found.</td></tr>';
         
             let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => {
                 let photosHtml = (m.photos && m.photos.length) ? m.photos.map(p => `
@@ -7359,21 +8044,23 @@ let scannedOrphanedFiles = [];
         
                 return `
                     <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                        <td class="p-3 font-mono font-bold text-purple-800">${m.container}</td>
-                        <td class="p-3 font-mono">${m.plate || '—'}</td>
-                        <td class="p-3">${m.storageDays || 0} Days</td>
-                        <td class="p-3 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                        <td class="p-3 font-mono text-xs">${m.date ? new Date(m.date).toLocaleString() : '—'}</td>
-                        <td class="p-3">${photosHtml}</td>
+                        <td class="p-2.5 font-mono font-bold text-purple-800">${m.container}</td>
+                        <td class="p-2.5">${m.customer || '—'}<br><span class="font-mono text-[10px]">${m.plate || '—'} • ${m.driver || '—'}</span></td>
+                        <td class="p-2.5 font-mono text-[10px]">EIR: ${m.eir || '—'}<br>${m.storageFeeType || 'Dry Van'} @ ₱${m.storageRate || 450}/d</td>
+                        <td class="p-2.5">${m.storageDays || 0} Days<br><span class="font-mono text-[10px]">In: ₱${m.vanInAmount || 0} | Out: ₱${m.vanOutAmount || 0}</span></td>
+                        <td class="p-2.5 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-2.5 font-mono text-[10px]">Out: ${m.date ? new Date(m.date).toLocaleString() : '—'} (${m.gateOutToD || '—'})<br>ETA Pull-out: ${m.etaPulloutDate ? new Date(m.etaPulloutDate).toLocaleString() : '—'}</td>
+                        <td class="p-2.5 text-[10px] max-w-[140px]">${m.remarks || '—'}</td>
+                        <td class="p-2.5">${photosHtml}</td>
                     </tr>
                 `;
-            }).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-medium">No Gate-Out release records found.</td></tr>';
+            }).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500 font-medium">No Gate-Out release records found.</td></tr>';
         
             content.innerHTML = `
                 <div class="flex justify-between items-center mb-4 text-white flex-wrap gap-3">
                     <div>
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit</h3>
-                        <p class="text-xs text-slate-300">Complete inspection audit trail featuring attached container photos, Gate-In logs, and release documentation.</p>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit (All User Inputs)</h3>
+                        <p class="text-xs text-slate-300">Complete inspection audit trail featuring all Gate-In & Gate-Out user inputs, billing breakdowns, remarks, and attached photos.</p>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="exportVisualExtractionPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow"><i class="fa-solid fa-file-pdf mr-1"></i> Export PDF Report</button>
@@ -7387,12 +8074,15 @@ let scannedOrphanedFiles = [];
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
                                 <tr class="border-b text-slate-800 font-bold">
-                                    <th class="p-3">Container No.</th>
-                                    <th class="p-3">Size/Type</th>
-                                    <th class="p-3">Shipping Line</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Gate-In Date</th>
-                                    <th class="p-3">Attached Inspection Photos</th>
+                                    <th class="p-2.5">Container No.</th>
+                                    <th class="p-2.5">Specs & Line</th>
+                                    <th class="p-2.5">Trucking, Plate & Driver</th>
+                                    <th class="p-2.5">EIR & Yard Slot</th>
+                                    <th class="p-2.5">Cond. & Status</th>
+                                    <th class="p-2.5">Gate-In & ETA Arrival</th>
+                                    <th class="p-2.5">Van In Fee</th>
+                                    <th class="p-2.5">Remarks</th>
+                                    <th class="p-2.5">Inspection Photos</th>
                                 </tr>
                                 ${gateInHtml}
                             </table>
@@ -7404,12 +8094,14 @@ let scannedOrphanedFiles = [];
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
                                 <tr class="border-b text-slate-800 font-bold">
-                                    <th class="p-3">Container No.</th>
-                                    <th class="p-3">Plate No.</th>
-                                    <th class="p-3">Storage Days</th>
-                                    <th class="p-3">Total Amount</th>
-                                    <th class="p-3">Gate-Out Date</th>
-                                    <th class="p-3">Attached Release Photos</th>
+                                    <th class="p-2.5">Container No.</th>
+                                    <th class="p-2.5">Customer, Plate & Driver</th>
+                                    <th class="p-2.5">EIR & Fee Rate</th>
+                                    <th class="p-2.5">Storage & Van Fees</th>
+                                    <th class="p-2.5">Total Billed</th>
+                                    <th class="p-2.5">Gate-Out & ETA Pull-out</th>
+                                    <th class="p-2.5">Remarks</th>
+                                    <th class="p-2.5">Release Photos</th>
                                 </tr>
                                 ${gateOutHtml}
                             </table>
@@ -7420,13 +8112,13 @@ let scannedOrphanedFiles = [];
         }
 
         // ==========================================
-        // AUTOMATED PDF & EXCEL EXPORT FUNCTIONS
+        // AUTOMATED PDF & EXCEL EXPORT FUNCTIONS (ALL USER INPUTS)
         // ==========================================
         function exportVisualExtractionPDF() {
             const element = document.getElementById('subModuleContent');
             const opt = {
-                margin:        0.5,
-                filename:      'Skymover_Visual_Extraction_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
+                margin:        0.35,
+                filename:      'Skymover_Visual_Extraction_Full_Report_' + new Date().toISOString().slice(0,10) + '.pdf',
                 image:         { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
@@ -7435,22 +8127,62 @@ let scannedOrphanedFiles = [];
         }
         
         function exportVisualExtractionExcel() {
+            const esc = (v) => `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "GATE-IN INSPECTION AUDIT\r\n";
-            csvContent += "Container No,Size/Type,Shipping Line,Status,Gate-In Date\r\n";
+            csvContent += "GATE-IN INSPECTION & FULL DETAILS AUDIT\r\n";
+            csvContent += "Container No,Size,Type,Shipping Line,Trucking Name,Truck Plate No,Driver Name,EIR / Ref No,Condition,Initial Status,Block,Bay,Row,Tier,Van In Amount (PHP),Van In Payment Status,Gate-In Date & Time,ETA Arrival Date & Time,Gate-In Time of Day,Remarks,Photos Count\r\n";
             (yardDb.containers || []).forEach(c => {
-                csvContent += `"${c.number}","${c.size} / ${c.type || 'Dry'}","${c.line}","${c.status}","${c.date || ''}"\r\n`;
+                csvContent += [
+                    esc(c.number),
+                    esc(c.size),
+                    esc(c.type || 'Dry'),
+                    esc(c.line),
+                    esc(c.truckingName || ''),
+                    esc(c.plate || ''),
+                    esc(c.driver || ''),
+                    esc(c.eir || ''),
+                    esc(c.condition || 'Good'),
+                    esc(c.status || 'Available'),
+                    esc(c.block || 'A'),
+                    esc(c.bay || 'BAY-1'),
+                    esc(c.row || 'GROUND'),
+                    esc(c.tier || '1'),
+                    c.vanInAmount || 0,
+                    esc(c.vanInStats || 'PAID'),
+                    esc(c.date || ''),
+                    esc(c.etaDate || ''),
+                    esc(c.gateInToD || ''),
+                    esc(c.remarks || ''),
+                    (c.photos || []).length
+                ].join(",") + "\r\n";
             });
-            csvContent += "\r\nGATE-OUT RELEASE AUDIT\r\n";
-            csvContent += "Container No,Plate No,Storage Days,Total Amount,Gate-Out Date\r\n";
+            csvContent += "\r\nGATE-OUT RELEASE & FULL BILLING AUDIT\r\n";
+            csvContent += "Container No,Release Customer,Truck Plate No,Driver Name,Gate-Out EIR / Ref,Storage Fee Type,Storage Rate/Day (PHP),Storage Days,Van In Amount (PHP),Van Out Amount (PHP),Total Billed Amount (PHP),Gate-Out Date & Time,ETA Pull-out Date & Time,Gate-Out Time of Day,Remarks,Release Photos Count\r\n";
             (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT').forEach(m => {
-                csvContent += `"${m.container}","${m.plate || ''}","${m.storageDays || 0}","${m.totalAmount || 0}","${m.date || ''}"\r\n`;
+                csvContent += [
+                    esc(m.container),
+                    esc(m.customer || ''),
+                    esc(m.plate || ''),
+                    esc(m.driver || ''),
+                    esc(m.eir || ''),
+                    esc(m.storageFeeType || 'Dry Van'),
+                    m.storageRate || 450,
+                    m.storageDays || 0,
+                    m.vanInAmount || 0,
+                    m.vanOutAmount || 0,
+                    m.totalAmount || 0,
+                    esc(m.date || ''),
+                    esc(m.etaPulloutDate || ''),
+                    esc(m.gateOutToD || ''),
+                    esc(m.remarks || ''),
+                    (m.photos || []).length
+                ].join(",") + "\r\n";
             });
         
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Skymover_Visual_Extraction_Report_" + new Date().toISOString().slice(0,10) + ".csv");
+            link.setAttribute("download", "Skymover_Visual_Extraction_Full_Report_" + new Date().toISOString().slice(0,10) + ".csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -7630,7 +8362,6 @@ let scannedOrphanedFiles = [];
             if (!target) return;
 
             if (confirm(`Are you sure you want to permanently delete container ${target.number} and its attached inspection/release photos?`)) {
-                // Remove both Gate-In photos and Gate-Out releasePhotos from Supabase Storage
                 await removeRecordAttachmentsFromStorage(target);
 
                 if (supabaseClient) {
@@ -7680,6 +8411,7 @@ let scannedOrphanedFiles = [];
                     tier: formData.get('tier'),
                     date: formData.get('date'),
                     etaDate: formData.get('etaDate'),
+                    gateInToD: formData.get('gateInToD') || 'MORNING',
                     remarks: formData.get('remarks'),
                     vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
                     vanInStats: formData.get('vanInStats'),
@@ -7712,6 +8444,7 @@ let scannedOrphanedFiles = [];
                 tier: formData.get('tier'),
                 date: formData.get('date'),
                 etaDate: formData.get('etaDate'),
+                gateInToD: formData.get('gateInToD') || 'MORNING',
                 remarks: formData.get('remarks'),
                 vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
                 vanInStats: formData.get('vanInStats'),
@@ -7724,12 +8457,29 @@ let scannedOrphanedFiles = [];
             
             const movementRecord = {
                 date: containerData.date,
+                etaDate: containerData.etaDate,
+                gateInToD: containerData.gateInToD,
                 kind: 'GATE-IN',
                 container: containerData.number,
+                size: containerData.size,
+                type: containerData.type,
+                line: containerData.line,
+                truckingName: containerData.truckingName,
                 plate: containerData.plate,
+                driver: containerData.driver,
                 eir: containerData.eir,
+                condition: containerData.condition,
+                status: containerData.status,
+                block: containerData.block,
+                bay: containerData.bay,
+                row: containerData.row,
+                tier: containerData.tier,
+                vanInAmount: containerData.vanInAmount,
+                vanInStats: containerData.vanInStats,
+                remarks: containerData.remarks,
                 amount: containerData.vanInAmount,
-                totalAmount: containerData.vanInAmount
+                totalAmount: containerData.vanInAmount,
+                photos: stagedGateInPhotos
             };
 
             if(!yardDb.movements) yardDb.movements = [];
@@ -7830,25 +8580,49 @@ let scannedOrphanedFiles = [];
             const form = document.getElementById('yardGateOutForm');
             const formData = new FormData(form);
             const gateOutDate = formData.get('date');
+            const etaPulloutDate = formData.get('etaPulloutDate') || '';
+            const gateOutToD = formData.get('gateOutToD') || 'MORNING';
+            const customer = formData.get('customer') || '';
+            const storageFeeType = formData.get('fee') || 'Dry Van';
+            const storageRate = parseFloat(formData.get('storageamount')) || 450;
+            const vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
             const totalAmount = parseFloat(formData.get('totalAmount')) || 0;
             const storageDays = parseInt(formData.get('storageDays')) || 1;
             const eirRef = formData.get('eir');
+            const remarks = formData.get('remarks') || '';
 
             match.status = 'Released';
             match.gateOutDate = gateOutDate;
-            match.vanOutAmount = parseFloat(formData.get('vanOutAmount')) || 0;
+            match.etaPulloutDate = etaPulloutDate;
+            match.gateOutToD = gateOutToD;
+            match.releaseCustomer = customer;
+            match.storageFeeType = storageFeeType;
+            match.storageRate = storageRate;
+            match.storageDays = storageDays;
+            match.vanOutAmount = vanOutAmount;
+            match.totalBilledAmount = totalAmount;
+            if (remarks) match.remarks = match.remarks ? `${match.remarks} | Gate-Out: ${remarks}` : remarks;
             match.releasePhotos = stagedGateOutPhotos;
             await syncYardContainerToSupabase(match);
             
             const movementRecord = {
                 date: gateOutDate,
+                etaPulloutDate: etaPulloutDate,
+                gateOutToD: gateOutToD,
                 kind: 'GATE-OUT',
                 container: containerNo,
+                customer: customer,
                 plate: match.plate,
+                driver: match.driver || '',
                 eir: eirRef,
+                storageFeeType: storageFeeType,
+                storageRate: storageRate,
                 storageDays: storageDays,
+                vanInAmount: match.vanInAmount || 0,
+                vanOutAmount: vanOutAmount,
                 totalAmount: totalAmount,
                 amount: totalAmount,
+                remarks: remarks,
                 photos: stagedGateOutPhotos
             };
 
@@ -8074,10 +8848,17 @@ let scannedOrphanedFiles = [];
                     </div>
                 </div>
                 <div>
-                    <h3 class="font-bold text-sm text-slate-900 mb-2">Revenue Line Items</h3>
+                    <h3 class="font-bold text-sm text-slate-900 mb-2">Revenue Line Items (${revList.length})</h3>
                     <table class="w-full text-left text-xs border-collapse border border-slate-300">
-                        <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2 text-right">Amount</th></tr>
-                        ${revList.map(r => `<tr><td class="border p-2">${r.date}</td><td class="border p-2">${r.source}</td><td class="border p-2 font-mono">${r.container}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString()}</td></tr>`).join('')}
+                        <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2">Reference / EIR</th><th class="border p-2 text-right">Amount</th></tr>
+                        ${revList.length ? revList.map(r => `<tr><td class="border p-2">${r.date}</td><td class="border p-2">${r.source}</td><td class="border p-2 font-mono">${r.container}</td><td class="border p-2 font-mono">${r.eir || '—'}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('') : '<tr><td colspan="5" class="border p-2 text-center text-slate-500">No revenue items in this month.</td></tr>'}
+                    </table>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-900 mb-2">Operating Expense Line Items (${expList.length})</h3>
+                    <table class="w-full text-left text-xs border-collapse border border-slate-300">
+                        <tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Category</th><th class="border p-2">Description / Vendor</th><th class="border p-2 text-right">Amount</th></tr>
+                        ${expList.length ? expList.map(ex => `<tr><td class="border p-2">${ex.date}</td><td class="border p-2">${ex.category}</td><td class="border p-2">${ex.description}</td><td class="border p-2 text-right">₱${Number(ex.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('') : '<tr><td colspan="4" class="border p-2 text-center text-slate-500">No expense items in this month.</td></tr>'}
                     </table>
                 </div>
                 <div class="mt-8 text-center text-[10px] text-slate-400 border-t pt-4">
@@ -8239,15 +9020,37 @@ let scannedOrphanedFiles = [];
 
         function exportYardMovements() {
             if (!requireAdminExecution("export Yard Movements CSV")) return;
+            const esc = (v) => `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`;
             const csvRows = [
-                ['Date / Time', 'Movement', 'Container No.', 'Plate', 'Storage Days', 'Amount', 'Total Amount', 'EIR'],
-                ...(yardDb.movements || []).map(m => [m.date, m.kind, m.container, m.plate || '', m.storageDays || '', m.amount || 0, m.totalAmount || m.amount || 0, m.eir || ''])
+                ['Date / Time', 'Movement', 'Container No.', 'Size', 'Type', 'Shipping Line', 'Trucking Name', 'Plate', 'Driver', 'Release Customer', 'Storage Fee Type', 'Storage Rate/Day (PHP)', 'Storage Days', 'Van In Amount (PHP)', 'Van Out Amount (PHP)', 'Total Amount (PHP)', 'EIR / Ref', 'Time of Day', 'ETA Date', 'Remarks'],
+                ...(yardDb.movements || []).map(m => [
+                    esc(m.date || ''),
+                    esc(m.kind || ''),
+                    esc(m.container || ''),
+                    esc(m.size || ''),
+                    esc(m.type || ''),
+                    esc(m.line || ''),
+                    esc(m.truckingName || ''),
+                    esc(m.plate || ''),
+                    esc(m.driver || ''),
+                    esc(m.customer || ''),
+                    esc(m.storageFeeType || ''),
+                    m.storageRate || '',
+                    m.storageDays || '',
+                    m.vanInAmount !== undefined ? m.vanInAmount : (m.kind === 'GATE-IN' ? (m.amount || 0) : 0),
+                    m.vanOutAmount || 0,
+                    m.totalAmount || m.amount || 0,
+                    esc(m.eir || ''),
+                    esc(m.gateInToD || m.gateOutToD || ''),
+                    esc(m.etaDate || m.etaPulloutDate || ''),
+                    esc(m.remarks || '')
+                ])
             ];
             let csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Skymover_Yard_Movements_" + new Date().toISOString().slice(0,10) + ".csv");
+            link.setAttribute("download", "Skymover_Yard_Movements_Full_" + new Date().toISOString().slice(0,10) + ".csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
