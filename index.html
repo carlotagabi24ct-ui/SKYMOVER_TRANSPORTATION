@@ -1741,6 +1741,10 @@
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
                     resetInactivityTimer();
+
+                    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+                        subscribeToRealtimeChanges();
+                    }
                 });
             } catch(err) {
                 currentUser = null;
@@ -2336,7 +2340,6 @@
 
             if (supabaseClient) {
                 try {
-                    // Collect attachments referenced ONLY by Management Backend & Driver records
                     const pathsToPurge = new Set();
                     const backendCollections = [
                         ...(db.vehicles || []),
@@ -2376,7 +2379,6 @@
                         });
                     });
 
-                    // Also include unreferenced files inside backend/driver subfolders only (preserving gate-in/ and gate-out/)
                     if (typeof listAllBucketFilesRecursive === 'function') {
                         const yardCorpus = JSON.stringify(yardDb || {});
                         const bucketFiles = await listAllBucketFilesRecursive(STORAGE_BUCKET_NAME);
@@ -2406,7 +2408,6 @@
                     console.warn("Backend storage purge notice:", storageResetErr.message || storageResetErr);
                 }
 
-                // Clear geofence_alerts first in case zone_id references geofence_zones
                 try {
                     const { error: alertsDelErr } = await supabaseClient
                         .from('geofence_alerts')
@@ -2447,7 +2448,6 @@
                 }));
             }
 
-            // Reset ONLY Management Backend & Driver's Side state (preserving admin RBAC users & yardDb)
             const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
 
             db = {
@@ -2561,7 +2561,6 @@
                         });
                     });
 
-                    // Include any files inside gate-in/ or gate-out/ folders not referenced by backend records
                     if (typeof listAllBucketFilesRecursive === 'function') {
                         const backendCorpus = JSON.stringify(db || {});
                         const bucketFiles = await listAllBucketFilesRecursive(STORAGE_BUCKET_NAME);
@@ -2616,7 +2615,6 @@
                 }));
             }
 
-            // Reset ONLY Empty Yard state (preserving Management Backend & Driver's Side)
             yardDb = {
                 containers: [],
                 movements: [],
