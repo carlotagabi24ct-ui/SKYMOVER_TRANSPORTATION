@@ -165,11 +165,14 @@
                     <button onclick="openSubModule('Dashboard')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDashboard">Dashboard</button>
                     <button onclick="openSubModule('Vehicle Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnVehicles">Vehicles</button>
                     <button onclick="openSubModule('Driver Management')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnDrivers">Drivers</button>
+                    <button onclick="openSubModule('Hub Locations')" id="hubLocationsNavBtn" class="bg-emerald-700 hover:bg-emerald-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-map-location-dot mr-1"></i> <span data-i18n="btnHubs">Hub Locations</span></button>
                     <button onclick="openSubModule('User Management')" id="rbacUsersNavBtn" class="bg-sky-700 hover:bg-sky-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-user-shield mr-1"></i> <span data-i18n="btnRbac">RBAC Users</span></button>
                     <button onclick="openSubModule('Fuel Monitoring')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnFuel">Fuel</button>
                     <button onclick="openSubModule('Maintenance')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnMaint">Maintenance</button>
                     <button onclick="openSubModule('GPS & Dispatch')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnGps">GPS & Dispatch</button>
                     <button onclick="openSubModule('Fleet Expenses')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold border border-slate-700 text-white" data-i18n="btnExpenses">Expenses</button>
+                    <button onclick="openSubModule('Expense Forecasting')" class="bg-indigo-700 hover:bg-indigo-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-chart-line mr-1"></i> <span data-i18n="btnForecasting">Forecasting</span></button>
+                    <button onclick="openSubModule('Report Templates')" class="bg-purple-700 hover:bg-purple-800 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-file-invoice mr-1"></i> <span data-i18n="btnReportTemplates">Report Templates</span></button>
                     <button onclick="loadAuditLogsModal()" id="auditLogBtn" class="bg-amber-600 hover:bg-amber-700 text-xs px-3 py-2 rounded-lg font-semibold text-white"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Audit Trail</button>
                     <button onclick="openSubModule('Data Backup')" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded-lg font-semibold text-white" data-i18n="btnBackup">Backup / Restore</button>
                     <button onclick="confirmResetAllDatabases()" id="resetDbBtn" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-2 rounded-lg font-bold text-white shadow"><i class="fa-solid fa-rotate-left mr-1"></i> <span data-i18n="btnReset">Reset DB</span></button>
@@ -672,7 +675,7 @@
 
     <!-- SUB-MODULE MODAL OVERLAY -->
     <div id="subModuleModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
+        <div class="glass-card w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeSubModule()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl z-50 p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <div id="subModuleContent"></div>
         </div>
@@ -685,8 +688,9 @@
             <h3 class="text-lg font-bold text-white mb-4">Post Transshipment Order</h3>
             <form id="transForm" onsubmit="handleTransSubmit(event)" class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-slate-300 mb-1 font-semibold">Origin Hub</label>
-                    <input type="text" id="transOrigin" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor">
+                    <label class="block text-slate-300 mb-1 font-semibold">Origin Hub (Admin-Assigned Hubs)</label>
+                    <input type="text" id="transOrigin" list="adminHubLocationsDatalist" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Select or type Admin-assigned hub...">
+                    <datalist id="adminHubLocationsDatalist"></datalist>
                 </div>
                 <div>
                     <label class="block text-slate-300 mb-1 font-semibold">Container Number</label>
@@ -763,7 +767,7 @@
             <h3 id="backendModalTitle" class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-plus text-sky-400 mr-2"></i> Add Entry</h3>
             <form id="backendEntryForm" onsubmit="handleBackendEntrySubmit(event)" class="space-y-3 text-xs">
                 <div id="backendModalFields"></div>
-                <div class="pt-2">
+                <div class="pt-2" id="backendAttachmentSection">
                     <label class="block text-slate-300 mb-1 font-semibold"><i class="fa-solid fa-paperclip mr-1 text-sky-400"></i> Attach Photo / Document Receipt (Cloud Upload)</label>
                     <!-- BACKEND ENTRY DRAG & DROP ZONE -->
                     <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="backendEntryDropZone"
@@ -798,7 +802,7 @@
                     <form id="geofenceForm" onsubmit="handleSaveGeofenceZone(event)" class="space-y-3 text-xs">
                         <div>
                             <label class="block text-slate-300 mb-1">Zone Name *</label>
-                            <input type="text" id="geoName" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Subic Bay Freeport Zone">
+                            <input type="text" id="geoName" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Custom Terminal Zone">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -865,6 +869,7 @@
         let trendChartInstance = null;
         let yardPieChartInstance = null;
         let yardBarChartInstance = null;
+        let forecastChartInstance = null;
         let supabaseClient = null;
         let currentUser = null;
         let currentUserRole = 'guest';
@@ -874,10 +879,69 @@
         let currentEditingYardExpenseIndex = null;
         let currentEditingYardContainerIndex = null;
         let currentEditingYardRevenueIndex = null;
+        let currentEditingHubIndex = null;
+        let currentEditingReportTemplateIndex = null;
+
+        // FIX: Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
+        let isSavingCloudData = false;
+        let lastLocalSaveTimestamp = 0;
 
         const SUPABASE_URL = "https://ygghxpsddnjzgnkvbrtl.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable__crUSfSiNT15j2bEtSGq8A_KnXDrnLo";
         const STORAGE_BUCKET_NAME = "skymover-attachments";
+
+        // ==========================================
+        // ROW PERSISTENCE & STORAGE QUOTA PROTECTION
+        // ==========================================
+        function stripLargeBase64ForCache(obj) {
+            try {
+                return JSON.parse(JSON.stringify(obj, (key, value) => {
+                    if (key === 'dataUrl' && typeof value === 'string' && value.startsWith('data:') && value.length > 60000) {
+                        return ''; // Strip oversized inline base64 from localStorage cache only; cloud URLs & in-memory copies stay intact
+                    }
+                    return value;
+                }));
+            } catch (e) {
+                return obj;
+            }
+        }
+
+        function safeLocalStorageSet(key, dataObj) {
+            try {
+                localStorage.setItem(key, JSON.stringify(dataObj));
+                return true;
+            } catch (err) {
+                console.warn(`localStorage quota notice for ${key}. Optimizing local cache without losing records...`, err);
+                try {
+                    const compactCopy = stripLargeBase64ForCache(dataObj);
+                    localStorage.setItem(key, JSON.stringify(compactCopy));
+                    return true;
+                } catch (err2) {
+                    console.warn(`localStorage still full for ${key}; continuing with in-memory & Supabase Cloud persistence.`, err2);
+                    return false;
+                }
+            }
+        }
+
+        // Non-destructive record merger: ensures cloud table fetches NEVER delete locally added rows
+        function mergeRecordsSafely(localArr, cloudArr, keyFn) {
+            const safeLocal = Array.isArray(localArr) ? localArr : [];
+            const safeCloud = Array.isArray(cloudArr) ? cloudArr : [];
+            if (safeCloud.length === 0) return safeLocal;
+
+            const mergedMap = new Map();
+            safeCloud.forEach(item => {
+                const k = keyFn(item);
+                if (k) mergedMap.set(k, item);
+            });
+            safeLocal.forEach(item => {
+                const k = keyFn(item);
+                if (k && !mergedMap.has(k)) {
+                    mergedMap.set(k, item);
+                }
+            });
+            return Array.from(mergedMap.values());
+        }
 
         // ==========================================
         // ADMIN-ONLY RBAC EXECUTION GUARD (ALL MODULES)
@@ -943,16 +1007,7 @@
                 // 4. Push to your local database uploads array and persist
                 db.uploads = db.uploads || [];
                 db.uploads.push(completeRecord);
-                saveCloudData();
-
-                // 5. Sync state to Supabase cloud table if active
-                if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-                    await supabaseClient.from('skymover_enterprise_db').upsert({
-                        id: 1,
-                        payload: { managementBackend: db, emptyYard: yardDb },
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
-                }
+                await saveCloudData();
 
                 alert('✅ File uploaded and record successfully saved!');
                 return completeRecord;
@@ -965,14 +1020,20 @@
         }
 
         // ==========================================
-        // AUTOMATED DISTANCE CALCULATION (HAVERSINE)
+        // DYNAMIC ADMIN-ASSIGNED HUB LOCATIONS & DISTANCE CALCULATION (HAVERSINE)
+        // (Zero hardcoded hubs — Admin has full authority to add/edit/delete hubs)
         // ==========================================
-        const destinationHubs = [
-            { name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667 },
-            { name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830 },
-            { name: "Subic Bay Freeport Zone", lat: 14.8291, lng: 120.2828 },
-            { name: "Batangas Port Container Terminal", lat: 13.7565, lng: 121.0583 }
-        ];
+        function getActiveHubLocations() {
+            if (!db || !Array.isArray(db.hubLocations)) return [];
+            return db.hubLocations;
+        }
+
+        function refreshHubDatalist() {
+            const datalist = document.getElementById('adminHubLocationsDatalist');
+            if (!datalist) return;
+            const hubs = getActiveHubLocations();
+            datalist.innerHTML = hubs.map(h => `<option value="${h.name}">${h.type || 'Hub'} (${h.lat}, ${h.lng})</option>`).join('');
+        }
 
         function calculateDistanceKm(lat1, lon1, lat2, lon2) {
             const R = 6371; // Radius of the earth in km
@@ -991,17 +1052,87 @@
         }
 
         function getNearestDestinationHub(driverLat, driverLng) {
-            let nearest = destinationHubs[0];
-            let minDistance = calculateDistanceKm(driverLat, driverLng, nearest.lat, nearest.lng);
+            const hubs = getActiveHubLocations();
+            if (!hubs || hubs.length === 0) {
+                return { hub: "No Hubs Assigned Yet (Configure in Hub Locations)", distanceKm: "N/A" };
+            }
 
-            for (let i = 1; i < destinationHubs.length; i++) {
-                const dist = calculateDistanceKm(driverLat, driverLng, destinationHubs[i].lat, destinationHubs[i].lng);
+            let nearest = hubs[0];
+            let minDistance = calculateDistanceKm(driverLat, driverLng, parseFloat(nearest.lat), parseFloat(nearest.lng));
+
+            for (let i = 1; i < hubs.length; i++) {
+                const dist = calculateDistanceKm(driverLat, driverLng, parseFloat(hubs[i].lat), parseFloat(hubs[i].lng));
                 if (dist < minDistance) {
                     minDistance = dist;
-                    nearest = destinationHubs[i];
+                    nearest = hubs[i];
                 }
             }
             return { hub: nearest.name, distanceKm: minDistance.toFixed(2) };
+        }
+
+        async function fetchHubLocationsFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('hub_locations')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (!error && data && data.length > 0) {
+                    const cloudHubs = data.map(h => ({
+                        id: h.id,
+                        name: h.name,
+                        type: h.hub_type || 'Terminal Hub',
+                        address: h.address || '',
+                        lat: parseFloat(h.latitude),
+                        lng: parseFloat(h.longitude),
+                        radius: parseFloat(h.radius_km) || 5,
+                        createdAt: h.created_at
+                    }));
+                    db.hubLocations = mergeRecordsSafely(db.hubLocations, cloudHubs, h => h.id ? `id:${h.id}` : `name:${(h.name || '').toLowerCase()}`);
+                    refreshHubDatalist();
+                    if (currentBackendModuleType === 'Hub Locations') openSubModule('Hub Locations');
+                }
+            } catch (e) {
+                console.warn("hub_locations standalone table fetch skipped (using unified enterprise payload):", e.message);
+            }
+        }
+
+        async function syncHubLocationToSupabase(hubObj) {
+            if (!supabaseClient) return null;
+            try {
+                const payload = {
+                    name: hubObj.name,
+                    hub_type: hubObj.type || 'Terminal Hub',
+                    address: hubObj.address || '',
+                    latitude: parseFloat(hubObj.lat),
+                    longitude: parseFloat(hubObj.lng),
+                    radius_km: parseFloat(hubObj.radius) || 5
+                };
+                if (hubObj.id && typeof hubObj.id === 'number') {
+                    await supabaseClient.from('hub_locations').update(payload).eq('id', hubObj.id);
+                } else {
+                    const { data } = await supabaseClient.from('hub_locations').insert(payload).select().single();
+                    if (data && data.id) hubObj.id = data.id;
+                }
+                return hubObj;
+            } catch (e) {
+                console.warn("hub_locations standalone sync fallback:", e.message);
+                return hubObj;
+            }
+        }
+
+        async function deleteHubLocationFromSupabase(hubObj) {
+            if (!supabaseClient || !hubObj) return;
+            try {
+                if (hubObj.id && typeof hubObj.id === 'number') {
+                    await supabaseClient.from('hub_locations').delete().eq('id', hubObj.id);
+                } else if (hubObj.name) {
+                    await supabaseClient.from('hub_locations').delete().eq('name', hubObj.name);
+                }
+            } catch (e) {
+                console.warn("hub_locations delete fallback:", e.message);
+            }
         }
 
         // ==========================================
@@ -1126,11 +1257,6 @@
                 if(session && session.user) {
                     currentUser = session.user;
                     currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
-                    
-                    if(db && db.geofenceAlerts) {
-                        db.geofenceAlerts = [];
-                        saveCloudData();
-                    }
 
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
@@ -1145,13 +1271,6 @@
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
                     currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
-                    
-                    if (currentUser) {
-                        if(db && db.geofenceAlerts) {
-                            db.geofenceAlerts = [];
-                            saveCloudData();
-                        }
-                    }
 
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
@@ -1196,6 +1315,7 @@
             const cardYard = document.getElementById('cardYard');
             const navHubPortalBtn = document.getElementById('navHubPortalBtn');
             const rbacUsersNavBtn = document.getElementById('rbacUsersNavBtn');
+            const hubLocationsNavBtn = document.getElementById('hubLocationsNavBtn');
             const auditLogBtn = document.getElementById('auditLogBtn');
 
             if(cardBackend) cardBackend.style.display = 'block';
@@ -1203,6 +1323,7 @@
             if(cardYard) cardYard.style.display = 'block';
             if(navHubPortalBtn) navHubPortalBtn.style.display = 'inline-block';
             if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'inline-block';
+            if(hubLocationsNavBtn) hubLocationsNavBtn.style.display = 'inline-block';
             if(auditLogBtn) auditLogBtn.style.display = 'inline-block';
 
             if (role === 'driver') {
@@ -1214,6 +1335,7 @@
                 if(cardBackend) cardBackend.style.display = 'none';
                 if(cardDriver) cardDriver.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
+                if(hubLocationsNavBtn) hubLocationsNavBtn.style.display = 'none';
                 if(auditLogBtn) auditLogBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('yard');
@@ -1222,6 +1344,7 @@
                 if(cardBackend) cardBackend.style.display = 'none';
                 if(cardDriver) cardDriver.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
+                if(hubLocationsNavBtn) hubLocationsNavBtn.style.display = 'none';
                 if(auditLogBtn) auditLogBtn.style.display = 'none';
                 if(resetBtn) resetBtn.style.display = 'none';
                 switchView('yard');
@@ -1229,6 +1352,7 @@
             } else if (role === 'dispatcher') {
                 if(resetBtn) resetBtn.style.display = 'none';
                 if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'none';
+                if(hubLocationsNavBtn) hubLocationsNavBtn.style.display = 'none';
                 restoreLastActiveViewOrLanding();
             } else if (role === 'admin') {
                 if(resetBtn) resetBtn.style.display = 'inline-block';
@@ -1271,11 +1395,6 @@
                 } else if(data && data.user) {
                     currentUser = data.user;
                     currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
-                    
-                    if(db && db.geofenceAlerts) {
-                        db.geofenceAlerts = [];
-                        saveCloudData();
-                    }
 
                     updateAuthUI(currentUser, currentUserRole);
                     applyRbacPermissions(currentUserRole);
@@ -1337,13 +1456,36 @@
             try {
                 const { data, error } = await supabaseClient.from('skymover_enterprise_db').select('*').eq('id', 1).single();
                 if(!error && data && data.payload) {
-                    db = data.payload.managementBackend || db;
-                    yardDb = data.payload.emptyYard || yardDb;
+                    const cloudBackend = data.payload.managementBackend || {};
+                    const cloudYard = data.payload.emptyYard || {};
+                    db = {
+                        vehicles: cloudBackend.vehicles || db.vehicles || [],
+                        drivers: cloudBackend.drivers || db.drivers || [],
+                        fuelLogs: cloudBackend.fuelLogs || db.fuelLogs || [],
+                        maintenanceLogs: cloudBackend.maintenanceLogs || db.maintenanceLogs || [],
+                        dispatchLogs: cloudBackend.dispatchLogs || db.dispatchLogs || [],
+                        expenseLogs: cloudBackend.expenseLogs || db.expenseLogs || [],
+                        transshipments: cloudBackend.transshipments || db.transshipments || [],
+                        uploads: cloudBackend.uploads || db.uploads || [],
+                        smsLogs: cloudBackend.smsLogs || db.smsLogs || [],
+                        geofenceAlerts: cloudBackend.geofenceAlerts || db.geofenceAlerts || [],
+                        geofenceZones: cloudBackend.geofenceZones || db.geofenceZones || [],
+                        hubLocations: cloudBackend.hubLocations || db.hubLocations || [],
+                        reportTemplates: cloudBackend.reportTemplates || db.reportTemplates || [],
+                        systemUsers: cloudBackend.systemUsers || db.systemUsers || []
+                    };
+                    yardDb = {
+                        containers: cloudYard.containers || yardDb.containers || [],
+                        movements: cloudYard.movements || yardDb.movements || [],
+                        revenues: cloudYard.revenues || yardDb.revenues || [],
+                        expenses: cloudYard.expenses || yardDb.expenses || []
+                    };
                 } else {
-                    saveCloudData();
+                    await saveCloudData();
                 }
 
-                // Fetch live LogiTRACK, Expenses, Maintenance & Yard tables directly from Supabase
+                // Fetch live tables from Supabase using non-destructive merge
+                await fetchHubLocationsFromSupabase();
                 await fetchLogiTrackDataFromSupabase();
                 await fetchFleetExpensesFromSupabase();
                 await fetchYardExpensesFromSupabase();
@@ -1352,29 +1494,44 @@
                 await fetchYardRevenuesFromSupabase();
                 await fetchYardMovementsFromSupabase();
                 
+                refreshHubDatalist();
                 refreshYard();
                 renderTransshipmentTable();
                 refreshDriverSmsInbox();
             } catch(e) {
-                saveCloudData();
+                console.warn("fetchCloudData notice:", e.message);
             }
         }
 
         // ==========================================
-        // UPDATED: LIVE SUPABASE REALTIME LISTENERS FOR LOGITRACK, EXPENSES & ENTERPRISE DB
+        // UPDATED: LIVE SUPABASE REALTIME LISTENERS WITH ECHO GUARD
         // ==========================================
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
             try {
                 const channel = supabaseClient.channel('skymover-logitrack-live');
 
-                // 1. Unified Enterprise DB Listener
+                // 1. Unified Enterprise DB Listener (Protected against self-echo overwrites)
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'skymover_enterprise_db' }, payload => {
+                    if (isSavingCloudData || (Date.now() - lastLocalSaveTimestamp < 2500)) {
+                        return; // Ignore our own immediate save echo so in-flight rows are never reverted
+                    }
                     if(payload && payload.new && payload.new.payload) {
-                        db = payload.new.payload.managementBackend || db;
-                        yardDb = payload.new.payload.emptyYard || yardDb;
+                        const cb = payload.new.payload.managementBackend || {};
+                        const cy = payload.new.payload.emptyYard || {};
+                        db = {
+                            ...db,
+                            ...cb,
+                            hubLocations: cb.hubLocations || db.hubLocations || [],
+                            reportTemplates: cb.reportTemplates || db.reportTemplates || []
+                        };
+                        yardDb = {
+                            ...yardDb,
+                            ...cy
+                        };
                         saveDB();
-                        localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
+                        safeLocalStorageSet(YARD_KEY, yardDb);
+                        refreshHubDatalist();
                         refreshYard();
                         renderTransshipmentTable();
                         refreshDriverSmsInbox();
@@ -1420,56 +1577,63 @@
 
                 // 3. Live LogiTRACK Geofence Zones Polygon Sync
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_zones' }, () => {
-                    fetchLogiTrackDataFromSupabase();
+                    if (!isSavingCloudData) fetchLogiTrackDataFromSupabase();
                 });
 
                 // 4. Live Driver SMS Dispatch Inbox Listener
                 channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sms_logs' }, payload => {
                     if (payload && payload.new) {
                         if (!db.smsLogs) db.smsLogs = [];
-                        db.smsLogs.unshift({
-                            id: payload.new.id,
-                            unit: payload.new.unit_id || payload.new.unit || 'ALL',
-                            message: payload.new.message,
-                            time: payload.new.created_at || new Date().toISOString()
-                        });
-                        refreshDriverSmsInbox();
+                        if (!db.smsLogs.some(s => s.id && s.id === payload.new.id)) {
+                            db.smsLogs.unshift({
+                                id: payload.new.id,
+                                unit: payload.new.unit_id || payload.new.unit || 'ALL',
+                                message: payload.new.message,
+                                time: payload.new.created_at || new Date().toISOString()
+                            });
+                            refreshDriverSmsInbox();
+                        }
                     }
                 });
 
                 // 5. Live GPS & Dispatch Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_logs' }, () => {
-                    fetchDispatchLogsFromSupabase();
+                    if (!isSavingCloudData) fetchDispatchLogsFromSupabase();
                 });
 
                 // 6. Live Fleet Expenses Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_expenses' }, () => {
-                    fetchFleetExpensesFromSupabase();
+                    if (!isSavingCloudData) fetchFleetExpensesFromSupabase();
                 });
 
                 // 7. Live Yard Operating Expenses Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_expenses' }, () => {
-                    fetchYardExpensesFromSupabase();
+                    if (!isSavingCloudData) fetchYardExpensesFromSupabase();
                 });
 
                 // 8. Live Fleet Maintenance Logs Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_logs' }, () => {
-                    fetchMaintenanceLogsFromSupabase();
+                    if (!isSavingCloudData) fetchMaintenanceLogsFromSupabase();
                 });
 
                 // 9. Live Empty Yard Containers Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_containers' }, () => {
-                    fetchYardContainersFromSupabase();
+                    if (!isSavingCloudData) fetchYardContainersFromSupabase();
                 });
 
                 // 10. Live Yard Revenues Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_revenues' }, () => {
-                    fetchYardRevenuesFromSupabase();
+                    if (!isSavingCloudData) fetchYardRevenuesFromSupabase();
                 });
 
                 // 11. Live Yard Movements Table Listener
                 channel.on('postgres_changes', { event: '*', schema: 'public', table: 'yard_movements' }, () => {
-                    fetchYardMovementsFromSupabase();
+                    if (!isSavingCloudData) fetchYardMovementsFromSupabase();
+                });
+
+                // 12. Live Hub Locations Table Listener
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: 'hub_locations' }, () => {
+                    if (!isSavingCloudData) fetchHubLocationsFromSupabase();
                 });
                 
                 channel.subscribe((status, err) => {
@@ -1485,21 +1649,32 @@
         }
 
         async function saveCloudData() {
-            saveDB();
-            localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
-            refreshYard();
-
-            if(!supabaseClient) return;
+            isSavingCloudData = true;
+            lastLocalSaveTimestamp = Date.now();
             try {
-                await supabaseClient.from('skymover_enterprise_db').upsert({
-                    id: 1,
-                    payload: { managementBackend: db, emptyYard: yardDb },
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'id' });
-            } catch(e) {}
-        }
+                saveDB();
+                safeLocalStorageSet(YARD_KEY, yardDb);
+                refreshYard();
+                refreshHubDatalist();
 
-        async function confirmResetAllDatabases() {
+                if(supabaseClient) {
+                    const { error } = await supabaseClient.from('skymover_enterprise_db').upsert({
+                        id: 1,
+                        payload: { managementBackend: db, emptyYard: yardDb },
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'id' });
+                    if (error) {
+                        console.warn("Supabase enterprise payload sync notice:", error.message);
+                    }
+                }
+            } catch(e) {
+                console.warn("saveCloudData error:", e.message || e);
+            } finally {
+                lastLocalSaveTimestamp = Date.now();
+                setTimeout(() => { isSavingCloudData = false; }, 600);
+            }
+        }
+async function confirmResetAllDatabases() {
             if (!requireAdminExecution("reset all databases")) return;
             const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
             if(pwd !== 'Skymover_Transportation_2026') return;
@@ -1539,6 +1714,8 @@
                 smsLogs: [], 
                 geofenceAlerts: [], 
                 geofenceZones: [], 
+                hubLocations: [],
+                reportTemplates: [],
                 systemUsers: preservedAdmins 
             };
     
@@ -1550,7 +1727,7 @@
             };
     
             saveDB();
-            localStorage.setItem(YARD_KEY, JSON.stringify(yardDb));
+            safeLocalStorageSet(YARD_KEY, yardDb);
     
             if(supabaseClient) {
                 try {
@@ -1564,6 +1741,7 @@
                 }
             }
     
+            refreshHubDatalist();
             refreshYard();
             renderTransshipmentTable();
             closeSubModule();
@@ -1675,14 +1853,18 @@
         }
 
         // ==========================================
-        // UPDATED: LOGITRACK REALTIME GEOFENCE SCAN
+        // UPDATED: LOGITRACK REALTIME GEOFENCE SCAN (DYNAMIC ADMIN HUBS / ZONES ONLY)
         // ==========================================
         async function triggerGeofenceScan() {
             if (!requireAdminExecution("trigger a Geofence Scan")) return;
-            const zones = db.geofenceZones && db.geofenceZones.length ? db.geofenceZones : [
-                { id: null, name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667, radius: 5 },
-                { id: null, name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830, radius: 3 }
-            ];
+            const customZones = (db.geofenceZones && db.geofenceZones.length) ? db.geofenceZones : [];
+            const adminHubs = getActiveHubLocations();
+            const zones = customZones.length > 0 ? customZones : adminHubs;
+
+            if (zones.length === 0) {
+                alert('⚠️ No Geofence Zones or Admin Hub Locations configured yet. Please add at least one hub in "Hub Locations" or configure a Geofence Zone first.');
+                return;
+            }
 
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
 
@@ -1712,8 +1894,8 @@
                 zoneId: randomZone.id || null,
                 alertType: 'GEOFENCE_BREACH',
                 message: alertMsg,
-                lat: parseFloat(randomZone.lat) || 14.7011,
-                lng: parseFloat(randomZone.lng) || 120.9830,
+                lat: parseFloat(randomZone.lat) || 0,
+                lng: parseFloat(randomZone.lng) || 0,
                 nearestHub: randomZone.name,
                 distanceKm: parseFloat(randomZone.radius) || 5
             });
@@ -1739,7 +1921,7 @@
             if (navigator.geolocation) {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
-                    statusDiv.textContent = '📡 Acquiring GPS position & resolving actual street address and distance to nearest hub...';
+                    statusDiv.textContent = '📡 Acquiring GPS position & resolving actual street address and distance to nearest Admin-assigned hub...';
                 }
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
@@ -1762,7 +1944,7 @@
                         }
 
                         if(statusDiv) {
-                            statusDiv.innerHTML = `✅ <b>GPS Position & Distance Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><i class="fa-solid fa-route text-sky-400 mr-1"></i> <b>Nearest Destination Hub:</b> ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km away)<br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
+                            statusDiv.innerHTML = `✅ <b>GPS Position & Distance Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><i class="fa-solid fa-route text-sky-400 mr-1"></i> <b>Nearest Destination Hub:</b> ${nearestHubInfo.hub} ${nearestHubInfo.distanceKm !== 'N/A' ? `(${nearestHubInfo.distanceKm} km away)` : ''}<br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
                         }
                         const liveMsg = `[DRIVER GPS & DISTANCE] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`;
                         await insertGeofenceAlertToSupabase({
@@ -1772,18 +1954,23 @@
                             lat: lat,
                             lng: lng,
                             nearestHub: nearestHubInfo.hub,
-                            distanceKm: parseFloat(nearestHubInfo.distanceKm)
+                            distanceKm: nearestHubInfo.distanceKm !== 'N/A' ? parseFloat(nearestHubInfo.distanceKm) : null
                         });
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
                         db.geofenceAlerts.unshift({ message: liveMsg, time: new Date().toISOString() });
                         await saveCloudData();
                     },
                     (error) => {
-                        const fallbackLat = 14.7011;
-                        const fallbackLng = 120.9830;
-                        const nearestHubInfo = getNearestDestinationHub(fallbackLat, fallbackLng);
-                        if(statusDiv) {
-                            statusDiv.innerHTML = `⚠️ Geolocation permission prompt unavailable. Using Valenzuela Yard default coordinates: [${fallbackLat}, ${fallbackLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km)`;
+                        const hubs = getActiveHubLocations();
+                        if (hubs.length > 0) {
+                            const fallbackLat = parseFloat(hubs[0].lat);
+                            const fallbackLng = parseFloat(hubs[0].lng);
+                            const nearestHubInfo = getNearestDestinationHub(fallbackLat, fallbackLng);
+                            if(statusDiv) {
+                                statusDiv.innerHTML = `⚠️ Geolocation permission unavailable. Using primary Admin-assigned hub (${hubs[0].name}): [${fallbackLat}, ${fallbackLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km)`;
+                            }
+                        } else if(statusDiv) {
+                            statusDiv.innerHTML = `⚠️ Geolocation permission unavailable and no Admin Hub Locations are assigned yet.`;
                         }
                     },
                     { timeout: 10000, enableHighAccuracy: true }
@@ -1795,11 +1982,18 @@
                 }
             }
         }
-	// ==========================================
-        // UPDATED: PLOT MAP COORDINATES & STREAM TO SUPABASE LOGITRACK
+
+        // ==========================================
+        // UPDATED: PLOT MAP COORDINATES USING ADMIN-ASSIGNED HUBS ONLY
         // ==========================================
         async function plotAutomatedMapCoordinates() {
             if (!requireAdminExecution("plot automated map coordinates")) return;
+            const adminHubs = getActiveHubLocations();
+            if (adminHubs.length === 0) {
+                alert('⚠️ No Admin Hub Locations assigned yet. Please open "Hub Locations" and add your hub coordinates first.');
+                return;
+            }
+
             const registeredUnits = (db.vehicles && db.vehicles.length) ? db.vehicles : [];
 
             if (registeredUnits.length === 0) {
@@ -1817,18 +2011,11 @@
                 return;
             }
 
-            const sampleCorridors = [
-                { name: "Manila North Harbor Terminal", lat: 14.6333, lng: 120.9667 },
-                { name: "Valenzuela Empty Container Depot", lat: 14.7011, lng: 120.9830 },
-                { name: "Subic Bay Freeport Zone", lat: 14.8291, lng: 120.2828 },
-                { name: "Batangas Port Container Terminal", lat: 13.7565, lng: 121.0583 }
-            ];
-
             const activeUnit = registeredUnits[Math.floor(Math.random() * registeredUnits.length)].id;
-            const targetCorridor = sampleCorridors[Math.floor(Math.random() * sampleCorridors.length)];
+            const targetHub = adminHubs[Math.floor(Math.random() * adminHubs.length)];
 
-            const jitterLat = Number((targetCorridor.lat + (Math.random() - 0.5) * 0.01).toFixed(4));
-            const jitterLng = Number((targetCorridor.lng + (Math.random() - 0.5) * 0.01).toFixed(4));
+            const jitterLat = Number((parseFloat(targetHub.lat) + (Math.random() - 0.5) * 0.01).toFixed(4));
+            const jitterLng = Number((parseFloat(targetHub.lng) + (Math.random() - 0.5) * 0.01).toFixed(4));
             const nearestHubInfo = getNearestDestinationHub(jitterLat, jitterLng);
 
             const plotMsg = `[GPS PLOT] Unit ${activeUnit} plotted at [Lat: ${jitterLat}, Lng: ${jitterLng}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km) (${new Date().toLocaleTimeString()})`;
@@ -1840,7 +2027,7 @@
                 lat: jitterLat,
                 lng: jitterLng,
                 nearestHub: nearestHubInfo.hub,
-                distanceKm: parseFloat(nearestHubInfo.distanceKm)
+                distanceKm: nearestHubInfo.distanceKm !== 'N/A' ? parseFloat(nearestHubInfo.distanceKm) : null
             });
 
             if(!db.geofenceAlerts) db.geofenceAlerts = [];
@@ -1860,7 +2047,7 @@
                     mapWrapper.className = 'mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3';
                     mapWrapper.innerHTML = `
                         <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-xs text-sky-300 flex items-center"><i class="fa-solid fa-map-marked-alt mr-2"></i> Live Fleet & Terminal Map Rendering (Leaflet.js)</h4>
+                            <h4 class="font-bold text-xs text-sky-300 flex items-center"><i class="fa-solid fa-map-marked-alt mr-2"></i> Live Fleet & Admin-Assigned Hubs Map (Leaflet.js)</h4>
                             <span class="text-[10px] bg-sky-950 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">Auto-Plotted Markers Active</span>
                         </div>
                         <div id="skymoverVisualMapContainer" class="w-full h-80 rounded-xl border border-slate-700 z-10"></div>
@@ -1873,7 +2060,7 @@
                 const mapEl = document.getElementById('skymoverVisualMapContainer');
                 if (mapEl) {
                     if (!skymoverLeafletMap) {
-                        skymoverLeafletMap = L.map('skymoverVisualMapContainer').setView([14.65, 121.00], 10);
+                        skymoverLeafletMap = L.map('skymoverVisualMapContainer').setView([jitterLat, jitterLng], 10);
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '© OpenStreetMap contributors',
                             maxZoom: 19
@@ -1885,9 +2072,9 @@
                         skymoverMapMarkersLayer.clearLayers();
                     }
 
-                    sampleCorridors.forEach(c => {
-                        const marker = L.marker([c.lat, c.lng]);
-                        marker.bindPopup(`<b>Hub/Terminal:</b> ${c.name}<br>Lat: ${c.lat}, Lng: ${c.lng}`);
+                    adminHubs.forEach(c => {
+                        const marker = L.marker([parseFloat(c.lat), parseFloat(c.lng)]);
+                        marker.bindPopup(`<b>Admin Hub:</b> ${c.name}<br><b>Type:</b> ${c.type || 'Hub'}<br>Lat: ${c.lat}, Lng: ${c.lng}`);
                         skymoverMapMarkersLayer.addLayer(marker);
                     });
 
@@ -2072,6 +2259,12 @@
                     <tr class="bg-slate-100 font-bold"><th class="border p-2">Trip ID</th><th class="border p-2">Fuel</th><th class="border p-2">Tolls</th><th class="border p-2">Maintenance</th><th class="border p-2">Total Cost</th></tr>
                     ${expenses.map(e => `<tr><td class="border p-2 font-bold">${e.trip}</td><td class="border p-2">${e.fuel}</td><td class="border p-2">${e.tolls}</td><td class="border p-2">${e.maintenance}</td><td class="border p-2 font-bold">${e.total}</td></tr>`).join('')}
                 </table>`;
+            } else if (moduleName === 'Hub Locations') {
+                const hubs = getActiveHubLocations();
+                reportContentHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">
+                    <tr class="bg-slate-100 font-bold"><th class="border p-2">Hub Name</th><th class="border p-2">Type</th><th class="border p-2">Address</th><th class="border p-2">Coordinates</th><th class="border p-2">Radius (km)</th></tr>
+                    ${hubs.map(h => `<tr><td class="border p-2 font-bold">${h.name}</td><td class="border p-2">${h.type || 'Hub'}</td><td class="border p-2">${h.address || '—'}</td><td class="border p-2">${h.lat}, ${h.lng}</td><td class="border p-2">${h.radius || 5} km</td></tr>`).join('')}
+                </table>`;
             } else {
                 reportContentHTML = `<p class="text-sm">Comprehensive operational statement generated for ${moduleName} on ${new Date().toLocaleString()}.</p>`;
             }
@@ -2126,6 +2319,11 @@
                 csvRows = [
                     ['Trip ID', 'Fuel', 'Tolls', 'Maintenance', 'Total Cost'],
                     ...(db.expenseLogs || []).map(e => [e.trip, `"${e.fuel}"`, `"${e.tolls}"`, `"${e.maintenance}"`, `"${e.total}"`])
+                ];
+            } else if (moduleName === 'Hub Locations') {
+                csvRows = [
+                    ['Hub Name', 'Type', 'Address', 'Latitude', 'Longitude', 'Geofence Radius (km)'],
+                    ...getActiveHubLocations().map(h => [`"${(h.name || '').replace(/"/g, '""')}"`, h.type || 'Hub', `"${(h.address || '').replace(/"/g, '""')}"`, h.lat, h.lng, h.radius || 5])
                 ];
             } else {
                 csvRows = [
@@ -2188,9 +2386,13 @@
                 smsLogs: [], 
                 geofenceAlerts: [], 
                 geofenceZones: [], 
+                hubLocations: [],
+                reportTemplates: [],
                 systemUsers: [] 
             };
         }
+        if (!Array.isArray(db.hubLocations)) db.hubLocations = [];
+        if (!Array.isArray(db.reportTemplates)) db.reportTemplates = [];
 
         const YARD_KEY = 'skymover_empty_yard_v3';
         let yardDb;
@@ -2199,7 +2401,7 @@
             yardDb = { containers: [], movements: [], revenues: [], expenses: [] };
         }
 
-        function saveDB() { localStorage.setItem('skymover_unified_db_v3', JSON.stringify(db)); }
+        function saveDB() { safeLocalStorageSet('skymover_unified_db_v3', db); }
         function saveYardDB() { saveCloudData(); }
 
         let currentLang = 'en';
@@ -2226,11 +2428,14 @@
                 btnDashboard: "Dashboard",
                 btnVehicles: "Vehicles",
                 btnDrivers: "Drivers",
+                btnHubs: "Hub Locations",
                 btnRbac: "RBAC Users",
                 btnFuel: "Fuel",
                 btnMaint: "Maintenance",
                 btnGps: "GPS & Dispatch",
                 btnExpenses: "Expenses",
+                btnForecasting: "Forecasting",
+                btnReportTemplates: "Report Templates",
                 btnBackup: "Backup / Restore",
                 btnReset: "Reset DB",
                 driverPortalHeading: "Driver's Portal & Waybill Mobile View",
@@ -2288,11 +2493,14 @@
                 btnDashboard: "仪表盘",
                 btnVehicles: "车辆",
                 btnDrivers: "司机",
+                btnHubs: "枢纽位置",
                 btnRbac: "RBAC 用户",
                 btnFuel: "燃油",
                 btnMaint: "维护",
                 btnGps: "GPS 与调度",
                 btnExpenses: "费用",
+                btnForecasting: "费用预测",
+                btnReportTemplates: "自定义报表",
                 btnBackup: "备份 / 恢复",
                 btnReset: "重置数据库",
                 driverPortalHeading: "司机端门户与运单移动视图",
@@ -2360,7 +2568,6 @@
                 document.getElementById('viewLanding').classList.remove('hidden');
             } else if (viewName === 'backend') { 
                 document.getElementById('viewBackend').classList.remove('hidden');
-                switchAiTab('brain');
                 const savedAiTab = localStorage.getItem('skymover_active_ai_tab') || 'brain';
                 switchAiTab(savedAiTab);
             } else if (viewName === 'driver') { 
@@ -2786,12 +2993,13 @@
                 const btn = document.getElementById('tabTrackBtn');
                 if(btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white transition shadow";
                 const activeUnitsCount = (db.vehicles && db.vehicles.length > 0) ? db.vehicles.length : 0;
+                const activeHubsCount = getActiveHubLocations().length;
                 container.innerHTML = `
                     <div class="space-y-4">
                         <div class="flex flex-wrap justify-between items-center gap-2">
                             <div>
                                 <h3 class="text-xl font-bold text-emerald-400 flex items-center"><i class="fa-solid fa-satellite-dish mr-2"></i> LogiTRACK Real-Time Telemetry & GPS Geofencing</h3>
-                                <p class="text-xs text-slate-300 mt-1">Live Philippine corridor positioning, automated geofence boundary alerts, and driver SMS dispatch controls.</p>
+                                <p class="text-xs text-slate-300 mt-1">Live corridor positioning using Admin-assigned hubs (${activeHubsCount} configured), automated geofence alerts, and driver SMS dispatch.</p>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="plotAutomatedMapCoordinates()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"><i class="fa-solid fa-map-pin mr-1"></i> Plot Map Coordinates</button>
@@ -2804,6 +3012,7 @@
                                 <h4 class="font-bold text-xs text-sky-300 mb-3"><i class="fa-solid fa-map-location-dot mr-1"></i> Active Fleet Geofence Status</h4>
                                 <div class="space-y-2 text-xs">
                                     <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">Telemetry Units Monitored</span><span class="text-emerald-400 font-bold">${activeUnitsCount} Active Units</span></div>
+                                    <div class="flex justify-between items-center border-b border-slate-800 pb-2"><span class="font-bold text-white">Admin-Assigned Hub Locations</span><span class="text-sky-400 font-bold">${activeHubsCount} Hubs Configured</span></div>
                                     <div class="flex justify-between items-center"><span class="font-bold text-white">Active Yard Stock</span><span class="text-amber-400 font-bold">${(yardDb.containers || []).filter(c=>c.status!=='Released').length} Units In Yard</span></div>
                                 </div>
                             </div>
@@ -2826,7 +3035,7 @@
             const log = document.getElementById('aiOutputLog');
             if(!log) return;
             log.innerHTML = "[LogiBRAIN] Initializing deep neural telemetry scan across Yard and Fleet DB...\n";
-            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + ((db.vehicles && db.vehicles.length) ? db.vehicles.length : 0) + " trucks.\n"; }, 400);
+            setTimeout(() => { log.innerHTML += "[LogiBRAIN] Total Yard Inventory: " + (yardDb.containers || []).filter(c=>c.status!=='Released').length + " containers. Active Fleet Units: " + ((db.vehicles && db.vehicles.length) ? db.vehicles.length : 0) + " trucks. Admin Hubs: " + getActiveHubLocations().length + ".\n"; }, 400);
             setTimeout(() => { log.innerHTML += "[LogiBRAIN] Success! All operational metrics verified successfully."; }, 900);
         }
 
@@ -2869,7 +3078,303 @@
                 db.expenseLogs.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Fleet Expenses');
+            } else if (moduleType === 'Hub' && db.hubLocations) {
+                const targetHub = db.hubLocations[index];
+                await deleteHubLocationFromSupabase(targetHub);
+                db.hubLocations.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Hub Locations');
+            } else if (moduleType === 'ReportTemplate' && db.reportTemplates) {
+                db.reportTemplates.splice(index, 1);
+                await saveCloudData();
+                openSubModule('Report Templates');
             }
+        }
+
+        // ==========================================
+        // NEW: AUTOMATED FLEET EXPENSE FORECASTING ENGINE
+        // ==========================================
+        function computeFleetExpenseForecast(horizonDays = 30, growthPct = 0) {
+            const fleetExpenses = db.expenseLogs || [];
+            const fuelLogs = db.fuelLogs || [];
+            const maintLogs = db.maintenanceLogs || [];
+            const yardExpenses = yardDb.expenses || [];
+
+            let totalFleetFuel = 0, totalFleetTolls = 0, totalFleetMaint = 0;
+            fleetExpenses.forEach(e => {
+                totalFleetFuel += parsePesoNumber(e.fuel);
+                totalFleetTolls += parsePesoNumber(e.tolls);
+                totalFleetMaint += parsePesoNumber(e.maintenance);
+            });
+
+            // Include standalone fuel & maintenance logs if trip expense logs are sparse
+            let standaloneFuel = 0;
+            fuelLogs.forEach(f => { standaloneFuel += parsePesoNumber(f.cost); });
+            let standaloneMaint = 0;
+            maintLogs.forEach(m => { standaloneMaint += parsePesoNumber(m.cost); });
+
+            let totalYardExp = 0;
+            yardExpenses.forEach(y => { totalYardExp += Number(y.amount || 0); });
+
+            const baseFuel = Math.max(totalFleetFuel, standaloneFuel);
+            const baseTolls = totalFleetTolls;
+            const baseMaint = Math.max(totalFleetMaint, standaloneMaint);
+            const baseYard = totalYardExp;
+
+            const activeDaysSpan = Math.max(1, Math.min(30, fleetExpenses.length + fuelLogs.length + yardExpenses.length || 1));
+            const multiplier = (horizonDays / 30) * (1 + (growthPct / 100));
+
+            const projFuel = baseFuel * multiplier;
+            const projTolls = baseTolls * multiplier;
+            const projMaint = baseMaint * multiplier;
+            const projYard = baseYard * multiplier;
+            const projTotal = projFuel + projTolls + projMaint + projYard;
+
+            return {
+                horizonDays,
+                growthPct,
+                baseFuel,
+                baseTolls,
+                baseMaint,
+                baseYard,
+                projFuel,
+                projTolls,
+                projMaint,
+                projYard,
+                projTotal,
+                dailyBurnRate: projTotal / Math.max(1, horizonDays)
+            };
+        }
+
+        function renderExpenseForecastView() {
+            const horizonEl = document.getElementById('forecastHorizonSelect');
+            const growthEl = document.getElementById('forecastGrowthSlider');
+            const growthLabel = document.getElementById('forecastGrowthLabel');
+            const horizonDays = horizonEl ? parseInt(horizonEl.value, 10) : 30;
+            const growthPct = growthEl ? parseFloat(growthEl.value) : 0;
+            if (growthLabel) growthLabel.textContent = `${growthPct >= 0 ? '+' : ''}${growthPct}%`;
+
+            const f = computeFleetExpenseForecast(horizonDays, growthPct);
+
+            const elTotal = document.getElementById('fcTotalProjected');
+            const elDaily = document.getElementById('fcDailyBurn');
+            const elFuel = document.getElementById('fcProjFuel');
+            const elMaint = document.getElementById('fcProjMaint');
+
+            if (elTotal) elTotal.textContent = '₱' + f.projTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (elDaily) elDaily.textContent = '₱' + f.dailyBurnRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' / day';
+            if (elFuel) elFuel.textContent = '₱' + f.projFuel.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (elMaint) elMaint.textContent = '₱' + (f.projMaint + f.projTolls).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const tbody = document.getElementById('forecastBreakdownBody');
+            if (tbody) {
+                const rows = [
+                    { cat: 'Fuel & Energy', base: f.baseFuel, proj: f.projFuel },
+                    { cat: 'Tolls & Corridor Fees', base: f.baseTolls, proj: f.projTolls },
+                    { cat: 'Fleet Maintenance & Repairs', base: f.baseMaint, proj: f.projMaint },
+                    { cat: 'Empty Yard Operating Expenses', base: f.baseYard, proj: f.projYard }
+                ];
+                tbody.innerHTML = rows.map(r => {
+                    const share = f.projTotal > 0 ? ((r.proj / f.projTotal) * 100).toFixed(1) : '0.0';
+                    return `<tr class="border-b hover:bg-slate-50">
+                        <td class="p-3 font-bold text-slate-900">${r.cat}</td>
+                        <td class="p-3 text-right font-mono">₱${r.base.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="p-3 text-right font-mono font-bold text-indigo-700">₱${r.proj.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="p-3 text-right font-bold text-slate-700">${share}%</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            const ctx = document.getElementById('expenseForecastChart');
+            if (ctx) {
+                if (forecastChartInstance) forecastChartInstance.destroy();
+                forecastChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Fuel', 'Tolls', 'Maintenance', 'Yard Expenses'],
+                        datasets: [
+                            { label: 'Historical Baseline (₱)', data: [f.baseFuel, f.baseTolls, f.baseMaint, f.baseYard], backgroundColor: '#94a3b8', borderRadius: 6 },
+                            { label: `Projected (${horizonDays} Days, ${growthPct >= 0 ? '+' : ''}${growthPct}%) (₱)`, data: [f.projFuel, f.projTolls, f.projMaint, f.projYard], backgroundColor: '#4f46e5', borderRadius: 6 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        function exportExpenseForecastPDF() {
+            if (!requireAdminExecution("export Fleet Expense Forecast PDF")) return;
+            const el = document.getElementById('forecastPrintableArea');
+            if (!el) return;
+            html2pdf().from(el).set({
+                margin: 10,
+                filename: `Skymover_Expense_Forecast_${new Date().toISOString().slice(0,10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).save();
+        }
+
+        function exportExpenseForecastCSV() {
+            if (!requireAdminExecution("export Fleet Expense Forecast CSV")) return;
+            const horizonDays = parseInt(document.getElementById('forecastHorizonSelect')?.value || '30', 10);
+            const growthPct = parseFloat(document.getElementById('forecastGrowthSlider')?.value || '0');
+            const f = computeFleetExpenseForecast(horizonDays, growthPct);
+            const csvRows = [
+                ['Category', 'Baseline (PHP)', `Projected ${horizonDays}d (${growthPct}%) (PHP)`],
+                ['Fuel & Energy', f.baseFuel.toFixed(2), f.projFuel.toFixed(2)],
+                ['Tolls & Corridor Fees', f.baseTolls.toFixed(2), f.projTolls.toFixed(2)],
+                ['Fleet Maintenance', f.baseMaint.toFixed(2), f.projMaint.toFixed(2)],
+                ['Yard Operating Expenses', f.baseYard.toFixed(2), f.projYard.toFixed(2)],
+                ['TOTAL PROJECTED', (f.baseFuel + f.baseTolls + f.baseMaint + f.baseYard).toFixed(2), f.projTotal.toFixed(2)]
+            ];
+            let csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+            let link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `Skymover_Expense_Forecast_${horizonDays}d.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ==========================================
+        // NEW: CUSTOM REPORT TEMPLATES ENGINE
+        // ==========================================
+        const REPORT_DATASET_SCHEMAS = {
+            vehicles: { label: 'Vehicle Masterlist', columns: ['id', 'model', 'status', 'driver'], getRows: () => db.vehicles || [] },
+            drivers: { label: 'Driver Roster', columns: ['driver_name', 'driver_license_number', 'driver_phone', 'helper_name', 'truck', 'status'], getRows: () => db.drivers || [] },
+            hubLocations: { label: 'Admin Hub Locations', columns: ['name', 'type', 'address', 'lat', 'lng', 'radius'], getRows: () => getActiveHubLocations() },
+            fuelLogs: { label: 'Fuel Monitoring', columns: ['unit', 'liters', 'cost', 'station', 'date'], getRows: () => db.fuelLogs || [] },
+            maintenanceLogs: { label: 'Fleet Maintenance', columns: ['unit', 'issue', 'cost', 'status', 'date'], getRows: () => db.maintenanceLogs || [] },
+            expenseLogs: { label: 'Fleet Trip Expenses', columns: ['trip', 'fuel', 'tolls', 'maintenance', 'total'], getRows: () => db.expenseLogs || [] },
+            yardContainers: { label: 'Empty Yard Inventory', columns: ['number', 'size', 'type', 'line', 'status', 'plate', 'date'], getRows: () => yardDb.containers || [] },
+            yardRevenues: { label: 'Yard Revenue History', columns: ['date', 'source', 'container', 'eir', 'amount'], getRows: () => yardDb.revenues || [] },
+            yardExpenses: { label: 'Yard Operating Expenses', columns: ['date', 'category', 'description', 'amount'], getRows: () => yardDb.expenses || [] }
+        };
+
+        function updateReportTemplateColumnsUI(selectedCols = null) {
+            const dsSelect = document.getElementById('rtDatasetSelect');
+            const colBox = document.getElementById('rtColumnsContainer');
+            if (!dsSelect || !colBox) return;
+            const schema = REPORT_DATASET_SCHEMAS[dsSelect.value];
+            if (!schema) return;
+            colBox.innerHTML = schema.columns.map(col => {
+                const isChecked = !selectedCols || selectedCols.includes(col) ? 'checked' : '';
+                return `<label class="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-800 cursor-pointer">
+                    <input type="checkbox" name="rtCol" value="${col}" ${isChecked} class="rounded text-purple-600"> ${col}
+                </label>`;
+            }).join('');
+        }
+
+        async function handleSaveReportTemplate(e) {
+            e.preventDefault();
+            if (!requireAdminExecution("save a Custom Report Template")) return;
+            const name = document.getElementById('rtNameInput').value.trim();
+            const dataset = document.getElementById('rtDatasetSelect').value;
+            const orientation = document.getElementById('rtOrientationSelect').value;
+            const notes = document.getElementById('rtNotesInput').value.trim();
+            const selectedCols = Array.from(document.querySelectorAll('input[name="rtCol"]:checked')).map(cb => cb.value);
+
+            if (!name || selectedCols.length === 0) {
+                alert('Please enter a template name and select at least one column.');
+                return;
+            }
+
+            if (!db.reportTemplates) db.reportTemplates = [];
+            const tplObj = {
+                id: currentEditingReportTemplateIndex !== null && db.reportTemplates[currentEditingReportTemplateIndex] ? db.reportTemplates[currentEditingReportTemplateIndex].id : ('TPL-' + Date.now()),
+                name,
+                dataset,
+                columns: selectedCols,
+                orientation,
+                notes,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (currentEditingReportTemplateIndex !== null && db.reportTemplates[currentEditingReportTemplateIndex]) {
+                db.reportTemplates[currentEditingReportTemplateIndex] = tplObj;
+                currentEditingReportTemplateIndex = null;
+            } else {
+                db.reportTemplates.unshift(tplObj);
+            }
+
+            await saveCloudData();
+            openSubModule('Report Templates');
+            alert('✅ Custom Report Template saved!');
+        }
+
+        function editReportTemplate(idx) {
+            if (!requireAdminExecution("edit a Custom Report Template")) return;
+            const tpl = (db.reportTemplates || [])[idx];
+            if (!tpl) return;
+            currentEditingReportTemplateIndex = idx;
+            document.getElementById('rtNameInput').value = tpl.name || '';
+            document.getElementById('rtDatasetSelect').value = tpl.dataset || 'vehicles';
+            document.getElementById('rtOrientationSelect').value = tpl.orientation || 'portrait';
+            document.getElementById('rtNotesInput').value = tpl.notes || '';
+            updateReportTemplateColumnsUI(tpl.columns || []);
+            const btn = document.getElementById('rtSubmitBtn');
+            if (btn) btn.textContent = 'Update Template';
+        }
+
+        function runCustomReportTemplate(idx, format = 'pdf') {
+            if (!requireAdminExecution("generate a custom template report")) return;
+            const tpl = (db.reportTemplates || [])[idx];
+            if (!tpl) return;
+            const schema = REPORT_DATASET_SCHEMAS[tpl.dataset];
+            if (!schema) return;
+            const rows = schema.getRows();
+            const cols = tpl.columns && tpl.columns.length ? tpl.columns : schema.columns;
+
+            if (format === 'csv') {
+                const csvRows = [
+                    cols,
+                    ...rows.map(r => cols.map(c => `"${String(r[c] !== undefined && r[c] !== null ? r[c] : '').replace(/"/g, '""')}"`))
+                ];
+                let csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+                let link = document.createElement("a");
+                link.setAttribute("href", encodeURI(csvContent));
+                link.setAttribute("download", `${tpl.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
+            }
+
+            const el = document.createElement('div');
+            el.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
+            el.innerHTML = `
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
+                        <p class="text-sm font-bold text-purple-800">${tpl.name} (${schema.label})</p>
+                        ${tpl.notes ? `<p class="text-xs text-slate-600 mt-1">${tpl.notes}</p>` : ''}
+                    </div>
+                    <div class="text-right text-[11px] font-mono text-slate-500">
+                        Generated: ${new Date().toLocaleString()}<br>Records: ${rows.length}
+                    </div>
+                </div>
+                <table class="w-full text-left text-xs border-collapse border border-slate-300">
+                    <thead><tr class="bg-slate-100 font-bold">${cols.map(c => `<th class="border p-2 uppercase">${c}</th>`).join('')}</tr></thead>
+                    <tbody>
+                        ${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="border p-2">${r[c] !== undefined && r[c] !== null ? r[c] : '—'}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="border p-4 text-center text-slate-500">No records available.</td></tr>`}
+                    </tbody>
+                </table>
+                <div class="mt-6 text-center text-[10px] text-slate-400 border-t pt-3">© 2026 Skymover Transport Corporation • Custom Report Template Output</div>
+            `;
+
+            html2pdf().from(el).set({
+                margin: 10,
+                filename: `${tpl.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: tpl.orientation || 'portrait' }
+            }).save();
         }
 
         function openSubModule(title) {
@@ -2892,6 +3397,7 @@
             const dispatchLogs = db.dispatchLogs || [];
             const expenseLogs = db.expenseLogs || [];
             const transshipments = db.transshipments || [];
+            const hubLocations = getActiveHubLocations();
             const yardContainers = (yardDb.containers || []).filter(c => c.status !== 'Released');
 
             if (title === 'Dashboard') {
@@ -2903,13 +3409,174 @@
                             <button onclick="generateModuleExcelReport('Dashboard')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 text-slate-900">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 text-slate-900">
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Fleet Units</p><h4 class="text-2xl font-extrabold text-slate-900 mt-1">${vehicles.length}</h4></div>
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Active Drivers</p><h4 class="text-2xl font-extrabold text-indigo-700 mt-1">${drivers.length}</h4></div>
+                        <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Admin Hub Locations</p><h4 class="text-2xl font-extrabold text-sky-700 mt-1">${hubLocations.length}</h4></div>
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Yard Containers On Hand</p><h4 class="text-2xl font-extrabold text-amber-700 mt-1">${yardContainers.length}</h4></div>
                         <div class="bg-white p-4 rounded-xl shadow border"><p class="text-xs font-bold text-slate-700">Transshipment Hub Orders</p><h4 class="text-2xl font-extrabold text-emerald-700 mt-1">${transshipments.length}</h4></div>
                     </div>
                 `;
+            } else if (title === 'Hub Locations') {
+                if (!requireAdminExecution("manage Hub Locations")) { closeSubModule(); return; }
+                let rows = hubLocations.length ? hubLocations.map((h, idx) => `
+                    <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
+                        <td class="p-3 font-bold text-sky-900">${h.name}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900">${h.type || 'Terminal Hub'}</span></td>
+                        <td class="p-3 text-xs text-slate-700">${h.address || '—'}</td>
+                        <td class="p-3 font-mono text-[11px]">${h.lat}, ${h.lng}</td>
+                        <td class="p-3 font-mono text-xs">${h.radius || 5} km</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openBackendEntryModal('Hub', ${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('Hub', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>
+                `).join('') : '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-medium">No hub locations assigned yet. Click "+ Add Hub Location" to assign your hubs.</td></tr>';
+
+                content.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 text-white">
+                        <div>
+                            <h3 class="text-xl font-bold"><i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> Admin Hub Location Management</h3>
+                            <p class="text-xs text-slate-300">Assign, edit, and remove hub coordinates. All GPS distance calculations, Leaflet map markers, geofence scans, and Transshipment Origin options use these hubs dynamically.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="generateModulePDFReport('Hub Locations')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</button>
+                            <button onclick="generateModuleExcelReport('Hub Locations')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel</button>
+                            <button onclick="openBackendEntryModal('Hub')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Add Hub Location</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto bg-white text-slate-900 rounded-xl p-3">
+                        <table class="w-full text-left text-xs">
+                            <tr class="border-b text-slate-800 font-bold">
+                                <th class="p-3">Hub Name</th>
+                                <th class="p-3">Hub Type</th>
+                                <th class="p-3">Address / Corridor</th>
+                                <th class="p-3">Coordinates (Lat, Lng)</th>
+                                <th class="p-3">Radius</th>
+                                <th class="p-3 text-right">Actions (Admin)</th>
+                            </tr>
+                            ${rows}
+                        </table>
+                    </div>
+                `;
+            } else if (title === 'Expense Forecasting') {
+                content.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 text-white">
+                        <div>
+                            <h3 class="text-xl font-bold"><i class="fa-solid fa-chart-line text-indigo-400 mr-2"></i> Automated Fleet & Yard Expense Forecasting</h3>
+                            <p class="text-xs text-slate-300">Dynamic 30/60/90-day cost projections derived from logged Fuel, Tolls, Maintenance, and Empty Yard expenses.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportExpenseForecastPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> Export PDF</button>
+                            <button onclick="exportExpenseForecastCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Export CSV</button>
+                        </div>
+                    </div>
+                    <div id="forecastPrintableArea" class="bg-white text-slate-900 rounded-2xl p-5 space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                            <div>
+                                <label class="font-bold text-slate-800 block mb-1">Forecast Horizon</label>
+                                <select id="forecastHorizonSelect" onchange="renderExpenseForecastView()" class="p-2 border rounded-lg w-full bg-white font-bold text-slate-900">
+                                    <option value="30">Next 30 Days (1 Month)</option>
+                                    <option value="60">Next 60 Days (2 Months)</option>
+                                    <option value="90">Next 90 Days (1 Quarter)</option>
+                                    <option value="180">Next 180 Days (6 Months)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div class="flex justify-between font-bold text-slate-800 mb-1">
+                                    <label>Fuel / Cost Inflation Adjustment</label>
+                                    <span id="forecastGrowthLabel" class="text-indigo-700">+0%</span>
+                                </div>
+                                <input type="range" id="forecastGrowthSlider" min="-25" max="50" step="5" value="0" oninput="renderExpenseForecastView()" class="w-full accent-indigo-600">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200"><div class="text-[10px] font-bold text-indigo-900">PROJECTED TOTAL COST</div><div id="fcTotalProjected" class="text-xl font-extrabold text-indigo-800 mt-1">₱0.00</div></div>
+                            <div class="bg-sky-50 p-4 rounded-xl border border-sky-200"><div class="text-[10px] font-bold text-sky-900">EST. DAILY BURN RATE</div><div id="fcDailyBurn" class="text-xl font-extrabold text-sky-800 mt-1">₱0.00</div></div>
+                            <div class="bg-amber-50 p-4 rounded-xl border border-amber-200"><div class="text-[10px] font-bold text-amber-900">PROJECTED FUEL</div><div id="fcProjFuel" class="text-xl font-extrabold text-amber-800 mt-1">₱0.00</div></div>
+                            <div class="bg-rose-50 p-4 rounded-xl border border-rose-200"><div class="text-[10px] font-bold text-rose-900">MAINT. & TOLLS</div><div id="fcProjMaint" class="text-xl font-extrabold text-rose-800 mt-1">₱0.00</div></div>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="expenseForecastChart"></canvas>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-800 font-bold">
+                                    <tr><th class="p-3">Cost Category</th><th class="p-3 text-right">Baseline (₱)</th><th class="p-3 text-right">Projected (₱)</th><th class="p-3 text-right">Share (%)</th></tr>
+                                </thead>
+                                <tbody id="forecastBreakdownBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                setTimeout(renderExpenseForecastView, 50);
+            } else if (title === 'Report Templates') {
+                const templates = db.reportTemplates || [];
+                const tplRows = templates.length ? templates.map((t, idx) => `
+                    <tr class="border-b hover:bg-slate-50 font-medium text-slate-900">
+                        <td class="p-3 font-bold text-purple-900">${t.name}</td>
+                        <td class="p-3">${(REPORT_DATASET_SCHEMAS[t.dataset] || {}).label || t.dataset}</td>
+                        <td class="p-3 font-mono text-[10px] text-slate-700">${(t.columns || []).join(', ')}</td>
+                        <td class="p-3 uppercase text-[10px] font-bold">${t.orientation || 'portrait'}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="runCustomReportTemplate(${idx}, 'pdf')" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">PDF</button>
+                            <button onclick="runCustomReportTemplate(${idx}, 'csv')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2 py-1 rounded font-bold text-[10px]">CSV</button>
+                            <button onclick="editReportTemplate(${idx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteBackendRecord('ReportTemplate', ${idx})" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
+                        </td>
+                    </tr>
+                `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No custom report templates saved yet. Create one above.</td></tr>';
+
+                content.innerHTML = `
+                    <div class="mb-4 text-white">
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-file-invoice text-purple-400 mr-2"></i> Custom Report Templates Builder</h3>
+                        <p class="text-xs text-slate-300">Design reusable PDF and CSV report templates with custom column selections across Fleet and Empty Yard modules.</p>
+                    </div>
+                    <div class="bg-white text-slate-900 rounded-2xl p-5 space-y-6">
+                        <form onsubmit="handleSaveReportTemplate(event)" class="space-y-3 text-xs border-b pb-5">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="font-bold text-slate-800 block mb-1">Template Name *</label>
+                                    <input type="text" id="rtNameInput" required class="p-2 border rounded-lg w-full bg-slate-50" placeholder="e.g. Executive Monthly Fuel Summary">
+                                </div>
+                                <div>
+                                    <label class="font-bold text-slate-800 block mb-1">Data Source *</label>
+                                    <select id="rtDatasetSelect" onchange="updateReportTemplateColumnsUI()" class="p-2 border rounded-lg w-full bg-slate-50 font-semibold">
+                                        ${Object.keys(REPORT_DATASET_SCHEMAS).map(k => `<option value="${k}">${REPORT_DATASET_SCHEMAS[k].label}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="font-bold text-slate-800 block mb-1">PDF Orientation</label>
+                                    <select id="rtOrientationSelect" class="p-2 border rounded-lg w-full bg-slate-50 font-semibold">
+                                        <option value="portrait">Portrait (A4)</option>
+                                        <option value="landscape">Landscape (A4)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="font-bold text-slate-800 block mb-1">Select Columns to Include *</label>
+                                <div id="rtColumnsContainer" class="flex flex-wrap gap-2"></div>
+                            </div>
+                            <div>
+                                <label class="font-bold text-slate-800 block mb-1">Header Notes / Subtitle (Optional)</label>
+                                <input type="text" id="rtNotesInput" class="p-2 border rounded-lg w-full bg-slate-50" placeholder="e.g. Prepared for Operations & Accounting Review">
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" id="rtSubmitBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-lg">Save Report Template</button>
+                                <button type="button" onclick="currentEditingReportTemplateIndex=null; openSubModule('Report Templates');" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-lg">Reset</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-800 font-bold">
+                                    <tr><th class="p-3">Template Name</th><th class="p-3">Dataset</th><th class="p-3">Columns</th><th class="p-3">Layout</th><th class="p-3 text-right">Run / Manage</th></tr>
+                                </thead>
+                                <tbody>${tplRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => updateReportTemplateColumnsUI(), 30);
             } else if (title === 'Vehicle Management') {
                 let rows = vehicles.length ? vehicles.map((v, idx) => {
                     let atts = (v.attachments && v.attachments.length) ? v.attachments.map(a => a.type && a.type.startsWith('image/') ? `<a href="${a.dataUrl}" target="_blank"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded border border-slate-700 inline-block mr-1 shadow" title="${a.name}"></a>` : `<a href="${a.dataUrl}" target="_blank" class="text-sky-600 underline text-[10px] block">${a.name}</a>`).join('') : '<span class="text-slate-400 italic text-[10px]">No files</span>';
@@ -3099,6 +3766,7 @@
                     <div class="flex justify-between items-center mb-4 text-white">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-wallet text-teal-400 mr-2"></i> Fleet Expenses</h3>
                         <div class="flex gap-2">
+                            <button onclick="openSubModule('Expense Forecasting')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-chart-line mr-1"></i> Forecast</button>
                             <button onclick="generateModulePDFReport('Fleet Expenses')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF Report</button>
                             <button onclick="generateModuleExcelReport('Fleet Expenses')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel Export</button>
                             <button onclick="openBackendEntryModal('Expense')" class="bg-teal-600 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Log Trip Expense</button>
@@ -3133,37 +3801,41 @@
                 `;
             }
         }
-
-        // Fetch all drivers from Supabase
+// Fetch all drivers from Supabase (non-destructive merge)
         async function fetchDriversFromSupabase() {
             if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('drivers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
             
-            const { data, error } = await supabaseClient
-                .from('drivers')
-                .select('*')
-                .order('created_at', { ascending: false });
-        
-            if (error) {
-                console.error("Error fetching drivers:", error.message);
-                return;
-            }
-        
-            // Sync to local DB state
-            db.drivers = data.map(d => ({
-                driver_name: d.driver_name,
-                driver_license_number: d.driver_license_number || d.driver_license,
-                driver_phone: d.driver_phone,
-                helper_name: d.helper_name,
-                helper_phone: d.helper_phone,
-                truck: d.assigned_unit,
-                status: d.status,
-                rating: typeof d.rating === 'number' ? `${d.rating.toFixed(1)} ★` : (d.rating || '5.0 ★'),
-                attachments: d.attachments || []
-            }));
-        
-            // Re-render UI if driver module is open
-            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Driver Management') {
-                openSubModule('Driver Management');
+                if (error) {
+                    console.warn("Notice fetching drivers:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    const cloudDrivers = data.map(d => ({
+                        id: d.id,
+                        driver_name: d.driver_name,
+                        driver_license_number: d.driver_license_number || d.driver_license,
+                        driver_phone: d.driver_phone,
+                        helper_name: d.helper_name,
+                        helper_phone: d.helper_phone,
+                        truck: d.assigned_unit,
+                        status: d.status,
+                        rating: typeof d.rating === 'number' ? `${d.rating.toFixed(1)} ★` : (d.rating || '5.0 ★'),
+                        attachments: d.attachments || []
+                    }));
+                    db.drivers = mergeRecordsSafely(db.drivers, cloudDrivers, d => d.id ? `id:${d.id}` : `lic:${(d.driver_license_number || d.driver_name || '').toLowerCase()}`);
+                }
+            
+                if (typeof openSubModule === 'function' && currentBackendModuleType === 'Driver Management') {
+                    openSubModule('Driver Management');
+                }
+            } catch (e) {
+                console.warn("fetchDriversFromSupabase fallback:", e.message);
             }
         }
         
@@ -3184,12 +3856,15 @@
                         status: driverRecord.status || 'Available',
                         rating: 5.00,
                         attachments: driverRecord.attachments || []
-                    });
+                    })
+                    .select()
+                    .single();
             
                 if (error) {
                     console.warn("Notice saving driver to standalone Supabase table:", error.message);
                     return false;
                 }
+                if (data && data.id) driverRecord.id = data.id;
                 return true;
             } catch (err) {
                 console.warn("Supabase drivers table sync skipped:", err.message);
@@ -3197,34 +3872,38 @@
             }
         }
 
-        // Fetch all fuel logs from Supabase cloud table
+        // Fetch all fuel logs from Supabase cloud table (non-destructive merge)
         async function fetchFuelLogsFromSupabase() {
             if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('fuel_logs')
+                    .select('*')
+                    .order('logged_at', { ascending: false });
             
-            const { data, error } = await supabaseClient
-                .from('fuel_logs')
-                .select('*')
-                .order('logged_at', { ascending: false });
-        
-            if (error) {
-                console.error("Error fetching fuel logs:", error.message);
-                return;
-            }
-        
-            // Sync to local DB state
-            db.fuelLogs = data.map(f => ({
-                id: f.id,
-                unit: f.unit_id,
-                liters: `${f.liters} L`,
-                cost: `₱${Number(f.cost).toLocaleString('en-US', {minimumFractionDigits: 2})}`,
-                station: f.station,
-                date: f.logged_at ? f.logged_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
-                attachments: f.receipt_url ? [{ name: 'Receipt.jpg', dataUrl: f.receipt_url, type: 'image/jpeg' }] : []
-            }));
-        
-            // Re-render UI if Fuel module is currently open
-            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Fuel Monitoring') {
-                openSubModule('Fuel Monitoring');
+                if (error) {
+                    console.warn("Notice fetching fuel logs:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    const cloudFuel = data.map(f => ({
+                        id: f.id,
+                        unit: f.unit_id,
+                        liters: `${f.liters} L`,
+                        cost: `₱${Number(f.cost).toLocaleString('en-US', {minimumFractionDigits: 2})}`,
+                        station: f.station,
+                        date: f.logged_at ? f.logged_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
+                        attachments: f.receipt_url ? [{ name: 'Receipt.jpg', dataUrl: f.receipt_url, type: 'image/jpeg' }] : []
+                    }));
+                    db.fuelLogs = mergeRecordsSafely(db.fuelLogs, cloudFuel, f => f.id ? `id:${f.id}` : `key:${f.unit}_${f.date}_${f.cost}`);
+                }
+            
+                if (typeof openSubModule === 'function' && currentBackendModuleType === 'Fuel Monitoring') {
+                    openSubModule('Fuel Monitoring');
+                }
+            } catch (e) {
+                console.warn("fetchFuelLogsFromSupabase fallback:", e.message);
             }
         }
 
@@ -3234,7 +3913,6 @@
         
             let receiptUrl = null;
         
-            // 1. Upload receipt photo to Supabase storage bucket if provided
             if (receiptFileObj && receiptFileObj.dataUrl) {
                 try {
                     const response = await fetch(receiptFileObj.dataUrl);
@@ -3258,24 +3936,27 @@
                 }
             }
         
-            // 2. Insert record into PostgreSQL fuel_logs table
-            const { error: insertError } = await supabaseClient
-                .from('fuel_logs')
-                .insert({
-                    unit_id: fuelRecord.unit,
-                    liters: parseFloat(fuelRecord.liters),
-                    cost: parseFloat(fuelRecord.cost.replace(/[^\d.]/g, '')),
-                    station: fuelRecord.station,
-                    receipt_url: receiptUrl,
-                    logged_at: new Date().toISOString()
-                });
-        
-            if (insertError) {
-                alert("Failed to save fuel log to cloud: " + insertError.message);
-                return false;
+            try {
+                const { data, error: insertError } = await supabaseClient
+                    .from('fuel_logs')
+                    .insert({
+                        unit_id: fuelRecord.unit,
+                        liters: parseFloat(fuelRecord.liters),
+                        cost: parseFloat(fuelRecord.cost.replace(/[^\d.]/g, '')),
+                        station: fuelRecord.station,
+                        receipt_url: receiptUrl,
+                        logged_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+            
+                if (!insertError && data && data.id) {
+                    fuelRecord.id = data.id;
+                }
+            } catch (e) {
+                console.warn("insertFuelLogToSupabase standalone table fallback:", e.message);
             }
         
-            // 3. Update local state and trigger sync
             if (!db.fuelLogs) db.fuelLogs = [];
             db.fuelLogs.unshift(fuelRecord);
             await saveCloudData();
@@ -3284,77 +3965,85 @@
             return true;
         }
 
-        // Fetch all GPS & Dispatch logs from Supabase
+        // Fetch all GPS & Dispatch logs from Supabase (non-destructive merge)
         async function fetchDispatchLogsFromSupabase() {
             if (!supabaseClient) return;
-        
-            const { data, error } = await supabaseClient
-                .from('dispatch_logs')
-                .select('*')
-                .order('created_at', { ascending: false });
-        
-            if (error) {
-                console.error("Error fetching dispatch logs:", error.message);
-                return;
-            }
-        
-            // Sync to local DB state matching your openSubModule('GPS & Dispatch') structure
-            db.dispatchLogs = data.map(d => ({
-                id: d.id,
-                unit: d.unit_id,
-                route: d.route,
-                driver: d.driver_name,
-                status: d.status,
-                lat: d.latitude,
-                lng: d.longitude,
-                nearestHub: d.nearest_hub,
-                attachments: d.attachments || []
-            }));
-        
-            if (typeof openSubModule === 'function' && currentBackendModuleType === 'GPS & Dispatch') {
-                openSubModule('GPS & Dispatch');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('dispatch_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+            
+                if (error) {
+                    console.warn("Notice fetching dispatch logs:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    const cloudDispatch = data.map(d => ({
+                        id: d.id,
+                        unit: d.unit_id,
+                        route: d.route,
+                        driver: d.driver_name,
+                        status: d.status,
+                        lat: d.latitude,
+                        lng: d.longitude,
+                        nearestHub: d.nearest_hub,
+                        attachments: d.attachments || []
+                    }));
+                    db.dispatchLogs = mergeRecordsSafely(db.dispatchLogs, cloudDispatch, d => d.id ? `id:${d.id}` : `key:${d.unit}_${d.route}_${d.driver}`);
+                }
+            
+                if (typeof openSubModule === 'function' && currentBackendModuleType === 'GPS & Dispatch') {
+                    openSubModule('GPS & Dispatch');
+                }
+            } catch (e) {
+                console.warn("fetchDispatchLogsFromSupabase fallback:", e.message);
             }
         }
         
         // Insert a new GPS & Dispatch entry into Supabase
         async function insertDispatchLogToSupabase(dispatchRecord) {
             if (!supabaseClient) return false;
-        
-            const { error } = await supabaseClient
-                .from('dispatch_logs')
-                .insert({
-                    unit_id: dispatchRecord.unit,
-                    route: dispatchRecord.route,
-                    driver_name: dispatchRecord.driver,
-                    status: dispatchRecord.status || 'In Transit',
-                    latitude: dispatchRecord.lat || null,
-                    longitude: dispatchRecord.lng || null,
-                    nearest_hub: dispatchRecord.nearestHub || null,
-                    attachments: dispatchRecord.attachments || []
-                });
-        
-            if (error) {
-                console.error("Error saving dispatch log:", error.message);
-                alert("Failed to save dispatch record to cloud: " + error.message);
+            try {
+                const { data, error } = await supabaseClient
+                    .from('dispatch_logs')
+                    .insert({
+                        unit_id: dispatchRecord.unit,
+                        route: dispatchRecord.route,
+                        driver_name: dispatchRecord.driver,
+                        status: dispatchRecord.status || 'In Transit',
+                        latitude: dispatchRecord.lat || null,
+                        longitude: dispatchRecord.lng || null,
+                        nearest_hub: dispatchRecord.nearestHub || null,
+                        attachments: dispatchRecord.attachments || []
+                    })
+                    .select()
+                    .single();
+            
+                if (error) {
+                    console.warn("Notice saving dispatch log to standalone table:", error.message);
+                    return false;
+                }
+                if (data && data.id) dispatchRecord.id = data.id;
+                return true;
+            } catch (e) {
+                console.warn("insertDispatchLogToSupabase fallback:", e.message);
                 return false;
             }
-        
-            await fetchDispatchLogsFromSupabase();
-            return true;
         }
 
         // ==========================================================
         // SUPABASE FLEET EXPENSES & YARD EXPENSES SYNC FUNCTIONS
         // ==========================================================
         
-        // Helper to strip '₱' and commas when saving numeric values to Postgres
         function parsePesoNumber(val) {
             if (typeof val === 'number') return val;
             if (!val) return 0;
             return parseFloat(String(val).replace(/[^\d.-]/g, '')) || 0;
         }
         
-        // 1. Fetch Fleet Expenses from Supabase
+        // 1. Fetch Fleet Expenses from Supabase (non-destructive merge)
         async function fetchFleetExpensesFromSupabase() {
             if (!supabaseClient) return;
         
@@ -3370,7 +4059,7 @@
                 }
             
                 if (data && data.length > 0) {
-                    db.expenseLogs = data.map(e => ({
+                    const cloudExpenses = data.map(e => ({
                         id: e.id,
                         trip: e.trip_id,
                         fuel: `₱${Number(e.fuel_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
@@ -3379,6 +4068,7 @@
                         total: `₱${Number(e.total_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
                         attachments: e.attachments || []
                     }));
+                    db.expenseLogs = mergeRecordsSafely(db.expenseLogs, cloudExpenses, e => e.id ? `id:${e.id}` : `trip:${e.trip}_${e.total}`);
                 }
             
                 if (typeof openSubModule === 'function' && currentBackendModuleType === 'Fleet Expenses') {
@@ -3415,8 +4105,6 @@
                 if (data && data.id) {
                     expenseRecord.id = data.id;
                 }
-            
-                await fetchFleetExpensesFromSupabase();
                 return true;
             } catch (err) {
                 console.warn("insertFleetExpenseToSupabase fallback:", err.message);
@@ -3474,7 +4162,7 @@
             }
         }
         
-        // 5. Fetch Yard Operating Expenses from Supabase
+        // 5. Fetch Yard Operating Expenses from Supabase (non-destructive merge)
         async function fetchYardExpensesFromSupabase() {
             if (!supabaseClient) return;
         
@@ -3490,13 +4178,14 @@
                 }
             
                 if (data && data.length > 0) {
-                    yardDb.expenses = data.map(ex => ({
+                    const cloudYardExp = data.map(ex => ({
                         id: ex.id,
                         category: ex.category,
                         description: ex.description,
                         amount: Number(ex.amount || 0),
                         date: ex.expense_date ? ex.expense_date.slice(0, 16) : new Date().toISOString().slice(0, 16)
                     }));
+                    yardDb.expenses = mergeRecordsSafely(yardDb.expenses, cloudYardExp, ex => ex.id ? `id:${ex.id}` : `key:${ex.date}_${ex.description}_${ex.amount}`);
                 }
             
                 renderYardExpenses();
@@ -3530,8 +4219,6 @@
                 if (data && data.id) {
                     expenseRecord.id = data.id;
                 }
-            
-                await fetchYardExpensesFromSupabase();
                 return true;
             } catch (err) {
                 console.warn("insertYardExpenseToSupabase fallback:", err.message);
@@ -3628,7 +4315,7 @@
         // SUPABASE MAINTENANCE LOGS & YARD CONTAINERS SYNC FUNCTIONS
         // ==========================================================
 
-        // 1. Fetch Fleet Maintenance Logs from Supabase
+        // 1. Fetch Fleet Maintenance Logs from Supabase (non-destructive merge)
         async function fetchMaintenanceLogsFromSupabase() {
             if (!supabaseClient) return;
             try {
@@ -3638,7 +4325,7 @@
                     .order('created_at', { ascending: false });
 
                 if (!error && data && data.length > 0) {
-                    db.maintenanceLogs = data.map(m => ({
+                    const cloudMaint = data.map(m => ({
                         id: m.id,
                         unit: m.unit_id,
                         issue: m.issue,
@@ -3647,6 +4334,7 @@
                         date: m.service_date || (m.created_at ? m.created_at.substring(0, 10) : ''),
                         attachments: m.attachments || []
                     }));
+                    db.maintenanceLogs = mergeRecordsSafely(db.maintenanceLogs, cloudMaint, m => m.id ? `id:${m.id}` : `key:${m.unit}_${m.issue}_${m.date}`);
                     if (typeof openSubModule === 'function' && currentBackendModuleType === 'Maintenance') {
                         openSubModule('Maintenance');
                     }
@@ -3718,7 +4406,7 @@
             }
         }
 
-        // 5. Fetch Yard Containers from Supabase
+        // 5. Fetch Yard Containers from Supabase (non-destructive merge)
         async function fetchYardContainersFromSupabase() {
             if (!supabaseClient) return;
             try {
@@ -3728,7 +4416,7 @@
                     .order('created_at', { ascending: false });
 
                 if (!error && data && data.length > 0) {
-                    yardDb.containers = data.map(c => ({
+                    const cloudContainers = data.map(c => ({
                         id: c.id,
                         number: c.container_number,
                         size: c.size,
@@ -3754,6 +4442,7 @@
                         photos: c.photos || [],
                         releasePhotos: c.release_photos || []
                     }));
+                    yardDb.containers = mergeRecordsSafely(yardDb.containers, cloudContainers, c => c.id ? `id:${c.id}` : `num:${(c.number || '').toUpperCase()}_${c.date || ''}`);
                     refreshYard();
                 }
             } catch (e) {
@@ -3819,7 +4508,7 @@
                     .order('transaction_date', { ascending: false });
 
                 if (!error && data && data.length > 0) {
-                    yardDb.revenues = data.map(r => ({
+                    const cloudRevs = data.map(r => ({
                         id: r.id,
                         date: r.transaction_date ? r.transaction_date.slice(0, 16) : '',
                         source: r.source_type,
@@ -3827,6 +4516,7 @@
                         eir: r.eir_ref || '—',
                         amount: Number(r.amount || 0)
                     }));
+                    yardDb.revenues = mergeRecordsSafely(yardDb.revenues, cloudRevs, r => r.id ? `id:${r.id}` : `key:${r.container}_${r.date}_${r.amount}`);
                     renderYardRevenue();
                 }
             } catch (e) {
@@ -3866,7 +4556,7 @@
                     .order('movement_date', { ascending: false });
 
                 if (!error && data && data.length > 0) {
-                    yardDb.movements = data.map(m => ({
+                    const cloudMoves = data.map(m => ({
                         id: m.id,
                         date: m.movement_date ? m.movement_date.slice(0, 16) : '',
                         kind: m.movement_kind,
@@ -3877,6 +4567,7 @@
                         amount: Number(m.amount || 0),
                         totalAmount: Number(m.total_amount || m.amount || 0)
                     }));
+                    yardDb.movements = mergeRecordsSafely(yardDb.movements, cloudMoves, m => m.id ? `id:${m.id}` : `key:${m.kind}_${m.container}_${m.date}`);
                     refreshYardDashboard();
                     renderYardReports();
                 }
@@ -4116,7 +4807,8 @@
             refreshYardDashboard();
             alert('✅ Yard revenue record successfully updated and synced to Supabase!');
         }
-	// Load Geofence Zones & Alerts on startup
+
+        // Load Geofence Zones & Alerts on startup (non-destructive merge)
         async function fetchLogiTrackDataFromSupabase() {
             if (!supabaseClient) return;
         
@@ -4127,21 +4819,23 @@
                 ]);
             
                 if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
-                    db.geofenceZones = zonesRes.data.map(z => ({
+                    const cloudZones = zonesRes.data.map(z => ({
                         id: z.id,
                         name: z.name,
                         lat: z.latitude,
                         lng: z.longitude,
                         radius: z.radius_km
                     }));
+                    db.geofenceZones = mergeRecordsSafely(db.geofenceZones, cloudZones, z => z.id ? `id:${z.id}` : `name:${z.name}`);
                 }
             
                 if (!alertsRes.error && alertsRes.data && alertsRes.data.length > 0) {
-                    db.geofenceAlerts = alertsRes.data.map(a => ({
+                    const cloudAlerts = alertsRes.data.map(a => ({
                         id: a.id,
                         message: a.message,
                         time: a.created_at
                     }));
+                    db.geofenceAlerts = mergeRecordsSafely(db.geofenceAlerts, cloudAlerts, a => a.id ? `id:${a.id}` : `msg:${a.message}_${a.time}`);
                 }
             } catch (err) {
                 console.warn("LogiTRACK direct table fetch notice:", err.message);
@@ -4212,14 +4906,34 @@
             const fieldsContainer = document.getElementById('backendModalFields');
             const filePreview = document.getElementById('backendEntryFilePreview');
             const submitBtn = document.getElementById('backendEntrySubmitBtn');
+            const attSection = document.getElementById('backendAttachmentSection');
             if(!modal || !titleEl || !fieldsContainer) return;
 
             modal.classList.remove('hidden');
             if(filePreview) filePreview.innerHTML = '';
             if(submitBtn) submitBtn.textContent = editIndex !== null ? 'Update Entry' : 'Save Entry';
+            if(attSection) attSection.style.display = (type === 'Hub') ? 'none' : 'block';
             let html = '';
 
-            if (type === 'Vehicle') {
+            if (type === 'Hub') {
+                const existing = (editIndex !== null && db.hubLocations && db.hubLocations[editIndex]) ? db.hubLocations[editIndex] : null;
+                titleEl.innerHTML = `<i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> ${existing ? 'Edit' : 'Assign New'} Hub Location`;
+                html = `
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Hub Name *</label><input type="text" id="beInput1" required value="${existing ? existing.name : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Valenzuela Empty Container Depot"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Hub Type *</label><select id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                        <option ${existing && existing.type === 'Terminal Hub' ? 'selected' : ''}>Terminal Hub</option>
+                        <option ${existing && existing.type === 'Empty Container Depot' ? 'selected' : ''}>Empty Container Depot</option>
+                        <option ${existing && existing.type === 'Transshipment Port' ? 'selected' : ''}>Transshipment Port</option>
+                        <option ${existing && existing.type === 'Warehouse / Staging' ? 'selected' : ''}>Warehouse / Staging</option>
+                    </select></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Address / Corridor Description</label><input type="text" id="beHubAddress" value="${existing ? (existing.address || '') : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Maysan Rd, Valenzuela City"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Latitude *</label><input type="number" step="any" id="beHubLat" required value="${existing ? existing.lat : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="14.7011"></div>
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Longitude *</label><input type="number" step="any" id="beHubLng" required value="${existing ? existing.lng : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="120.9830"></div>
+                    </div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Geofence Radius (km)</label><input type="number" step="any" id="beInput3" value="${existing ? (existing.radius || 5) : 5}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="5"></div>
+                `;
+            } else if (type === 'Vehicle') {
                 const existing = (editIndex !== null && db.vehicles && db.vehicles[editIndex]) ? db.vehicles[editIndex] : null;
                 titleEl.innerHTML = `<i class="fa-solid fa-truck text-sky-400 mr-2"></i> ${existing ? 'Edit' : 'Add New'} Vehicle (Vehicle Masterlist)`;
                 html = `
@@ -4248,7 +4962,7 @@
                 titleEl.innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> ${existing ? 'Edit' : 'New'} Fleet Dispatch (GPS & Dispatch)`;
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required value="${existing ? existing.route : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Manila North Harbor → Valenzuela Depot"></div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required value="${existing ? existing.route : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Origin Hub → Destination Hub"></div>
                     <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required value="${existing ? existing.driver : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
                 `;
             } else if (type === 'Expense') {
@@ -4267,7 +4981,6 @@
             fieldsContainer.innerHTML = html;
         }
 
-        // Helper to automatically sum Fuel + Tolls + Maintenance in the Fleet Expense modal
         function autoSumFleetExpenseModal() {
             const fuel = parsePesoNumber(document.getElementById('beInput2') ? document.getElementById('beInput2').value : 0);
             const tolls = parsePesoNumber(document.getElementById('beInputTolls') ? document.getElementById('beInputTolls').value : 0);
@@ -4279,56 +4992,56 @@
             }
         }
 
-        // Fetch all vehicles from Supabase
         async function fetchVehiclesFromSupabase() {
             if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('vehicles')
+                    .select('*')
+                    .order('created_at', { ascending: false });
             
-            const { data, error } = await supabaseClient
-                .from('vehicles')
-                .select('*')
-                .order('created_at', { ascending: false });
-        
-            if (error) {
-                console.error("Error fetching vehicles:", error.message);
-                return;
-            }
-        
-            // Sync to local DB state
-            db.vehicles = data.map(v => ({
-                id: v.id,
-                model: v.model,
-                status: v.status,
-                driver: v.driver,
-                attachments: v.attachments || []
-            }));
-        
-            // Re-render UI if on vehicle module
-            if (typeof openSubModule === 'function' && currentBackendModuleType === 'Vehicle Management') {
-                openSubModule('Vehicle Management');
+                if (error) {
+                    console.warn("Notice fetching vehicles:", error.message);
+                    return;
+                }
+            
+                if (data && data.length > 0) {
+                    const cloudVehicles = data.map(v => ({
+                        id: v.id,
+                        model: v.model,
+                        status: v.status,
+                        driver: v.driver,
+                        attachments: v.attachments || []
+                    }));
+                    db.vehicles = mergeRecordsSafely(db.vehicles, cloudVehicles, v => `id:${v.id}`);
+                }
+            
+                if (typeof openSubModule === 'function' && currentBackendModuleType === 'Vehicle Management') {
+                    openSubModule('Vehicle Management');
+                }
+            } catch (e) {
+                console.warn("fetchVehiclesFromSupabase fallback:", e.message);
             }
         }
         
-        // Insert a new vehicle into Supabase table
         async function insertVehicleToSupabase(vehicleRecord) {
             if (!supabaseClient) return;
-        
-            const { data, error } = await supabaseClient
-                .from('vehicles')
-                .upsert({
-                    id: vehicleRecord.id,
-                    model: vehicleRecord.model,
-                    status: vehicleRecord.status || 'Active',
-                    driver: vehicleRecord.driver || 'Unassigned',
-                    attachments: vehicleRecord.attachments || []
-                }, { onConflict: 'id' });
-        
-            if (error) {
-                console.error("Error saving vehicle:", error.message);
-                alert("Failed to save vehicle to cloud: " + error.message);
-                return false;
-            }
-        
-            // Also update local unified DB JSON payload
+            try {
+                const { error } = await supabaseClient
+                    .from('vehicles')
+                    .upsert({
+                        id: vehicleRecord.id,
+                        model: vehicleRecord.model,
+                        status: vehicleRecord.status || 'Active',
+                        driver: vehicleRecord.driver || 'Unassigned',
+                        attachments: vehicleRecord.attachments || []
+                    }, { onConflict: 'id' });
+            
+                if (error) {
+                    console.warn("Notice saving vehicle to standalone table:", error.message);
+                }
+            } catch (e) {}
+
             if (!db.vehicles) db.vehicles = [];
             const idx = db.vehicles.findIndex(v => v.id === vehicleRecord.id);
             if (idx >= 0) {
@@ -4337,7 +5050,7 @@
                 db.vehicles.push(vehicleRecord);
             }
             
-            saveCloudData();
+            await saveCloudData();
             return true;
         }
 
@@ -4354,7 +5067,32 @@
             const val2 = document.getElementById('beInput2').value;
             const val3 = document.getElementById('beInput3') ? document.getElementById('beInput3').value : '';
 
-            if (currentBackendModuleType === 'Vehicle') {
+            if (currentBackendModuleType === 'Hub') {
+                if (!db.hubLocations) db.hubLocations = [];
+                const hubObj = {
+                    name: val1.trim(),
+                    type: val2 || 'Terminal Hub',
+                    address: document.getElementById('beHubAddress') ? document.getElementById('beHubAddress').value.trim() : '',
+                    lat: parseFloat(document.getElementById('beHubLat').value),
+                    lng: parseFloat(document.getElementById('beHubLng').value),
+                    radius: parseFloat(val3) || 5,
+                    updatedAt: new Date().toISOString()
+                };
+                if (currentEditingRecordIndex !== null && db.hubLocations[currentEditingRecordIndex]) {
+                    const existing = db.hubLocations[currentEditingRecordIndex];
+                    const updatedHub = { ...existing, ...hubObj };
+                    db.hubLocations[currentEditingRecordIndex] = updatedHub;
+                    await syncHubLocationToSupabase(updatedHub);
+                } else {
+                    await syncHubLocationToSupabase(hubObj);
+                    db.hubLocations.push(hubObj);
+                }
+                currentEditingRecordIndex = null;
+                await saveCloudData();
+                refreshHubDatalist();
+                closeBackendEntryModal();
+                openSubModule('Hub Locations');
+            } else if (currentBackendModuleType === 'Vehicle') {
                 if(!db.vehicles) db.vehicles = [];
                 if (currentEditingRecordIndex !== null && db.vehicles[currentEditingRecordIndex]) {
                     const existing = db.vehicles[currentEditingRecordIndex];
@@ -4824,7 +5562,6 @@
 
             if(!yardDb.containers) yardDb.containers = [];
 
-            // Branch 1: Updating an existing Container Inventory record
             if (currentEditingYardContainerIndex !== null && yardDb.containers[currentEditingYardContainerIndex]) {
                 const existing = yardDb.containers[currentEditingYardContainerIndex];
                 const updatedContainer = {
@@ -4860,7 +5597,6 @@
                 return;
             }
 
-            // Branch 2: Creating a new Container Gate-In record
             const containerData = {
                 number: formData.get('number').toUpperCase(),
                 size: formData.get('size'),
@@ -4972,7 +5708,6 @@
             const storageTotal = diffDays * storageRate;
 
             const vanOutAmount = parseFloat(document.getElementById('calcVanOutAmount').value) || 0;
-            const vanInAmount = parseFloat(document.getElementById('calcVanInAmount').value) || 0;
 
             const notice = document.getElementById('vanInDeductionNotice');
             if(notice) notice.classList.add('hidden');
@@ -5442,6 +6177,8 @@
                         const parsed = JSON.parse(e.target.result);
                         if(parsed.managementBackend) db = parsed.managementBackend;
                         if(parsed.emptyYard) yardDb = parsed.emptyYard;
+                        if(!Array.isArray(db.hubLocations)) db.hubLocations = [];
+                        if(!Array.isArray(db.reportTemplates)) db.reportTemplates = [];
                         await saveCloudData();
                         alert('✅ Unified enterprise backup successfully restored and synced to cloud database!');
                         refreshYard();
@@ -5471,7 +6208,10 @@
             `).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No transshipment orders posted.</td></tr>';
         }
 
-        function openNewTransshipmentModal() { document.getElementById('transModal').classList.remove('hidden'); }
+        function openNewTransshipmentModal() {
+            refreshHubDatalist();
+            document.getElementById('transModal').classList.remove('hidden');
+        }
         function closeNewTransshipmentModal() { document.getElementById('transModal').classList.add('hidden'); }
 
         async function handleTransSubmit(e) {
