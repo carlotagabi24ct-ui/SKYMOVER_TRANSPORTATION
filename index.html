@@ -199,8 +199,8 @@
                     </div>
                     <button onclick="openNewDriverRegistrationModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold" data-i18n="regNewDriverBtn">Register New Driver</button>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-                    <div class="flex justify-between items-center">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
                         <h3 class="font-bold text-sm text-purple-300" data-i18n="activeTripHeading">Active Assigned Trip & Driver GPS Location</h3>
                         <button onclick="fetchDriverLiveLocation()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow">
                             <i class="fa-solid fa-location-crosshairs mr-1"></i> Get Actual GPS Position
@@ -209,14 +209,92 @@
                     <div id="driverActiveTripInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono text-slate-200"></div>
                     <div id="driverGeoStatus" class="text-[11px] font-mono text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 hidden"></div>
 
+                    <!-- DIRECT RLS-COMPLIANT TRIP STATUS UPDATE & GEOFENCE ALERT GRID -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 border-t border-slate-800 pt-4">
+                        <!-- Left: Direct Trip Status Update -> public.dispatch_logs -->
+                        <form onsubmit="submitDriverTripStatusUpdate(event)" class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-emerald-400"><i class="fa-solid fa-truck-fast mr-1.5"></i> Update Assigned Trip Status</h4>
+                                <span class="text-[10px] font-mono text-slate-400">RLS Synced</span>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1 font-semibold">Assigned Dispatch Trip</label>
+                                <select id="driverActiveDispatchSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono text-xs">
+                                    <option value="">Auto-detect my active dispatch...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1 font-semibold">Trip Status *</label>
+                                <select id="driverTripStatusSelect" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-semibold">
+                                    <option value="In Transit">In Transit</option>
+                                    <option value="Arrived at Origin Hub">Arrived at Origin Hub</option>
+                                    <option value="Container Loaded / Departed">Container Loaded / Departed</option>
+                                    <option value="Arrived at Destination Hub">Arrived at Destination Hub</option>
+                                    <option value="Delivered / Completed">Delivered / Completed</option>
+                                    <option value="Delayed / Traffic Hold">Delayed / Traffic Hold</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1 font-semibold">Trip Remarks / Gate Notes</label>
+                                <input type="text" id="driverTripNotesInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Cleared North Harbor Gate 2">
+                            </div>
+                            <button type="submit" id="driverTripUpdateBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition shadow">
+                                <i class="fa-solid fa-paper-plane mr-1.5"></i> Update Trip Status
+                            </button>
+                        </form>
+
+                        <!-- Right: Direct GPS Geofence Check-In / Alert -> public.geofence_alerts -->
+                        <form onsubmit="submitDriverGeofenceAlert(event)" class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-amber-400"><i class="fa-solid fa-satellite-dish mr-1.5"></i> Submit GPS Geofence Check-In / Alert</h4>
+                                <span class="text-[10px] font-mono text-slate-400">Live Telemetry</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-slate-300 mb-1 font-semibold">Latitude</label>
+                                    <input type="number" step="any" id="driverGpsLat" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" placeholder="Auto GPS or 14.6333">
+                                </div>
+                                <div>
+                                    <label class="block text-slate-300 mb-1 font-semibold">Longitude</label>
+                                    <input type="number" step="any" id="driverGpsLng" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" placeholder="Auto GPS or 120.9667">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1 font-semibold">Alert / Check-In Type</label>
+                                <select id="driverGeofenceAlertType" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white">
+                                    <option value="Geofence Check-In">Geofence Check-In</option>
+                                    <option value="Hub Arrival Ping">Hub Arrival Ping</option>
+                                    <option value="Route Deviation / Traffic Alert">Route Deviation / Traffic Alert</option>
+                                    <option value="Emergency / Mechanical Hold">Emergency / Mechanical Hold</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 mb-1 font-semibold">Alert Note (Optional)</label>
+                                <input type="text" id="driverGeofenceNoteInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" placeholder="e.g. Waiting in port queue">
+                            </div>
+                            <button type="submit" id="driverGeofenceAlertBtn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg transition shadow">
+                                <i class="fa-solid fa-satellite-dish mr-1.5"></i> Send GPS Geofence Alert
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- RECENT DRIVER GPS GEOFENCE ALERTS -->
                     <div class="border-t border-slate-800 pt-4">
-                        <h4 class="text-xs font-bold text-sky-400 mb-2"><i class="fa-solid fa-sms mr-1"></i> <span data-i18n="smsInboxHeading">Driver SMS Notification Inbox</span></h4>
-                        <div id="driverSmsInbox" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono space-y-2 max-h-36 overflow-y-auto text-slate-300">
+                        <h4 class="text-xs font-bold text-amber-400 mb-2"><i class="fa-solid fa-bell mr-1"></i> Recent GPS Geofence Alerts</h4>
+                        <div id="driverGeofenceAlertsList" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-bold text-sky-400"><i class="fa-solid fa-sms mr-1"></i> <span data-i18n="smsInboxHeading">Driver SMS Notification Inbox</span></h4>
+                            <span id="driverSmsCountBadge" class="px-2 py-0.5 rounded-full bg-sky-900/70 border border-sky-700/60 text-sky-200 font-mono text-[10px] font-bold">0</span>
+                        </div>
+                        <div id="driverSmsInbox" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] space-y-2 max-h-56 overflow-y-auto text-slate-300">
                             <div class="text-slate-500 italic" data-i18n="noSmsText">No SMS notifications received yet.</div>
                         </div>
                     </div>
 
-                    <div class="pt-2">
+                    <div class="pt-2 border-t border-slate-800">
                         <label class="block text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-camera mr-1"></i> <span data-i18n="uploadProofLabel">Upload Proof of Delivery / Waybill Photo</span></label>
                         <!-- DRIVER PORTAL DRAG & DROP ZONE -->
                         <div class="bg-slate-950 p-4 rounded-xl border-2 border-dashed border-slate-700 transition-all text-center" id="driverProofDropZone"
@@ -632,6 +710,24 @@
                         <div class="mt-1"><strong>Status:</strong> <span class="text-emerald-700 font-bold">● Active Real-Time Websocket Synced & Storage Bucket Ready</span></div>
                     </div>
                 </div>
+
+                <!-- ADMIN-ONLY: STORAGE ORPHAN CLEANER LAUNCHER -->
+                <div id="yardOrphanCleanerPanel" class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border border-rose-200">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-broom text-rose-600"></i>
+                                Storage Bucket Orphan Cleaner (<span class="font-mono text-xs text-sky-700">skymover-attachments</span>)
+                                <span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">Admin Only</span>
+                            </h3>
+                            <p class="text-xs text-slate-600 mt-1">Audit and purge unreferenced Gate-In, Gate-Out, Driver, and Expense photos from Supabase Storage.</p>
+                        </div>
+                        <button onclick="openStorageOrphanCleanerFromYard()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-magnifying-glass"></i> Scan & Clean Orphaned Files
+                        </button>
+                    </div>
+                </div>
+
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border">
                     <h3 class="font-bold text-base text-slate-900 mb-2">Unified Enterprise Backup (Management Backend & Empty Yard)</h3>
                     <p class="text-xs text-slate-600 mb-4">Download a complete JSON snapshot of both your Management Backend database and your Empty Yard database together.</p>
@@ -760,7 +856,7 @@
         </div>
     </div>
 
-    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS (FIXED) -->
+    <!-- GENERIC MANAGEMENT BACKEND ENTRY MODAL WITH DRAG & DROP ATTACHMENTS -->
     <div id="backendEntryModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl">
             <button onclick="closeBackendEntryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -861,7 +957,7 @@
 
     <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION, REAL-TIME WEBSOCKET SYNC & RBAC -->
     <script>
-        let stagedGateInPhotos = [];
+	let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
         let stagedDriverAttachments = [];
         let stagedBackendAttachments = [];
@@ -872,6 +968,7 @@
         let forecastChartInstance = null;
         let supabaseClient = null;
         let currentUser = null;
+        let currentUserEmail = '';
         let currentUserRole = 'guest';
         let currentBackendModuleType = '';
         let currentEditingRecordIndex = null;
@@ -882,7 +979,7 @@
         let currentEditingHubIndex = null;
         let currentEditingReportTemplateIndex = null;
 
-        // FIX: Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
+        // Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
         let isSavingCloudData = false;
         let lastLocalSaveTimestamp = 0;
 
@@ -1135,6 +1232,127 @@
             }
         }
 
+        async function loadDefaultPhilippineHubs() {
+            if (!requireAdminExecution("load default Philippine hub locations")) return;
+
+            const presetPhilippineHubs = [
+                {
+                    name: "Manila North Harbor Terminal",
+                    type: "Terminal Hub",
+                    address: "North Harbor, Tondo, Manila",
+                    lat: 14.6333,
+                    lng: 120.9667,
+                    radius: 5
+                },
+                {
+                    name: "Manila International Container Terminal (MICT)",
+                    type: "Transshipment Port",
+                    address: "MICT South Access Rd, Tondo, Manila",
+                    lat: 14.6042,
+                    lng: 120.9467,
+                    radius: 5
+                },
+                {
+                    name: "Manila South Harbor (ATI)",
+                    type: "Transshipment Port",
+                    address: "Port Area, Manila",
+                    lat: 14.5819,
+                    lng: 120.9645,
+                    radius: 5
+                },
+                {
+                    name: "Valenzuela Empty Container Depot",
+                    type: "Empty Container Depot",
+                    address: "Maysan Rd / NLEX Corridor, Valenzuela City",
+                    lat: 14.7011,
+                    lng: 120.9830,
+                    radius: 3
+                },
+                {
+                    name: "Subic Bay Freeport Zone (NCT 1 & 2)",
+                    type: "Transshipment Port",
+                    address: "Subic Bay Freeport Zone, Zambales",
+                    lat: 14.8291,
+                    lng: 120.2828,
+                    radius: 6
+                },
+                {
+                    name: "Batangas Port Container Terminal",
+                    type: "Transshipment Port",
+                    address: "Santa Clara, Batangas City",
+                    lat: 13.7565,
+                    lng: 121.0583,
+                    radius: 5
+                },
+                {
+                    name: "Calamba / Laguna Logistics Staging Hub",
+                    type: "Warehouse / Staging",
+                    address: "SLEX / Calamba Industrial Corridor, Laguna",
+                    lat: 14.2117,
+                    lng: 121.1653,
+                    radius: 4
+                }
+            ];
+
+            if (!confirm(`Seed ${presetPhilippineHubs.length} standard Philippine port, terminal, and depot hubs into your Hub Locations list? (Any hub name already configured will be skipped.)`)) {
+                return;
+            }
+
+            const btn = document.getElementById('loadDefaultHubsBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading Hubs...';
+            }
+
+            try {
+                if (!Array.isArray(db.hubLocations)) db.hubLocations = [];
+                const existingNames = new Set(
+                    db.hubLocations.map(h => (h.name || '').trim().toLowerCase())
+                );
+
+                let addedCount = 0;
+                let skippedCount = 0;
+
+                for (const preset of presetPhilippineHubs) {
+                    if (existingNames.has(preset.name.toLowerCase())) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const hubRecord = {
+                        ...preset,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    await syncHubLocationToSupabase(hubRecord);
+                    db.hubLocations.push(hubRecord);
+                    existingNames.add(preset.name.toLowerCase());
+                    addedCount++;
+                }
+
+                await saveCloudData();
+                refreshHubDatalist();
+
+                if (currentBackendModuleType === 'Hub Locations') {
+                    openSubModule('Hub Locations');
+                }
+
+                if (addedCount > 0) {
+                    alert(`✅ Loaded ${addedCount} default Philippine hub(s)${skippedCount > 0 ? ` (${skippedCount} already existed and were skipped)` : ''}. They are now active across GPS distance calculations, Leaflet maps, geofencing, and Transshipment Orders.`);
+                } else {
+                    alert(`ℹ️ All ${skippedCount} default Philippine hubs are already present in your Hub Locations list.`);
+                }
+            } catch (err) {
+                console.error("Error loading default Philippine hubs:", err);
+                alert(`❌ Failed to load default hubs: ${err.message || err}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Load Default Philippine Hubs';
+                }
+            }
+        }
+        
         // ==========================================
         // SUPABASE STORAGE BUCKET DIRECT UPLOAD UTILITY
         // ==========================================
@@ -1256,6 +1474,7 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if(session && session.user) {
                     currentUser = session.user;
+                    currentUserEmail = currentUser.email || '';
                     currentUserRole = (currentUser.user_metadata && currentUser.user_metadata.role) ? currentUser.user_metadata.role : 'admin';
 
                     updateAuthUI(currentUser, currentUserRole);
@@ -1263,6 +1482,8 @@
                     resetInactivityTimer();
                     restoreLastActiveViewOrLanding();
                 } else {
+                    currentUser = null;
+                    currentUserEmail = '';
                     currentUserRole = 'guest';
                     updateAuthUI(null, 'guest');
                     applyRbacPermissions('guest');
@@ -1270,6 +1491,7 @@
                 }
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     currentUser = session ? session.user : null;
+                    currentUserEmail = currentUser && currentUser.email ? currentUser.email : '';
                     currentUserRole = currentUser && currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : (currentUser ? 'admin' : 'guest');
 
                     updateAuthUI(currentUser, currentUserRole);
@@ -1277,6 +1499,8 @@
                     resetInactivityTimer();
                 });
             } catch(err) {
+                currentUser = null;
+                currentUserEmail = '';
                 applyRbacPermissions('guest');
                 window.openSkymoverLogin();
             }
@@ -1317,6 +1541,7 @@
             const rbacUsersNavBtn = document.getElementById('rbacUsersNavBtn');
             const hubLocationsNavBtn = document.getElementById('hubLocationsNavBtn');
             const auditLogBtn = document.getElementById('auditLogBtn');
+            const yardOrphanCleanerPanel = document.getElementById('yardOrphanCleanerPanel');
 
             if(cardBackend) cardBackend.style.display = 'block';
             if(cardDriver) cardDriver.style.display = 'block';
@@ -1325,6 +1550,7 @@
             if(rbacUsersNavBtn) rbacUsersNavBtn.style.display = 'inline-block';
             if(hubLocationsNavBtn) hubLocationsNavBtn.style.display = 'inline-block';
             if(auditLogBtn) auditLogBtn.style.display = 'inline-block';
+            if(yardOrphanCleanerPanel) yardOrphanCleanerPanel.style.display = (role === 'admin') ? 'block' : 'none';
 
             if (role === 'driver') {
                 if(cardBackend) cardBackend.style.display = 'none';
@@ -1394,6 +1620,7 @@
                     alert('Authentication Error: ' + error.message);
                 } else if(data && data.user) {
                     currentUser = data.user;
+                    currentUserEmail = currentUser.email || '';
                     currentUserRole = currentUser.user_metadata && currentUser.user_metadata.role ? currentUser.user_metadata.role : 'admin';
 
                     updateAuthUI(currentUser, currentUserRole);
@@ -1423,6 +1650,7 @@
             try {
                 await supabaseClient.auth.signOut();
                 currentUser = null;
+                currentUserEmail = '';
                 currentUserRole = 'guest';
                 localStorage.removeItem('skymover_active_view');
                 updateAuthUI(null, 'guest');
@@ -1487,6 +1715,7 @@
                 // Fetch live tables from Supabase using non-destructive merge
                 await fetchHubLocationsFromSupabase();
                 await fetchLogiTrackDataFromSupabase();
+                await fetchDispatchLogsFromSupabase();
                 await fetchFleetExpensesFromSupabase();
                 await fetchYardExpensesFromSupabase();
                 await fetchMaintenanceLogsFromSupabase();
@@ -1498,13 +1727,14 @@
                 refreshYard();
                 renderTransshipmentTable();
                 refreshDriverSmsInbox();
+                renderDriverGeofenceAlerts();
             } catch(e) {
                 console.warn("fetchCloudData notice:", e.message);
             }
         }
 
         // ==========================================
-        // UPDATED: LIVE SUPABASE REALTIME LISTENERS WITH ECHO GUARD
+        // LIVE SUPABASE REALTIME LISTENERS WITH ECHO GUARD
         // ==========================================
         function subscribeToRealtimeChanges() {
             if(!supabaseClient) return;
@@ -1535,6 +1765,7 @@
                         refreshYard();
                         renderTransshipmentTable();
                         refreshDriverSmsInbox();
+                        renderDriverGeofenceAlerts();
                         const trackContainer = document.getElementById('geofenceAlertsContainer');
                         if(trackContainer) renderGeofenceLogs(trackContainer);
                         renderConfiguredZones();
@@ -1546,8 +1777,13 @@
                     if (payload && payload.new) {
                         const newAlert = {
                             id: payload.new.id,
+                            unit: payload.new.unit_id,
+                            driver: payload.new.driver_name,
+                            zone: payload.new.zone_name || payload.new.nearest_hub,
+                            type: payload.new.alert_type,
                             message: payload.new.message,
                             time: payload.new.created_at || new Date().toISOString(),
+                            timestamp: payload.new.created_at || new Date().toISOString(),
                             lat: payload.new.latitude,
                             lng: payload.new.longitude,
                             unitId: payload.new.unit_id,
@@ -1560,6 +1796,7 @@
                         }
                         const trackContainer = document.getElementById('geofenceAlertsContainer');
                         if (trackContainer) renderGeofenceLogs(trackContainer);
+                        renderDriverGeofenceAlerts();
 
                         if (newAlert.lat && newAlert.lng && skymoverLeafletMap && skymoverMapMarkersLayer) {
                             const liveMarker = L.marker([newAlert.lat, newAlert.lng], {
@@ -1587,9 +1824,13 @@
                         if (!db.smsLogs.some(s => s.id && s.id === payload.new.id)) {
                             db.smsLogs.unshift({
                                 id: payload.new.id,
+                                recipient: payload.new.recipient || payload.new.driver_name || 'Driver',
                                 unit: payload.new.unit_id || payload.new.unit || 'ALL',
+                                phone: payload.new.phone || 'In-App Driver Inbox',
                                 message: payload.new.message,
-                                time: payload.new.created_at || new Date().toISOString()
+                                status: payload.new.status || 'Delivered',
+                                timestamp: payload.new.sent_at || payload.new.created_at || new Date().toISOString(),
+                                time: payload.new.sent_at || payload.new.created_at || new Date().toISOString()
                             });
                             refreshDriverSmsInbox();
                         }
@@ -1674,11 +1915,12 @@
                 setTimeout(() => { isSavingCloudData = false; }, 600);
             }
         }
-async function confirmResetAllDatabases() {
+
+        async function confirmResetAllDatabases() {
             if (!requireAdminExecution("reset all databases")) return;
-            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records & Sync DB:');
-            if(pwd !== 'Skymover_Transportation_2026') return;
-    
+            const pwd = prompt('🔒 Enter Administrator Password to Reset All Records, Standalone Tables, Storage Files & Sync DB:');
+            if (pwd !== 'Skymover_Transportation_2026') return;
+
             try {
                 const backupPayload = {
                     timestamp: new Date().toISOString(),
@@ -1695,61 +1937,193 @@ async function confirmResetAllDatabases() {
                 downloadAnchor.remove();
             } catch (backupErr) {
                 console.error("Automated backup generation failed:", backupErr);
-                if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with the database reset?")) {
+                if (!confirm("⚠️ Warning: Automated backup download failed. Do you still want to proceed with the database and storage reset?")) {
                     return;
                 }
             }
-    
+
+            isSavingCloudData = true;
+            lastLocalSaveTimestamp = Date.now();
+
+            // 1. Purge all referenced & bucket files from skymover-attachments after emergency backup downloads
+            let removedStorageCount = 0;
+            let clearedTablesCount = 0;
+
+            if (supabaseClient) {
+                try {
+                    const pathsToPurge = new Set();
+
+                    const allRecordCollections = [
+                        ...(db.vehicles || []),
+                        ...(db.drivers || []),
+                        ...(db.fuelLogs || []),
+                        ...(db.maintenanceLogs || []),
+                        ...(db.dispatchLogs || []),
+                        ...(db.expenseLogs || []),
+                        ...(db.transshipments || []),
+                        ...(db.uploads || []),
+                        ...(yardDb.containers || []),
+                        ...(yardDb.movements || [])
+                    ];
+
+                    allRecordCollections.forEach(rec => {
+                        if (!rec || typeof rec !== 'object') return;
+                        ['attachments', 'photos', 'releasePhotos'].forEach(field => {
+                            if (Array.isArray(rec[field])) {
+                                rec[field].forEach(item => {
+                                    const candidate = typeof item === 'string'
+                                        ? item
+                                        : (item && (item.filePath || item.path || item.dataUrl || item.fileUrl || item.url));
+                                    const extracted = typeof extractBucketPathFromUrl === 'function'
+                                        ? extractBucketPathFromUrl(candidate)
+                                        : null;
+                                    if (extracted) pathsToPurge.add(extracted);
+                                });
+                            }
+                        });
+                        ['filePath', 'fileUrl', 'receipt_url'].forEach(field => {
+                            const extracted = typeof extractBucketPathFromUrl === 'function'
+                                ? extractBucketPathFromUrl(rec[field])
+                                : null;
+                            if (extracted) pathsToPurge.add(extracted);
+                        });
+                    });
+
+                    // Include any unreferenced/orphaned files across all subfolders in the bucket
+                    if (typeof listAllBucketFilesRecursive === 'function') {
+                        const bucketFiles = await listAllBucketFilesRecursive(STORAGE_BUCKET_NAME);
+                        bucketFiles.forEach(f => {
+                            if (f && f.fullPath) pathsToPurge.add(f.fullPath);
+                        });
+                    }
+
+                    // Delete storage objects in batches of 100
+                    const allPaths = Array.from(pathsToPurge);
+                    for (let i = 0; i < allPaths.length; i += 100) {
+                        const batch = allPaths.slice(i, i + 100);
+                        const { error: removeErr } = await supabaseClient.storage
+                            .from(STORAGE_BUCKET_NAME)
+                            .remove(batch);
+                        if (!removeErr) {
+                            removedStorageCount += batch.length;
+                        } else {
+                            console.warn("Storage batch purge notice:", removeErr.message);
+                        }
+                    }
+                } catch (storageResetErr) {
+                    console.warn("Storage bucket purge notice during DB reset:", storageResetErr.message || storageResetErr);
+                }
+
+                // 2. Delete all rows across the 14 standalone Supabase tables
+                // Delete geofence_alerts first in case zone_id has a foreign key to geofence_zones
+                try {
+                    const { error: alertsDelErr } = await supabaseClient
+                        .from('geofence_alerts')
+                        .delete()
+                        .not('id', 'is', null);
+                    if (!alertsDelErr) clearedTablesCount++;
+                } catch (e) {
+                    console.warn("geofence_alerts reset notice:", e.message);
+                }
+
+                const standaloneTables = [
+                    'vehicles',
+                    'drivers',
+                    'fuel_logs',
+                    'maintenance_logs',
+                    'dispatch_logs',
+                    'fleet_expenses',
+                    'yard_containers',
+                    'yard_revenues',
+                    'yard_movements',
+                    'yard_expenses',
+                    'geofence_zones',
+                    'sms_logs',
+                    'hub_locations'
+                ];
+
+                await Promise.all(standaloneTables.map(async (tbl) => {
+                    try {
+                        const { error } = await supabaseClient
+                            .from(tbl)
+                            .delete()
+                            .not('id', 'is', null);
+
+                        if (!error) {
+                            clearedTablesCount++;
+                        } else {
+                            console.warn(`Standalone table reset notice (${tbl}):`, error.message);
+                        }
+                    } catch (tblErr) {
+                        console.warn(`Standalone table reset skipped (${tbl}):`, tblErr.message);
+                    }
+                }));
+            }
+
+            // 3. Reset local in-memory state (preserving admin RBAC accounts)
             const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
-    
-            db = { 
-                vehicles: [], 
-                drivers: [], 
-                fuelLogs: [], 
-                maintenanceLogs: [], 
-                dispatchLogs: [], 
-                expenseLogs: [], 
-                transshipments: [], 
-                uploads: [], 
-                smsLogs: [], 
-                geofenceAlerts: [], 
-                geofenceZones: [], 
+
+            db = {
+                vehicles: [],
+                drivers: [],
+                fuelLogs: [],
+                maintenanceLogs: [],
+                dispatchLogs: [],
+                expenseLogs: [],
+                transshipments: [],
+                uploads: [],
+                smsLogs: [],
+                geofenceAlerts: [],
+                geofenceZones: [],
                 hubLocations: [],
                 reportTemplates: [],
-                systemUsers: preservedAdmins 
+                systemUsers: preservedAdmins
             };
-    
-            yardDb = { 
-                containers: [], 
-                movements: [], 
-                revenues: [], 
-                expenses: [] 
+
+            yardDb = {
+                containers: [],
+                movements: [],
+                revenues: [],
+                expenses: []
             };
-    
+
+            // Clear any in-progress staged attachments in UI memory
+            stagedGateInPhotos = [];
+            stagedGateOutPhotos = [];
+            stagedDriverAttachments = [];
+            stagedBackendAttachments = [];
+            stagedDriverProofPhotos = [];
+
             saveDB();
             safeLocalStorageSet(YARD_KEY, yardDb);
-    
-            if(supabaseClient) {
+
+            // 4. Reset unified enterprise payload row in skymover_enterprise_db
+            if (supabaseClient) {
                 try {
                     await supabaseClient.from('skymover_enterprise_db').upsert({
                         id: 1,
                         payload: { managementBackend: db, emptyYard: yardDb },
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'id' });
-                } catch(e) {
+                } catch (e) {
                     console.error("Cloud DB reset sync error:", e);
                 }
             }
-    
+
+            lastLocalSaveTimestamp = Date.now();
+            setTimeout(() => { isSavingCloudData = false; }, 1000);
+
             refreshHubDatalist();
             refreshYard();
             renderTransshipmentTable();
+            refreshDriverSmsInbox();
+            renderDriverGeofenceAlerts();
             closeSubModule();
-    
+
             if (currentBackendModuleType === 'Dashboard') {
                 openSubModule('Dashboard');
             }
-            alert('🔄 Database successfully reset! A safety backup snapshot has been downloaded to your machine, admin accounts are preserved, and all operational logs have been cleared.');
+            alert(`🔄 Database successfully reset! A safety backup snapshot was downloaded, ${clearedTablesCount} standalone cloud table(s) and ${removedStorageCount} storage file(s) were cleared, admin accounts were preserved, and all operational logs were wiped.`);
         }
     
         function openGeofenceSmsModal() {
@@ -1766,7 +2140,7 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // UPDATED: LOGITRACK LIVE SUPABASE GEOFENCE ZONE HANDLERS
+        // LOGITRACK LIVE SUPABASE GEOFENCE ZONE HANDLERS
         // ==========================================
         async function handleSaveGeofenceZone(e) {
             e.preventDefault();
@@ -1853,7 +2227,7 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // UPDATED: LOGITRACK REALTIME GEOFENCE SCAN (DYNAMIC ADMIN HUBS / ZONES ONLY)
+        // LOGITRACK REALTIME GEOFENCE SCAN (DYNAMIC ADMIN HUBS / ZONES ONLY)
         // ==========================================
         async function triggerGeofenceScan() {
             if (!requireAdminExecution("trigger a Geofence Scan")) return;
@@ -1914,10 +2288,14 @@ async function confirmResetAllDatabases() {
         let skymoverMapMarkersLayer = null;
 
         // ==========================================
-        // UPDATED: FETCH ACTUAL GPS POSITION & SYNC LIVE TO SUPABASE LOGITRACK
+        // FETCH ACTUAL GPS POSITION & SYNC LIVE TO SUPABASE LOGITRACK
         // ==========================================
         async function fetchDriverLiveLocation() {
             const statusDiv = document.getElementById('driverGeoStatus');
+            const latInputEl = document.getElementById('driverGpsLat');
+            const lngInputEl = document.getElementById('driverGpsLng');
+            const identity = resolveDriverIdentityForWrite();
+
             if (navigator.geolocation) {
                 if(statusDiv) {
                     statusDiv.classList.remove('hidden');
@@ -1925,10 +2303,13 @@ async function confirmResetAllDatabases() {
                 }
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
+                        const lat = Number(position.coords.latitude.toFixed(6));
+                        const lng = Number(position.coords.longitude.toFixed(6));
                         const latStr = lat.toFixed(4);
                         const lngStr = lng.toFixed(4);
+
+                        if (latInputEl) latInputEl.value = lat;
+                        if (lngInputEl) lngInputEl.value = lng;
                         
                         const nearestHubInfo = getNearestDestinationHub(lat, lng);
 
@@ -1946,9 +2327,10 @@ async function confirmResetAllDatabases() {
                         if(statusDiv) {
                             statusDiv.innerHTML = `✅ <b>GPS Position & Distance Acquired:</b><br><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${resolvedAddress} <br><i class="fa-solid fa-route text-sky-400 mr-1"></i> <b>Nearest Destination Hub:</b> ${nearestHubInfo.hub} ${nearestHubInfo.distanceKm !== 'N/A' ? `(${nearestHubInfo.distanceKm} km away)` : ''}<br><span class="text-[10px] text-slate-400 font-mono">(Coordinates: ${latStr}, ${lngStr} • Accuracy: ±${Math.round(position.coords.accuracy)}m)</span>`;
                         }
-                        const liveMsg = `[DRIVER GPS & DISTANCE] Unit positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`;
+                        const liveMsg = `[DRIVER GPS & DISTANCE] Unit ${identity.unit_id} (${identity.driver_name}) positioned at [${resolvedAddress}] [Lat: ${latStr}, Lng: ${lngStr}] • Nearest Hub: ${nearestHubInfo.hub} (${nearestHubInfo.distanceKm} km).`;
                         await insertGeofenceAlertToSupabase({
-                            unitId: (currentUser && currentUser.email) ? currentUser.email : 'DRIVER-UNIT',
+                            unitId: identity.unit_id !== 'UNASSIGNED' ? identity.unit_id : (currentUserEmail || 'DRIVER-UNIT'),
+                            driverName: identity.driver_name,
                             alertType: 'DRIVER_LIVE_GPS',
                             message: liveMsg,
                             lat: lat,
@@ -1957,7 +2339,17 @@ async function confirmResetAllDatabases() {
                             distanceKm: nearestHubInfo.distanceKm !== 'N/A' ? parseFloat(nearestHubInfo.distanceKm) : null
                         });
                         if(!db.geofenceAlerts) db.geofenceAlerts = [];
-                        db.geofenceAlerts.unshift({ message: liveMsg, time: new Date().toISOString() });
+                        db.geofenceAlerts.unshift({
+                            unit: identity.unit_id,
+                            driver: identity.driver_name,
+                            type: 'DRIVER_LIVE_GPS',
+                            message: liveMsg,
+                            lat: lat,
+                            lng: lng,
+                            time: new Date().toISOString(),
+                            timestamp: new Date().toISOString()
+                        });
+                        renderDriverGeofenceAlerts();
                         await saveCloudData();
                     },
                     (error) => {
@@ -1984,7 +2376,7 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // UPDATED: PLOT MAP COORDINATES USING ADMIN-ASSIGNED HUBS ONLY
+        // PLOT MAP COORDINATES USING ADMIN-ASSIGNED HUBS ONLY
         // ==========================================
         async function plotAutomatedMapCoordinates() {
             if (!requireAdminExecution("plot automated map coordinates")) return;
@@ -2095,15 +2487,27 @@ async function confirmResetAllDatabases() {
 
         async function sendDriverSms(unitId, messageText) {
             if(!db.smsLogs) db.smsLogs = [];
-            const smsItem = { unit: unitId, message: messageText, time: new Date().toISOString() };
+            const nowIso = new Date().toISOString();
+            const smsItem = {
+                recipient: unitId,
+                unit: unitId,
+                phone: 'In-App Driver Inbox',
+                message: messageText,
+                status: 'Delivered',
+                timestamp: nowIso,
+                time: nowIso
+            };
             db.smsLogs.unshift(smsItem);
 
             if (supabaseClient) {
                 try {
                     await supabaseClient.from('sms_logs').insert({
+                        recipient: unitId,
                         unit_id: unitId,
                         message: messageText,
-                        created_at: smsItem.time
+                        status: 'Delivered',
+                        sent_at: nowIso,
+                        created_at: nowIso
                     });
                 } catch (e) {
                     console.warn("Supabase sms_logs table sync fallback to enterprise payload:", e.message);
@@ -2114,20 +2518,631 @@ async function confirmResetAllDatabases() {
             refreshDriverSmsInbox();
         }
 
-        function refreshDriverSmsInbox() {
-            const inbox = document.getElementById('driverSmsInbox');
-            if(!inbox) return;
-            const logs = db.smsLogs || [];
-            if(logs.length === 0) {
-                inbox.innerHTML = '<div class="text-slate-500 italic">No SMS notifications received yet.</div>';
+        // ==========================================
+        // RBAC-FILTERED DRIVER PORTAL SMS INBOX
+        // ==========================================
+        function resolveLoggedInDriverProfile() {
+            const emailLower = (typeof currentUserEmail === 'string' && currentUserEmail ? currentUserEmail : (currentUser && currentUser.email ? currentUser.email : '')).trim().toLowerCase();
+            const matchedNames = new Set();
+            const matchedUnits = new Set();
+
+            // 0. Check JWT user_metadata if present
+            if (currentUser && currentUser.user_metadata) {
+                const mName = (currentUser.user_metadata.driver_name || currentUser.user_metadata.full_name || currentUser.user_metadata.name || '').trim().toLowerCase();
+                const mUnit = (currentUser.user_metadata.unit_id || currentUser.user_metadata.unit || currentUser.user_metadata.truck || '').trim().toLowerCase();
+                if (mName) matchedNames.add(mName);
+                if (mUnit && mUnit !== 'unassigned') matchedUnits.add(mUnit);
+            }
+
+            // 1. Check RBAC systemUsers entry matching currentUserEmail
+            const sysUser = (db.systemUsers || []).find(u => (u.email || '').trim().toLowerCase() === emailLower);
+            if (sysUser) {
+                const sysName = (sysUser.name || sysUser.fullName || sysUser.driverName || '').trim();
+                if (sysName) matchedNames.add(sysName.toLowerCase());
+                const sysUnit = (sysUser.truck || sysUser.unit || sysUser.assignedUnit || '').trim();
+                if (sysUnit) matchedUnits.add(sysUnit.toLowerCase());
+            }
+
+            // 2. Match against db.drivers by email or resolved name to get exact name & assigned truck
+            (db.drivers || []).forEach(d => {
+                const dEmail = (d.email || '').trim().toLowerCase();
+                const dName = (d.driver_name || d.name || '').trim();
+                const dNameLower = dName.toLowerCase();
+                const dTruck = (d.truck || d.unit || d.unit_id || d.assignedUnit || '').trim().toLowerCase();
+
+                const isEmailMatch = emailLower && dEmail && dEmail === emailLower;
+                const isNameMatch = dNameLower && matchedNames.has(dNameLower);
+
+                if (isEmailMatch || isNameMatch) {
+                    if (dNameLower) matchedNames.add(dNameLower);
+                    if (dTruck && dTruck !== 'unassigned') matchedUnits.add(dTruck);
+                }
+            });
+
+            // 3. Fallback: derive name prefix from email (e.g. "roberto.santos@..." -> "roberto santos") if still unresolved
+            if (matchedNames.size === 0 && emailLower.includes('@')) {
+                const localPart = emailLower.split('@')[0].replace(/[._-]+/g, ' ').trim();
+                if (localPart) {
+                    (db.drivers || []).forEach(d => {
+                        const dNameLower = (d.driver_name || d.name || '').trim().toLowerCase();
+                        const dTruck = (d.truck || d.unit || d.unit_id || '').trim().toLowerCase();
+                        if (dNameLower && (dNameLower === localPart || dNameLower.includes(localPart))) {
+                            matchedNames.add(dNameLower);
+                            if (dTruck && dTruck !== 'unassigned') matchedUnits.add(dTruck);
+                        }
+                    });
+                }
+            }
+
+            // 4. Also include any active truck unit assigned to this driver in db.dispatchLogs
+            if (matchedNames.size > 0) {
+                (db.dispatchLogs || []).forEach(log => {
+                    const logDriver = (log.driver || log.driver_name || '').trim().toLowerCase();
+                    const logUnit = (log.unit || log.unit_id || '').trim().toLowerCase();
+                    if (logDriver && matchedNames.has(logDriver) && logUnit) {
+                        matchedUnits.add(logUnit);
+                    }
+                });
+            }
+
+            return {
+                names: Array.from(matchedNames),
+                units: Array.from(matchedUnits)
+            };
+        }
+
+        // ==========================================
+        // CANONICAL DRIVER IDENTITY & ZONE RESOLVERS
+        // ==========================================
+        function resolveDriverIdentityForWrite(preferredUnit = '', preferredDriver = '') {
+            const profile = typeof resolveLoggedInDriverProfile === 'function'
+                ? resolveLoggedInDriverProfile()
+                : { names: [], units: [] };
+
+            let canonicalDriver = (preferredDriver || '').trim();
+            let canonicalUnit = (preferredUnit || '').trim();
+            const emailLower = (currentUserEmail || (currentUser && currentUser.email) || '').trim().toLowerCase();
+
+            // 1. Resolve exact-cased driver_name & assigned truck from db.drivers
+            const matchedDriverRec = (db.drivers || []).find(d => {
+                const dName = (d.driver_name || d.name || '').trim().toLowerCase();
+                const dTruck = (d.truck || d.unit_id || d.unit || '').trim().toLowerCase();
+                const dEmail = (d.email || '').trim().toLowerCase();
+
+                return (emailLower && dEmail === emailLower)
+                    || (dName && profile.names.includes(dName))
+                    || (canonicalDriver && dName === canonicalDriver.toLowerCase())
+                    || (dTruck && profile.units.includes(dTruck));
+            });
+
+            if (matchedDriverRec) {
+                if (!canonicalDriver) {
+                    canonicalDriver = (matchedDriverRec.driver_name || matchedDriverRec.name || '').trim();
+                }
+                const assignedTruck = (matchedDriverRec.truck || matchedDriverRec.unit_id || matchedDriverRec.unit || '').trim();
+                if (!canonicalUnit && assignedTruck && assignedTruck.toLowerCase() !== 'unassigned') {
+                    canonicalUnit = assignedTruck;
+                }
+            }
+
+            // 2. Fallback to active dispatch assignment in db.dispatchLogs
+            if (!canonicalDriver || !canonicalUnit) {
+                const activeTrip = (db.dispatchLogs || []).find(log => {
+                    const lDriver = (log.driver || log.driver_name || '').trim().toLowerCase();
+                    const lUnit = (log.unit || log.unit_id || '').trim().toLowerCase();
+                    return (lDriver && profile.names.includes(lDriver))
+                        || (lUnit && profile.units.includes(lUnit))
+                        || (canonicalUnit && lUnit === canonicalUnit.toLowerCase());
+                });
+
+                if (activeTrip) {
+                    if (!canonicalDriver) canonicalDriver = (activeTrip.driver || activeTrip.driver_name || '').trim();
+                    if (!canonicalUnit) canonicalUnit = (activeTrip.unit || activeTrip.unit_id || '').trim();
+                }
+            }
+
+            // 3. Final fallback from resolved profile sets
+            if (!canonicalDriver && profile.names.length > 0) {
+                canonicalDriver = profile.names[0].replace(/\b\w/g, c => c.toUpperCase());
+            }
+            if (!canonicalUnit && profile.units.length > 0) {
+                canonicalUnit = profile.units[0].toUpperCase();
+            }
+
+            return {
+                driver_name: canonicalDriver || emailLower || 'Assigned Driver',
+                unit_id: canonicalUnit || 'UNASSIGNED'
+            };
+        }
+
+        function evaluateNearestGeofenceOrHub(lat, lng) {
+            const numLat = parseFloat(lat);
+            const numLng = parseFloat(lng);
+            if (isNaN(numLat) || isNaN(numLng)) {
+                return { zoneName: 'Unverified GPS Location', distanceKm: null, insideZone: false, radiusKm: 5 };
+            }
+
+            const candidates = [
+                ...(db.geofenceZones || []).map(z => ({
+                    name: z.name || z.zone_name || 'Geofence Zone',
+                    lat: parseFloat(z.lat ?? z.latitude),
+                    lng: parseFloat(z.lng ?? z.longitude),
+                    radiusKm: parseFloat(z.radius ?? z.radius_km ?? 5) || 5
+                })),
+                ...(typeof getActiveHubLocations === 'function' ? getActiveHubLocations() : (db.hubLocations || [])).map(h => ({
+                    name: h.name || 'Assigned Hub',
+                    lat: parseFloat(h.lat ?? h.latitude),
+                    lng: parseFloat(h.lng ?? h.longitude),
+                    radiusKm: parseFloat(h.radius ?? 5) || 5
+                }))
+            ].filter(c => !isNaN(c.lat) && !isNaN(c.lng));
+
+            let best = null;
+            for (const item of candidates) {
+                const dist = typeof calculateDistanceKm === 'function'
+                    ? calculateDistanceKm(numLat, numLng, item.lat, item.lng)
+                    : 0;
+                if (!best || dist < best.distanceKm) {
+                    best = {
+                        zoneName: item.name,
+                        distanceKm: Number(dist.toFixed(2)),
+                        insideZone: dist <= item.radiusKm,
+                        radiusKm: item.radiusKm
+                    };
+                }
+            }
+
+            return best || { zoneName: 'Open Transit Corridor', distanceKm: null, insideZone: false, radiusKm: 5 };
+        }
+
+        // ==========================================
+        // DRIVER PORTAL: DIRECT TRIP STATUS UPDATE -> public.dispatch_logs
+        // ==========================================
+        async function syncDriverTripStatusToSupabase(dispatchRec) {
+            if (!supabaseClient || !dispatchRec) {
+                throw new Error("Supabase client or dispatch record is unavailable.");
+            }
+
+            const nowIso = new Date().toISOString();
+            const updatePayload = {
+                status: dispatchRec.status,
+                latitude: dispatchRec.lat !== null && dispatchRec.lat !== undefined ? Number(dispatchRec.lat) : null,
+                longitude: dispatchRec.lng !== null && dispatchRec.lng !== undefined ? Number(dispatchRec.lng) : null,
+                nearest_hub: dispatchRec.nearestHub || dispatchRec.destinationHub || null,
+                attachments: Array.isArray(dispatchRec.attachments) ? dispatchRec.attachments : [],
+                updated_at: nowIso
+            };
+
+            let query = supabaseClient.from('dispatch_logs').update(updatePayload);
+
+            // Target by primary key id when present; otherwise match by canonical unit_id + driver_name
+            if (dispatchRec.id) {
+                query = query.eq('id', dispatchRec.id);
+            } else {
+                const identity = resolveDriverIdentityForWrite(dispatchRec.unit, dispatchRec.driver);
+                query = query
+                    .eq('unit_id', identity.unit_id)
+                    .eq('driver_name', identity.driver_name);
+            }
+
+            const { data, error } = await query.select('id, status, updated_at');
+
+            if (error) {
+                throw new Error(`RLS / Database update rejected: ${error.message}`);
+            }
+
+            if (!data || data.length === 0) {
+                throw new Error("No matching dispatch row was updated. Verify that this trip is assigned to your driver profile or truck unit.");
+            }
+
+            if (!dispatchRec.id && data[0].id) {
+                dispatchRec.id = data[0].id;
+            }
+            dispatchRec.updatedAt = data[0].updated_at || nowIso;
+
+            return data[0];
+        }
+
+        async function submitDriverTripStatusUpdate(event) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+
+            const dispatchSelectEl =
+                document.getElementById('driverActiveDispatchSelect') ||
+                document.getElementById('driverTripSelect');
+            const statusSelectEl =
+                document.getElementById('driverTripStatusSelect') ||
+                document.getElementById('driverStatusSelect');
+            const notesInputEl =
+                document.getElementById('driverTripNotesInput') ||
+                document.getElementById('driverRemarksInput');
+            const latInputEl = document.getElementById('driverGpsLat');
+            const lngInputEl = document.getElementById('driverGpsLng');
+            const submitBtn =
+                document.getElementById('driverTripUpdateBtn') ||
+                document.getElementById('submitDriverStatusBtn');
+
+            const newStatus = statusSelectEl ? statusSelectEl.value.trim() : '';
+            if (!newStatus) {
+                alert("Please select a trip status before submitting.");
                 return;
             }
-            inbox.innerHTML = logs.map(s => `
-                <div class="border-b border-slate-900 pb-1.5 mb-1.5 last:border-0">
-                    <span class="text-sky-400 font-bold">[${s.unit}]</span> <span class="text-slate-200">${s.message}</span>
-                    <div class="text-[9px] text-slate-500">${new Date(s.time).toLocaleTimeString()}</div>
-                </div>
-            `).join('');
+
+            const identity = resolveDriverIdentityForWrite();
+            let targetIndex = -1;
+
+            if (dispatchSelectEl && dispatchSelectEl.value !== '') {
+                const selectedVal = dispatchSelectEl.value;
+                targetIndex = (db.dispatchLogs || []).findIndex(
+                    (d, idx) => String(d.id || idx) === String(selectedVal)
+                );
+            }
+
+            if (targetIndex === -1) {
+                targetIndex = (db.dispatchLogs || []).findIndex(d => {
+                    const dUnit = (d.unit || d.unit_id || '').trim().toLowerCase();
+                    const dDriver = (d.driver || d.driver_name || '').trim().toLowerCase();
+                    return (dUnit && dUnit === identity.unit_id.toLowerCase())
+                        || (dDriver && dDriver === identity.driver_name.toLowerCase());
+                });
+            }
+
+            if (targetIndex === -1 || !db.dispatchLogs[targetIndex]) {
+                alert("No active dispatch assignment found for your driver profile or assigned truck unit.");
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Updating Trip...';
+            }
+
+            try {
+                const targetTrip = db.dispatchLogs[targetIndex];
+
+                let currentLat = latInputEl && latInputEl.value !== '' ? parseFloat(latInputEl.value) : targetTrip.lat;
+                let currentLng = lngInputEl && lngInputEl.value !== '' ? parseFloat(lngInputEl.value) : targetTrip.lng;
+
+                if ((isNaN(currentLat) || isNaN(currentLng)) && navigator.geolocation) {
+                    try {
+                        const pos = await new Promise((resolve, reject) =>
+                            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true })
+                        );
+                        currentLat = Number(pos.coords.latitude.toFixed(6));
+                        currentLng = Number(pos.coords.longitude.toFixed(6));
+                        if (latInputEl) latInputEl.value = currentLat;
+                        if (lngInputEl) lngInputEl.value = currentLng;
+                    } catch (gpsErr) {
+                        // Proceed with status update even if browser GPS is unavailable
+                    }
+                }
+
+                const proximity = evaluateNearestGeofenceOrHub(currentLat, currentLng);
+                const mergedAttachments = [
+                    ...(Array.isArray(targetTrip.attachments) ? targetTrip.attachments : []),
+                    ...(Array.isArray(stagedDriverProofPhotos) ? stagedDriverProofPhotos : [])
+                ];
+
+                targetTrip.status = newStatus;
+                if (!isNaN(currentLat)) targetTrip.lat = currentLat;
+                if (!isNaN(currentLng)) targetTrip.lng = currentLng;
+                if (proximity.zoneName && proximity.zoneName !== 'Unverified GPS Location') {
+                    targetTrip.nearestHub = proximity.zoneName;
+                }
+                if (notesInputEl && notesInputEl.value.trim()) {
+                    targetTrip.driverNotes = notesInputEl.value.trim();
+                }
+                targetTrip.attachments = mergedAttachments;
+                targetTrip.updatedAt = new Date().toISOString();
+
+                // Persist directly to public.dispatch_logs under RLS policy rbac_update_dispatch_logs
+                await syncDriverTripStatusToSupabase(targetTrip);
+
+                stagedDriverProofPhotos = [];
+                if (notesInputEl) notesInputEl.value = '';
+                saveDB();
+
+                try {
+                    await saveCloudData();
+                } catch (syncErr) {
+                    // Standalone table update already succeeded
+                }
+
+                if (typeof refreshDriverPortal === 'function') {
+                    refreshDriverPortal();
+                }
+
+                alert(`✅ Trip status updated to "${newStatus}" for Unit ${targetTrip.unit || identity.unit_id} and synced to cloud dispatch logs.`);
+            } catch (err) {
+                console.error("Driver trip status update failed:", err);
+                alert(`❌ Could not update trip status: ${err.message || err}`);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Update Trip Status';
+                }
+            }
+        }
+
+        // ==========================================
+        // DRIVER PORTAL: DIRECT GPS GEOFENCE ALERT -> public.geofence_alerts
+        // ==========================================
+        async function submitDriverGeofenceAlert(event, presetAlertType = null) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+
+            if (!supabaseClient) {
+                alert("Supabase client is not initialized.");
+                return;
+            }
+
+            const alertTypeEl =
+                document.getElementById('driverGeofenceAlertType') ||
+                document.getElementById('driverAlertTypeSelect');
+            const customNoteEl =
+                document.getElementById('driverGeofenceNoteInput') ||
+                document.getElementById('driverAlertRemarksInput');
+            const latInputEl = document.getElementById('driverGpsLat');
+            const lngInputEl = document.getElementById('driverGpsLng');
+            const alertBtn =
+                document.getElementById('driverGeofenceAlertBtn') ||
+                document.getElementById('sendDriverGeofenceAlertBtn');
+
+            const identity = resolveDriverIdentityForWrite();
+            if (!identity.unit_id || identity.unit_id === 'UNASSIGNED') {
+                alert("Cannot submit GPS geofence alert: No truck unit is assigned to your driver profile.");
+                return;
+            }
+
+            if (alertBtn) {
+                alertBtn.disabled = true;
+                alertBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Sending GPS Alert...';
+            }
+
+            try {
+                let lat = latInputEl && latInputEl.value !== '' ? parseFloat(latInputEl.value) : NaN;
+                let lng = lngInputEl && lngInputEl.value !== '' ? parseFloat(lngInputEl.value) : NaN;
+
+                if ((isNaN(lat) || isNaN(lng)) && navigator.geolocation) {
+                    const pos = await new Promise((resolve, reject) =>
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, enableHighAccuracy: true })
+                    );
+                    lat = Number(pos.coords.latitude.toFixed(6));
+                    lng = Number(pos.coords.longitude.toFixed(6));
+                    if (latInputEl) latInputEl.value = lat;
+                    if (lngInputEl) lngInputEl.value = lng;
+                }
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    throw new Error("GPS coordinates are required. Enable browser location services or enter Latitude/Longitude.");
+                }
+
+                const proximity = evaluateNearestGeofenceOrHub(lat, lng);
+                const alertType = presetAlertType
+                    || (alertTypeEl && alertTypeEl.value.trim())
+                    || (proximity.insideZone ? 'Geofence Check-In' : 'Outside Geofence / Transit Ping');
+                const noteText = customNoteEl && customNoteEl.value.trim() ? ` — Note: ${customNoteEl.value.trim()}` : '';
+                const distSummary = proximity.distanceKm !== null
+                    ? `${proximity.insideZone ? 'INSIDE' : `${proximity.distanceKm} km from`} ${proximity.zoneName} (${proximity.radiusKm} km radius)`
+                    : proximity.zoneName;
+
+                // Explicitly include Unit <unit_id> and driver_name so RLS WITH CHECK passes cleanly
+                const alertMessage = `[${alertType}] Unit ${identity.unit_id} (${identity.driver_name}) at (${lat}, ${lng}) • ${distSummary}${noteText}`;
+                const nowIso = new Date().toISOString();
+
+                const insertPayload = {
+                    unit_id: identity.unit_id,
+                    driver_name: identity.driver_name,
+                    zone_name: proximity.zoneName,
+                    alert_type: alertType,
+                    message: alertMessage,
+                    latitude: lat,
+                    longitude: lng,
+                    nearest_hub: proximity.zoneName,
+                    distance_km: proximity.distanceKm,
+                    status: 'Active',
+                    created_at: nowIso
+                };
+
+                // Persist directly to public.geofence_alerts under RLS policy rbac_insert_geofence_alerts
+                const { data, error } = await supabaseClient
+                    .from('geofence_alerts')
+                    .insert(insertPayload)
+                    .select('id, created_at')
+                    .single();
+
+                if (error) {
+                    throw new Error(`RLS / Database insert rejected: ${error.message}`);
+                }
+
+                if (!Array.isArray(db.geofenceAlerts)) db.geofenceAlerts = [];
+                db.geofenceAlerts.unshift({
+                    id: data ? data.id : Date.now(),
+                    unit: identity.unit_id,
+                    driver: identity.driver_name,
+                    zone: proximity.zoneName,
+                    type: alertType,
+                    message: alertMessage,
+                    lat: lat,
+                    lng: lng,
+                    status: 'Active',
+                    time: (data && data.created_at) ? data.created_at : nowIso,
+                    timestamp: (data && data.created_at) ? data.created_at : nowIso
+                });
+
+                if (customNoteEl) customNoteEl.value = '';
+                saveDB();
+
+                try {
+                    await saveCloudData();
+                } catch (syncErr) {
+                    // Direct table insert already succeeded
+                }
+
+                renderDriverGeofenceAlerts();
+                alert(`📡 GPS Geofence Alert submitted for Unit ${identity.unit_id}!\nLocation: ${distSummary}`);
+            } catch (err) {
+                console.error("Driver geofence alert submission failed:", err);
+                alert(`❌ Failed to submit GPS geofence alert: ${err.message || err}`);
+            } finally {
+                if (alertBtn) {
+                    alertBtn.disabled = false;
+                    alertBtn.innerHTML = '<i class="fa-solid fa-satellite-dish mr-1.5"></i> Send GPS Geofence Alert';
+                }
+            }
+        }
+
+        function renderDriverGeofenceAlerts() {
+            const listEl =
+                document.getElementById('driverGeofenceAlertsList') ||
+                document.getElementById('driverRecentAlertsList');
+            if (!listEl) return;
+
+            const identity = resolveDriverIdentityForWrite();
+            const isElevated = ['admin', 'dispatcher'].includes(currentUserRole);
+            const alerts = (db.geofenceAlerts || []).filter(a => {
+                if (isElevated) return true;
+                const aUnit = (a.unit || a.unit_id || '').trim().toLowerCase();
+                const aDriver = (a.driver || a.driver_name || '').trim().toLowerCase();
+                const aMsg = (a.message || '').toLowerCase();
+                return (aUnit && aUnit === identity.unit_id.toLowerCase())
+                    || (aDriver && aDriver === identity.driver_name.toLowerCase())
+                    || (identity.unit_id !== 'UNASSIGNED' && aMsg.includes(`unit ${identity.unit_id.toLowerCase()}`));
+            });
+
+            if (alerts.length === 0) {
+                listEl.innerHTML = `<div class="p-3 text-center text-xs text-slate-400 bg-slate-900/60 border border-slate-800 rounded-xl">No GPS geofence alerts recorded for Unit ${identity.unit_id} yet.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = alerts.slice(0, 10).map(a => {
+                const ts = a.timestamp || a.time || a.created_at;
+                const timeStr = ts ? new Date(ts).toLocaleString() : 'Just now';
+                return `
+                    <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 space-y-1">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${a.type || a.alert_type || 'Geofence Alert'}</span>
+                            <span class="text-[10px] font-mono text-slate-400">${timeStr}</span>
+                        </div>
+                        <p class="text-xs text-slate-200">${a.message || ''}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function refreshDriverSmsInbox() {
+            const container =
+                document.getElementById('driverSmsInboxList') ||
+                document.getElementById('driverSmsInbox') ||
+                document.getElementById('driverSmsList');
+
+            const badgeEl =
+                document.getElementById('driverSmsCountBadge') ||
+                document.getElementById('driverUnreadSmsBadge');
+
+            const allLogs = Array.isArray(db.smsLogs) ? db.smsLogs : [];
+            const isElevatedRole = ['admin', 'dispatcher'].includes(currentUserRole);
+
+            let visibleLogs = [];
+            let scopeBannerHtml = '';
+
+            if (isElevatedRole) {
+                // Admins and Dispatchers see all fleet SMS logs
+                visibleLogs = [...allLogs];
+                scopeBannerHtml = `
+                    <div class="flex items-center justify-between bg-sky-950/60 border border-sky-800/60 rounded-lg px-3 py-1.5 mb-2.5 text-[11px] text-sky-200">
+                        <span><i class="fa-solid fa-shield-halved text-sky-400 mr-1.5"></i> <strong>${currentUserRole === 'admin' ? 'Admin' : 'Dispatcher'} View:</strong> Showing all fleet SMS notifications (${visibleLogs.length})</span>
+                    </div>
+                `;
+            } else {
+                // Drivers see ONLY SMS alerts addressed to their driver name or assigned truck unit
+                const profile = resolveLoggedInDriverProfile();
+
+                visibleLogs = allLogs.filter(sms => {
+                    if (!sms) return false;
+
+                    const recipient = (sms.recipient || sms.driver || sms.driver_name || '').trim().toLowerCase();
+                    const smsUnit = (sms.unit || sms.unit_id || '').trim().toLowerCase();
+                    const smsMsg = (sms.message || '').toLowerCase();
+
+                    const matchesDriverName =
+                        recipient !== '' &&
+                        profile.names.some(name => recipient === name || recipient.includes(name));
+
+                    const matchesAssignedUnit =
+                        profile.units.some(unit =>
+                            (smsUnit !== '' && smsUnit === unit) ||
+                            (unit !== '' && smsMsg.includes(`unit ${unit}`))
+                        );
+
+                    return matchesDriverName || matchesAssignedUnit;
+                });
+
+                const identitySummary = [
+                    profile.names.length ? `Driver: ${profile.names.map(n => n.replace(/\b\w/g, c => c.toUpperCase())).join(', ')}` : null,
+                    profile.units.length ? `Unit: ${profile.units.map(u => u.toUpperCase()).join(', ')}` : null
+                ].filter(Boolean).join(' • ') || (currentUserEmail || 'Unlinked Driver Account');
+
+                scopeBannerHtml = `
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/50 border border-emerald-800/60 rounded-lg px-3 py-1.5 mb-2.5 text-[11px] text-emerald-200">
+                        <span><i class="fa-solid fa-user-check text-emerald-400 mr-1.5"></i> Filtered for <strong>${identitySummary}</strong></span>
+                        <span class="font-mono text-[10px] text-emerald-300">${visibleLogs.length} message(s)</span>
+                    </div>
+                `;
+            }
+
+            if (badgeEl) {
+                badgeEl.textContent = visibleLogs.length;
+            }
+
+            if (!container) return;
+
+            if (visibleLogs.length === 0) {
+                container.innerHTML = `
+                    ${scopeBannerHtml}
+                    <div class="p-4 text-center text-xs text-slate-400 bg-slate-900/70 border border-slate-800 rounded-xl">
+                        <i class="fa-solid fa-inbox text-slate-500 text-base mb-1 block"></i>
+                        ${isElevatedRole
+                            ? 'No SMS dispatch logs recorded yet.'
+                            : 'No SMS dispatch notifications addressed to your driver profile or assigned truck unit yet.'}
+                    </div>
+                `;
+                return;
+            }
+
+            const cardsHtml = visibleLogs.map(sms => {
+                const rawTime = sms.timestamp || sms.sent_at || sms.time || sms.created_at;
+                const timeLabel = rawTime ? new Date(rawTime).toLocaleString() : 'Just now';
+                const recipientLabel = sms.recipient || sms.driver || sms.driver_name || 'Driver';
+                const unitBadge = sms.unit || sms.unit_id
+                    ? `<span class="px-2 py-0.5 rounded bg-sky-900/70 border border-sky-700/60 text-sky-200 font-mono text-[10px] font-bold">Unit ${sms.unit || sms.unit_id}</span>`
+                    : '';
+                const hubBadge = sms.destinationHub
+                    ? `<span class="px-2 py-0.5 rounded bg-emerald-900/60 border border-emerald-700/60 text-emerald-200 text-[10px] font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${sms.destinationHub}</span>`
+                    : '';
+
+                return `
+                    <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 space-y-1.5 hover:border-sky-600/60 transition">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-xs font-bold text-white"><i class="fa-solid fa-comment-sms text-emerald-400 mr-1"></i> ${recipientLabel}</span>
+                                ${unitBadge}
+                                ${hubBadge}
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400">${timeLabel}</span>
+                        </div>
+                        <p class="text-xs text-slate-200 leading-relaxed">${sms.message || ''}</p>
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-0.5">
+                            <span>To: <span class="font-mono text-slate-300">${sms.phone || 'In-App Driver Inbox'}</span></span>
+                            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check-double mr-0.5"></i> ${sms.status || 'Delivered'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `${scopeBannerHtml}<div class="space-y-2.5">${cardsHtml}</div>`;
         }
 
         function renderGeofenceLogs(containerEl) {
@@ -2138,8 +3153,7 @@ async function confirmResetAllDatabases() {
                 </div>
             `).join('') : '<div class="text-slate-500 italic text-xs">No active geofence boundary alerts.</div>';
         }
-
-        function handleDragOver(e, zoneId) {
+function handleDragOver(e, zoneId) {
             e.preventDefault();
             e.stopPropagation();
             const zone = document.getElementById(zoneId);
@@ -2420,7 +3434,7 @@ async function confirmResetAllDatabases() {
                 card2Title: "Driver's side", 
                 card2Desc: "Waybill, Photo, Navigation", 
                 newDriverReg: "New driver registration →", 
-                card3Title: "Transshipment Hub", 
+                card3Title: "Safe Keeping", 
                 card3Desc: "Waybill, Photograph, Commission & Terminal Acceptance",
                 card3Link: "Open Empty Yard →",
                 backendHeading: "Management Backend & Analytics",
@@ -2441,7 +3455,7 @@ async function confirmResetAllDatabases() {
                 driverPortalHeading: "Driver's Portal & Waybill Mobile View",
                 driverPortalSub: "Mobile waybill dispatch, active route navigation, and proof-of-delivery photo uploads.",
                 regNewDriverBtn: "Register New Driver",
-                activeTripHeading: "Active Assigned Trip & Driver SMS Feed",
+                activeTripHeading: "Active Assigned Trip & Driver GPS Location",
                 smsInboxHeading: "Driver SMS Notification Inbox",
                 noSmsText: "No SMS notifications received yet.",
                 uploadProofLabel: "Upload Proof of Delivery / Waybill Photo",
@@ -2597,16 +3611,39 @@ async function confirmResetAllDatabases() {
 
         function refreshDriverPortal() {
             const infoContainer = document.getElementById('driverActiveTripInfo');
-            if(!infoContainer) return;
-            let activeTrans = (db.transshipments || []).find(t => t.status && t.status.includes('Hub Accepted')) || (db.transshipments || [])[0];
-            let activeContainer = (yardDb.containers || []).find(c => c.status !== 'Released') || { number: '—', size: '—' };
-            infoContainer.innerHTML = `
-                <div><span class="text-slate-400">Waybill ID:</span> <strong class="text-white">${activeTrans ? activeTrans.id : 'No Active Waybill'}</strong></div>
-                <div><span class="text-slate-400">Origin / Route:</span> <strong class="text-white">${activeTrans ? activeTrans.origin : 'Standby / Unassigned'}</strong></div>
-                <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '—'})</strong></div>
-                <div><span class="text-slate-400">Status:</span> <span class="text-emerald-400 font-bold">Standby & Ready</span></div>
-            `;
+            const dispatchSelectEl = document.getElementById('driverActiveDispatchSelect');
+            const identity = resolveDriverIdentityForWrite();
+            const isElevated = ['admin', 'dispatcher'].includes(currentUserRole);
+
+            const matchingDispatches = (db.dispatchLogs || []).map((d, idx) => ({ ...d, _idx: idx })).filter(d => {
+                if (isElevated) return true;
+                const dUnit = (d.unit || d.unit_id || '').trim().toLowerCase();
+                const dDriver = (d.driver || d.driver_name || '').trim().toLowerCase();
+                return (dUnit && dUnit === identity.unit_id.toLowerCase())
+                    || (dDriver && dDriver === identity.driver_name.toLowerCase());
+            });
+
+            if (dispatchSelectEl) {
+                dispatchSelectEl.innerHTML = matchingDispatches.length
+                    ? matchingDispatches.map(d => `<option value="${d.id || d._idx}">${d.unit || 'UNIT'} • ${d.route || 'Assigned Route'} (${d.status || 'In Transit'})</option>`).join('')
+                    : `<option value="">No assigned dispatch rows found (${identity.unit_id})</option>`;
+            }
+
+            if (infoContainer) {
+                const primaryDispatch = matchingDispatches[0] || null;
+                const activeTrans = (db.transshipments || []).find(t => t.status && t.status.includes('Hub Accepted')) || (db.transshipments || [])[0];
+                const activeContainer = (yardDb.containers || []).find(c => c.status !== 'Released') || { number: '—', size: '—' };
+
+                infoContainer.innerHTML = `
+                    <div><span class="text-slate-400">Assigned Unit / Driver:</span> <strong class="text-white">${primaryDispatch ? primaryDispatch.unit : identity.unit_id} (${primaryDispatch ? primaryDispatch.driver : identity.driver_name})</strong></div>
+                    <div><span class="text-slate-400">Active Route / Waybill:</span> <strong class="text-white">${primaryDispatch ? primaryDispatch.route : (activeTrans ? activeTrans.origin : 'Standby / Unassigned')}</strong></div>
+                    <div><span class="text-slate-400">Container:</span> <strong class="text-white">${activeContainer.number} (${activeContainer.size || '—'})</strong></div>
+                    <div><span class="text-slate-400">Trip Status:</span> <span class="text-emerald-400 font-bold">${primaryDispatch ? (primaryDispatch.status || 'In Transit') : 'Standby & Ready'}</span></div>
+                `;
+            }
+
             refreshDriverSmsInbox();
+            renderDriverGeofenceAlerts();
         }
 
         async function submitDriverProofOfDelivery() {
@@ -2655,7 +3692,7 @@ async function confirmResetAllDatabases() {
             document.getElementById('driverRegModal').classList.add('hidden');
         }
 
-        // FIXED: New Driver Registration & Edit Form Handler (Admin Only)
+        // New Driver Registration & Edit Form Handler (Admin Only)
         async function handleNewDriverSubmit(e) {
             e.preventDefault();
             if (!requireAdminExecution("save or update a driver record")) return;
@@ -3040,26 +4077,119 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // ADMIN DELETE RECORD ACROSS BACKEND MODULES
+        // AUTOMATIC SUPABASE STORAGE CLEANUP HELPERS
+        // ==========================================
+        function extractBucketPathFromUrl(urlOrPath) {
+            if (!urlOrPath || typeof urlOrPath !== 'string') return null;
+            const trimmed = urlOrPath.trim();
+            if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
+
+            // Match Supabase Storage public or signed URL patterns for this bucket
+            const markers = [
+                `/object/public/${STORAGE_BUCKET_NAME}/`,
+                `/object/sign/${STORAGE_BUCKET_NAME}/`,
+                `/${STORAGE_BUCKET_NAME}/`
+            ];
+
+            for (const marker of markers) {
+                const idx = trimmed.indexOf(marker);
+                if (idx !== -1) {
+                    const rawRelative = trimmed.substring(idx + marker.length).split('?')[0];
+                    try {
+                        return decodeURIComponent(rawRelative).replace(/^\/+/, '');
+                    } catch (e) {
+                        return rawRelative.replace(/^\/+/, '');
+                    }
+                }
+            }
+
+            // Handle direct relative paths (e.g., "gate-in/1700000_photo.jpg")
+            if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+                return trimmed.replace(/^\/+/, '');
+            }
+
+            return null;
+        }
+
+        async function removeRecordAttachmentsFromStorage(record) {
+            if (!supabaseClient || !record || typeof record !== 'object') return [];
+
+            const candidateUrls = [];
+            const arrayFields = ['attachments', 'photos', 'releasePhotos'];
+
+            arrayFields.forEach(field => {
+                if (Array.isArray(record[field])) {
+                    record[field].forEach(item => {
+                        if (typeof item === 'string') {
+                            candidateUrls.push(item);
+                        } else if (item && typeof item === 'object') {
+                            if (item.filePath) candidateUrls.push(item.filePath);
+                            if (item.path) candidateUrls.push(item.path);
+                            if (item.dataUrl) candidateUrls.push(item.dataUrl);
+                            if (item.fileUrl) candidateUrls.push(item.fileUrl);
+                            if (item.url) candidateUrls.push(item.url);
+                        }
+                    });
+                }
+            });
+
+            // Also check single-value URL/path fields if present
+            ['filePath', 'fileUrl', 'receipt_url'].forEach(field => {
+                if (typeof record[field] === 'string') {
+                    candidateUrls.push(record[field]);
+                }
+            });
+
+            const uniquePaths = Array.from(
+                new Set(candidateUrls.map(extractBucketPathFromUrl).filter(Boolean))
+            );
+
+            if (uniquePaths.length === 0) return [];
+
+            try {
+                const { error } = await supabaseClient.storage
+                    .from(STORAGE_BUCKET_NAME)
+                    .remove(uniquePaths);
+
+                if (error) {
+                    console.warn(`Supabase Storage cleanup notice (${STORAGE_BUCKET_NAME}):`, error.message);
+                    return [];
+                }
+                return uniquePaths;
+            } catch (err) {
+                console.warn("Supabase Storage cleanup exception:", err.message || err);
+                return [];
+            }
+        }
+        
+        // ==========================================
+        // ADMIN DELETE RECORD ACROSS BACKEND MODULES (+ STORAGE CLEANUP)
         // ==========================================
         async function deleteBackendRecord(moduleType, index) {
             if (!requireAdminExecution(`delete ${moduleType} record`)) return;
-            if (!confirm(`Are you sure you want to permanently delete this ${moduleType} record?`)) return;
+            if (!confirm(`Are you sure you want to permanently delete this ${moduleType} record and its attached files?`)) return;
 
             if (moduleType === 'Vehicle' && db.vehicles) {
+                const targetVehicle = db.vehicles[index];
+                await removeRecordAttachmentsFromStorage(targetVehicle);
                 db.vehicles.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Vehicle Management');
             } else if (moduleType === 'Driver' && db.drivers) {
+                const targetDriver = db.drivers[index];
+                await removeRecordAttachmentsFromStorage(targetDriver);
                 db.drivers.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Driver Management');
             } else if (moduleType === 'Fuel' && db.fuelLogs) {
+                const targetFuel = db.fuelLogs[index];
+                await removeRecordAttachmentsFromStorage(targetFuel);
                 db.fuelLogs.splice(index, 1);
                 await saveCloudData();
                 openSubModule('Fuel Monitoring');
             } else if (moduleType === 'Maintenance' && db.maintenanceLogs) {
                 const targetMaint = db.maintenanceLogs[index];
+                await removeRecordAttachmentsFromStorage(targetMaint);
                 if (targetMaint && targetMaint.id) {
                     await deleteMaintenanceLogFromSupabase(targetMaint.id);
                 }
@@ -3067,11 +4197,14 @@ async function confirmResetAllDatabases() {
                 await saveCloudData();
                 openSubModule('Maintenance');
             } else if (moduleType === 'Dispatch' && db.dispatchLogs) {
+                const targetDispatch = db.dispatchLogs[index];
+                await removeRecordAttachmentsFromStorage(targetDispatch);
                 db.dispatchLogs.splice(index, 1);
                 await saveCloudData();
                 openSubModule('GPS & Dispatch');
             } else if (moduleType === 'Expense' && db.expenseLogs) {
                 const targetExp = db.expenseLogs[index];
+                await removeRecordAttachmentsFromStorage(targetExp);
                 if (targetExp && targetExp.id) {
                     await deleteFleetExpenseFromSupabase(targetExp.id);
                 }
@@ -3092,7 +4225,7 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // NEW: AUTOMATED FLEET EXPENSE FORECASTING ENGINE
+        // AUTOMATED FLEET EXPENSE FORECASTING ENGINE
         // ==========================================
         function computeFleetExpenseForecast(horizonDays = 30, growthPct = 0) {
             const fleetExpenses = db.expenseLogs || [];
@@ -3243,7 +4376,7 @@ async function confirmResetAllDatabases() {
         }
 
         // ==========================================
-        // NEW: CUSTOM REPORT TEMPLATES ENGINE
+        // CUSTOM REPORT TEMPLATES ENGINE
         // ==========================================
         const REPORT_DATASET_SCHEMAS = {
             vehicles: { label: 'Vehicle Masterlist', columns: ['id', 'model', 'status', 'driver'], getRows: () => db.vehicles || [] },
@@ -3431,7 +4564,10 @@ async function confirmResetAllDatabases() {
                             <button onclick="deleteBackendRecord('Hub', ${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded font-bold text-[10px]">Delete</button>
                         </td>
                     </tr>
-                `).join('') : '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-medium">No hub locations assigned yet. Click "+ Add Hub Location" to assign your hubs.</td></tr>';
+                `).join('') : `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-medium">
+                    No hub locations assigned yet. Click <strong>"+ Add Hub Location"</strong> to create a custom hub, or click
+                    <button onclick="loadDefaultPhilippineHubs()" class="text-sky-700 font-bold underline hover:text-sky-900 ml-1">Load Default Philippine Hubs</button>.
+                </td></tr>`;
 
                 content.innerHTML = `
                     <div class="flex flex-wrap justify-between items-center gap-3 mb-4 text-white">
@@ -3439,7 +4575,10 @@ async function confirmResetAllDatabases() {
                             <h3 class="text-xl font-bold"><i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> Admin Hub Location Management</h3>
                             <p class="text-xs text-slate-300">Assign, edit, and remove hub coordinates. All GPS distance calculations, Leaflet map markers, geofence scans, and Transshipment Origin options use these hubs dynamically.</p>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="loadDefaultPhilippineHubs()" id="loadDefaultHubsBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Load Default Philippine Hubs
+                            </button>
                             <button onclick="generateModulePDFReport('Hub Locations')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</button>
                             <button onclick="generateModuleExcelReport('Hub Locations')" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold"><i class="fa-solid fa-file-excel mr-1"></i> Excel</button>
                             <button onclick="openBackendEntryModal('Hub')" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold">+ Add Hub Location</button>
@@ -3788,20 +4927,324 @@ async function confirmResetAllDatabases() {
                     </div>
                 `;
             } else if (title === 'Data Backup') {
-                if(currentUserRole !== 'admin') { alert('⛔ RBAC Access Denied'); closeSubModule(); return; }
+                if (!requireAdminExecution("access Data Backup & Storage Maintenance")) { closeSubModule(); return; }
                 content.innerHTML = `
-                    <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup & Restore</h3>
-                    <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your entire Skymover Unified Fleet and Yard database.</p>
+                    <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup, Restore & Storage Maintenance</h3>
+                    <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your Skymover Unified Fleet and Yard database, or clean unreferenced files from Supabase Storage.</p>
                     <div class="space-y-6 text-slate-900">
                         <div class="bg-white p-6 rounded-2xl shadow border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-2">Export Unified Enterprise Backup</h4>
-                            <button onclick="backupUnifiedBackendData()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow">Download Full Enterprise Backup (.json)</button>
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">Export Unified Enterprise Backup</h4>
+                            <p class="text-xs text-slate-600 mb-4">Exports all Management Backend modules, Admin Hub Locations, Custom Report Templates, and Empty Yard records.</p>
+                            <button onclick="backupUnifiedBackendData()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow">
+                                <i class="fa-solid fa-download mr-1.5"></i> Download Full Enterprise Backup (.json)
+                            </button>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow border border-slate-200 space-y-4">
+                            <div class="flex flex-wrap justify-between items-start gap-3">
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                                        <i class="fa-solid fa-broom text-rose-600"></i>
+                                        Supabase Storage Orphaned File Cleaner (<span class="font-mono text-xs text-sky-700">${STORAGE_BUCKET_NAME}</span>)
+                                    </h4>
+                                    <p class="text-xs text-slate-600 mt-1">Scans all bucket folders and compares them against active Fleet, Driver, Maintenance, Expense, and Yard records to identify unreferenced files.</p>
+                                </div>
+                                <button onclick="scanOrphanedStorageFiles()" id="scanOrphansBtn" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow flex items-center gap-1.5">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Scan Orphaned Files
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <input type="checkbox" id="includeRecentOrphansChk" class="rounded text-sky-600">
+                                <label for="includeRecentOrphansChk" class="cursor-pointer font-medium">Include files uploaded within the last 1 hour (disable 1-hour active-upload grace window)</label>
+                            </div>
+
+                            <div id="orphanScanResultsArea" class="hidden space-y-3"></div>
                         </div>
                     </div>
                 `;
             }
         }
-// Fetch all drivers from Supabase (non-destructive merge)
+let scannedOrphanedFiles = [];
+
+        async function collectAllDatabaseFileReferences() {
+            const chunks = [
+                JSON.stringify(db || {}),
+                JSON.stringify(yardDb || {})
+            ];
+
+            if (supabaseClient) {
+                const tablesToCheck = [
+                    'skymover_enterprise_db',
+                    'vehicles',
+                    'drivers',
+                    'fuel_logs',
+                    'maintenance_logs',
+                    'dispatch_logs',
+                    'fleet_expenses',
+                    'yard_containers',
+                    'yard_movements'
+                ];
+
+                await Promise.all(tablesToCheck.map(async (tbl) => {
+                    try {
+                        const { data, error } = await supabaseClient.from(tbl).select('*');
+                        if (!error && data && data.length > 0) {
+                            chunks.push(JSON.stringify(data));
+                        }
+                    } catch (e) {
+                        // Ignore tables not yet provisioned
+                    }
+                }));
+            }
+
+            return chunks.join('\n');
+        }
+
+        async function listAllBucketFilesRecursive(bucketName) {
+            const allFiles = [];
+            const folderQueue = [''];
+            const visitedFolders = new Set();
+
+            while (folderQueue.length > 0) {
+                const currentPrefix = folderQueue.shift();
+                if (visitedFolders.has(currentPrefix)) continue;
+                visitedFolders.add(currentPrefix);
+
+                const { data, error } = await supabaseClient.storage
+                    .from(bucketName)
+                    .list(currentPrefix, { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+
+                if (error) {
+                    throw new Error(`Storage list error (${currentPrefix || 'root'}): ${error.message}`);
+                }
+
+                for (const item of (data || [])) {
+                    if (!item || !item.name || item.name === '.emptyFolderPlaceholder') continue;
+                    const fullPath = currentPrefix ? `${currentPrefix}/${item.name}` : item.name;
+
+                    if (item.id === null) {
+                        // Virtual folder in Supabase Storage
+                        folderQueue.push(fullPath);
+                    } else {
+                        allFiles.push({
+                            name: item.name,
+                            folder: currentPrefix || '(root)',
+                            fullPath: fullPath,
+                            sizeBytes: (item.metadata && item.metadata.size) ? Number(item.metadata.size) : 0,
+                            mimeType: (item.metadata && item.metadata.mimetype) ? item.metadata.mimetype : 'unknown',
+                            createdAt: item.created_at || null
+                        });
+                    }
+                }
+            }
+
+            return allFiles;
+        }
+
+        async function openStorageOrphanCleanerFromYard() {
+            if (!requireAdminExecution("scan and clean orphaned storage files")) return;
+            openSubModule('Data Backup');
+            const resultsArea = document.getElementById('orphanScanResultsArea');
+            if (resultsArea) {
+                resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            await scanOrphanedStorageFiles();
+        }
+        
+        async function scanOrphanedStorageFiles() {
+            if (!requireAdminExecution("scan orphaned storage files")) return;
+            if (!supabaseClient) {
+                alert("Supabase client is not initialized.");
+                return;
+            }
+
+            const btn = document.getElementById('scanOrphansBtn');
+            const resultsArea = document.getElementById('orphanScanResultsArea');
+            const includeRecent = document.getElementById('includeRecentOrphansChk')?.checked || false;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning Storage & DB...';
+            }
+            if (resultsArea) {
+                resultsArea.classList.remove('hidden');
+                resultsArea.innerHTML = '<div class="p-4 text-center text-xs text-slate-600 font-medium bg-slate-50 rounded-xl border">Scanning bucket folders and cross-checking all database records...</div>';
+            }
+
+            try {
+                const [bucketFiles, referenceCorpus] = await Promise.all([
+                    listAllBucketFilesRecursive(STORAGE_BUCKET_NAME),
+                    collectAllDatabaseFileReferences()
+                ]);
+
+                const oneHourAgoMs = Date.now() - (60 * 60 * 1000);
+
+                scannedOrphanedFiles = bucketFiles.filter(file => {
+                    if (!includeRecent && file.createdAt) {
+                        const createdMs = new Date(file.createdAt).getTime();
+                        if (!isNaN(createdMs) && createdMs > oneHourAgoMs) {
+                            return false;
+                        }
+                    }
+                    const isReferencedRaw = referenceCorpus.includes(file.fullPath);
+                    const isReferencedEncoded = referenceCorpus.includes(encodeURI(file.fullPath));
+                    return !isReferencedRaw && !isReferencedEncoded;
+                });
+
+                renderOrphanedFilesTable(bucketFiles.length);
+            } catch (err) {
+                console.error("Orphan scan error:", err);
+                if (resultsArea) {
+                    resultsArea.innerHTML = `<div class="p-4 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl font-semibold">❌ Scan failed: ${err.message || err}</div>`;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Scan Orphaned Files';
+                }
+            }
+        }
+
+        function renderOrphanedFilesTable(totalScannedCount = 0) {
+            const resultsArea = document.getElementById('orphanScanResultsArea');
+            if (!resultsArea) return;
+
+            if (scannedOrphanedFiles.length === 0) {
+                resultsArea.innerHTML = `
+                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-semibold flex items-center justify-between">
+                        <span>✅ No orphaned files found! All ${totalScannedCount} files in <span class="font-mono">${STORAGE_BUCKET_NAME}</span> are actively referenced.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            const totalBytes = scannedOrphanedFiles.reduce((acc, f) => acc + (f.sizeBytes || 0), 0);
+            const totalMb = (totalBytes / (1024 * 1024)).toFixed(2);
+
+            const rowsHtml = scannedOrphanedFiles.map((f, idx) => {
+                const { data: pubData } = supabaseClient.storage.from(STORAGE_BUCKET_NAME).getPublicUrl(f.fullPath);
+                const publicUrl = pubData ? pubData.publicUrl : '#';
+                const sizeKb = (f.sizeBytes / 1024).toFixed(1);
+                const dateLabel = f.createdAt ? new Date(f.createdAt).toLocaleString() : '—';
+
+                return `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-2.5 text-center">
+                            <input type="checkbox" class="orphan-file-chk rounded text-rose-600" value="${idx}" checked>
+                        </td>
+                        <td class="p-2.5 font-mono text-[11px] font-bold text-sky-800">${f.folder}</td>
+                        <td class="p-2.5 font-mono text-[11px] text-slate-900 break-all">
+                            <a href="${publicUrl}" target="_blank" class="hover:underline text-slate-900" title="Open file in new tab">${f.name}</a>
+                        </td>
+                        <td class="p-2.5 font-mono text-[11px] text-right">${sizeKb} KB</td>
+                        <td class="p-2.5 font-mono text-[10px] text-slate-600">${dateLabel}</td>
+                        <td class="p-2.5 text-right">
+                            <button onclick="deleteSingleOrphanedFile(${idx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Remove</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            resultsArea.innerHTML = `
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-rose-50 border border-rose-200 p-3.5 rounded-xl">
+                    <div class="text-xs text-rose-950">
+                        <strong>Found ${scannedOrphanedFiles.length} orphaned file(s)</strong> out of ${totalScannedCount} scanned • Reclaimable space: <strong>${totalMb} MB</strong>
+                    </div>
+                    <button onclick="deleteSelectedOrphanedFiles()" id="deleteSelectedOrphansBtn" class="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-can"></i> Delete Selected Orphans
+                    </button>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-xl max-h-72 overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-800 font-bold sticky top-0">
+                            <tr>
+                                <th class="p-2.5 text-center w-8"><input type="checkbox" checked onchange="toggleAllOrphanCheckboxes(this.checked)" class="rounded text-rose-600"></th>
+                                <th class="p-2.5">Folder</th>
+                                <th class="p-2.5">File Name</th>
+                                <th class="p-2.5 text-right">Size</th>
+                                <th class="p-2.5">Uploaded</th>
+                                <th class="p-2.5 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function toggleAllOrphanCheckboxes(checkedState) {
+            document.querySelectorAll('.orphan-file-chk').forEach(cb => {
+                cb.checked = checkedState;
+            });
+        }
+
+        async function deleteSingleOrphanedFile(index) {
+            if (!requireAdminExecution("remove an orphaned storage file")) return;
+            const target = scannedOrphanedFiles[index];
+            if (!target) return;
+
+            if (!confirm(`Permanently delete orphaned file "${target.fullPath}" from ${STORAGE_BUCKET_NAME}?`)) return;
+
+            const { error } = await supabaseClient.storage
+                .from(STORAGE_BUCKET_NAME)
+                .remove([target.fullPath]);
+
+            if (error) {
+                alert(`❌ Failed to delete file: ${error.message}`);
+                return;
+            }
+
+            scannedOrphanedFiles.splice(index, 1);
+            renderOrphanedFilesTable(scannedOrphanedFiles.length);
+        }
+
+        async function deleteSelectedOrphanedFiles() {
+            if (!requireAdminExecution("delete selected orphaned storage files")) return;
+            const selectedIndices = Array.from(document.querySelectorAll('.orphan-file-chk:checked'))
+                .map(cb => parseInt(cb.value, 10))
+                .filter(idx => !isNaN(idx) && scannedOrphanedFiles[idx]);
+
+            if (selectedIndices.length === 0) {
+                alert("Please select at least one orphaned file to remove.");
+                return;
+            }
+
+            if (!confirm(`⚠️ Permanently delete ${selectedIndices.length} orphaned file(s) from Supabase Storage (${STORAGE_BUCKET_NAME})? This cannot be undone.`)) {
+                return;
+            }
+
+            const delBtn = document.getElementById('deleteSelectedOrphansBtn');
+            if (delBtn) {
+                delBtn.disabled = true;
+                delBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+            }
+
+            try {
+                const pathsToRemove = selectedIndices.map(idx => scannedOrphanedFiles[idx].fullPath);
+                const { error } = await supabaseClient.storage
+                    .from(STORAGE_BUCKET_NAME)
+                    .remove(pathsToRemove);
+
+                if (error) {
+                    throw error;
+                }
+
+                const removedSet = new Set(pathsToRemove);
+                scannedOrphanedFiles = scannedOrphanedFiles.filter(f => !removedSet.has(f.fullPath));
+                renderOrphanedFilesTable(scannedOrphanedFiles.length);
+                alert(`✅ Successfully removed ${pathsToRemove.length} orphaned file(s) from ${STORAGE_BUCKET_NAME}.`);
+            } catch (err) {
+                alert(`❌ Bulk delete failed: ${err.message || err}`);
+            } finally {
+                if (delBtn) {
+                    delBtn.disabled = false;
+                    delBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete Selected Orphans';
+                }
+            }
+        }
+        
+        // Fetch all drivers from Supabase (non-destructive merge)
         async function fetchDriversFromSupabase() {
             if (!supabaseClient) return;
             try {
@@ -3996,6 +5439,9 @@ async function confirmResetAllDatabases() {
             
                 if (typeof openSubModule === 'function' && currentBackendModuleType === 'GPS & Dispatch') {
                     openSubModule('GPS & Dispatch');
+                }
+                if (typeof refreshDriverPortal === 'function') {
+                    refreshDriverPortal();
                 }
             } catch (e) {
                 console.warn("fetchDispatchLogsFromSupabase fallback:", e.message);
@@ -4640,8 +6086,13 @@ async function confirmResetAllDatabases() {
             const target = movements[index];
             if (!target) return;
 
-            if (!confirm(`Are you sure you want to permanently delete the ${target.kind} movement log for Container ${target.container}?`)) {
+            if (!confirm(`Are you sure you want to permanently delete the ${target.kind} movement log for Container ${target.container} and its attached files?`)) {
                 return;
+            }
+
+            // Purge attached Gate-In / Gate-Out photos from skymover-attachments
+            if (typeof removeRecordAttachmentsFromStorage === 'function') {
+                await removeRecordAttachmentsFromStorage(target);
             }
 
             if (supabaseClient) {
@@ -4832,8 +6283,15 @@ async function confirmResetAllDatabases() {
                 if (!alertsRes.error && alertsRes.data && alertsRes.data.length > 0) {
                     const cloudAlerts = alertsRes.data.map(a => ({
                         id: a.id,
+                        unit: a.unit_id,
+                        driver: a.driver_name,
+                        zone: a.zone_name || a.nearest_hub,
+                        type: a.alert_type,
                         message: a.message,
-                        time: a.created_at
+                        lat: a.latitude,
+                        lng: a.longitude,
+                        time: a.created_at,
+                        timestamp: a.created_at
                     }));
                     db.geofenceAlerts = mergeRecordsSafely(db.geofenceAlerts, cloudAlerts, a => a.id ? `id:${a.id}` : `msg:${a.message}_${a.time}`);
                 }
@@ -4843,6 +6301,7 @@ async function confirmResetAllDatabases() {
         
             const trackContainer = document.getElementById('geofenceAlertsContainer');
             if (trackContainer) renderGeofenceLogs(trackContainer);
+            renderDriverGeofenceAlerts();
             renderConfiguredZones();
         }
         
@@ -4873,7 +6332,7 @@ async function confirmResetAllDatabases() {
         }
         
         // Log a GPS plot, Driver live location, or Geofence boundary alert
-        async function insertGeofenceAlertToSupabase({ unitId = null, zoneId = null, alertType = 'GEOFENCE', message, lat = null, lng = null, nearestHub = null, distanceKm = null }) {
+        async function insertGeofenceAlertToSupabase({ unitId = null, driverName = null, zoneId = null, alertType = 'GEOFENCE', message, lat = null, lng = null, nearestHub = null, distanceKm = null }) {
             if (!supabaseClient) return;
         
             try {
@@ -4881,7 +6340,9 @@ async function confirmResetAllDatabases() {
                     .from('geofence_alerts')
                     .insert({
                         unit_id: unitId,
+                        driver_name: driverName,
                         zone_id: zoneId,
+                        zone_name: nearestHub,
                         alert_type: alertType,
                         message: message,
                         latitude: lat,
@@ -4895,9 +6356,387 @@ async function confirmResetAllDatabases() {
                 }
             } catch (e) {}
         }
+
+        // ==========================================
+        // INTERACTIVE LEAFLET MAP PICKER FOR HUB LOCATIONS
+        // ==========================================
+        let hubPickerLeafletMap = null;
+        let hubPickerMarker = null;
+        let hubPickerCircle = null;
+
+        function initHubLocationPickerMap() {
+            const mapEl = document.getElementById('hubLocationPickerMap');
+            if (!mapEl || typeof L === 'undefined') return;
+
+            if (hubPickerLeafletMap) {
+                hubPickerLeafletMap.remove();
+                hubPickerLeafletMap = null;
+                hubPickerMarker = null;
+                hubPickerCircle = null;
+            }
+
+            const latInput = document.getElementById('beHubLat');
+            const lngInput = document.getElementById('beHubLng');
+            const existingLat = latInput && latInput.value !== '' ? parseFloat(latInput.value) : NaN;
+            const existingLng = lngInput && lngInput.value !== '' ? parseFloat(lngInput.value) : NaN;
+            const hasValidCoords = !isNaN(existingLat) && !isNaN(existingLng);
+
+            const activeHubs = getActiveHubLocations();
+            let initialCenter = [14.6333, 120.9830]; // Default Metro Manila viewport
+            let initialZoom = 11;
+
+            if (hasValidCoords) {
+                initialCenter = [existingLat, existingLng];
+                initialZoom = 15;
+            } else if (activeHubs.length > 0 && !isNaN(parseFloat(activeHubs[0].lat)) && !isNaN(parseFloat(activeHubs[0].lng))) {
+                initialCenter = [parseFloat(activeHubs[0].lat), parseFloat(activeHubs[0].lng)];
+                initialZoom = 11;
+            }
+
+            hubPickerLeafletMap = L.map('hubLocationPickerMap').setView(initialCenter, initialZoom);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(hubPickerLeafletMap);
+
+            // Show existing configured hubs as subtle reference dots
+            activeHubs.forEach(h => {
+                const hLat = parseFloat(h.lat);
+                const hLng = parseFloat(h.lng);
+                if (!isNaN(hLat) && !isNaN(hLng)) {
+                    L.circleMarker([hLat, hLng], {
+                        radius: 6,
+                        color: '#10b981',
+                        fillColor: '#34d399',
+                        fillOpacity: 0.7,
+                        weight: 1.5
+                    }).bindTooltip(`Existing Hub: ${h.name}`).addTo(hubPickerLeafletMap);
+                }
+            });
+
+            // Click anywhere on the map to place/move the hub pin & auto-fill coordinates
+            hubPickerLeafletMap.on('click', function (e) {
+                updateHubPickerPin(e.latlng.lat, e.latlng.lng, true);
+            });
+
+            if (hasValidCoords) {
+                updateHubPickerPin(existingLat, existingLng, false);
+            }
+
+            setTimeout(() => {
+                if (hubPickerLeafletMap) hubPickerLeafletMap.invalidateSize();
+            }, 120);
+        }
+
+        function updateHubPickerPin(lat, lng, autoFillEmptyAddress = false) {
+            if (!hubPickerLeafletMap) return;
+
+            const latNum = Number(parseFloat(lat).toFixed(6));
+            const lngNum = Number(parseFloat(lng).toFixed(6));
+            if (isNaN(latNum) || isNaN(lngNum)) return;
+
+            const latInput = document.getElementById('beHubLat');
+            const lngInput = document.getElementById('beHubLng');
+            const radiusInput = document.getElementById('beInput3');
+            const statusEl = document.getElementById('hubPickerStatusText');
+
+            if (latInput) latInput.value = latNum;
+            if (lngInput) lngInput.value = lngNum;
+
+            const radiusKm = radiusInput && radiusInput.value !== '' ? Math.max(0.1, parseFloat(radiusInput.value)) : 5;
+            const radiusMeters = radiusKm * 1000;
+
+            if (!hubPickerMarker) {
+                hubPickerMarker = L.marker([latNum, lngNum], { draggable: true }).addTo(hubPickerLeafletMap);
+                hubPickerMarker.on('dragend', function (ev) {
+                    const pos = ev.target.getLatLng();
+                    updateHubPickerPin(pos.lat, pos.lng, true);
+                });
+            } else {
+                hubPickerMarker.setLatLng([latNum, lngNum]);
+            }
+
+            hubPickerMarker.bindPopup(`<b>Selected Hub Pin</b><br>Lat: ${latNum}, Lng: ${lngNum}<br>Geofence Radius: ${radiusKm} km`);
+
+            if (!hubPickerCircle) {
+                hubPickerCircle = L.circle([latNum, lngNum], {
+                    radius: radiusMeters,
+                    color: '#0284c7',
+                    fillColor: '#0ea5e9',
+                    fillOpacity: 0.15,
+                    weight: 2
+                }).addTo(hubPickerLeafletMap);
+            } else {
+                hubPickerCircle.setLatLng([latNum, lngNum]);
+                hubPickerCircle.setRadius(radiusMeters);
+            }
+
+            if (statusEl) {
+                statusEl.innerHTML = `<i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Pin set at <span class="text-white font-bold">${latNum}, ${lngNum}</span> (${radiusKm} km radius)`;
+            }
+
+            // Auto-populate address only if the field is still blank
+            const addrInput = document.getElementById('beHubAddress');
+            if (autoFillEmptyAddress && addrInput && !addrInput.value.trim()) {
+                resolveHubAddressFromPin(false);
+            }
+        }
+
+        function syncHubPickerFromInputs() {
+            const latVal = parseFloat(document.getElementById('beHubLat')?.value);
+            const lngVal = parseFloat(document.getElementById('beHubLng')?.value);
+            if (!isNaN(latVal) && !isNaN(lngVal) && hubPickerLeafletMap) {
+                updateHubPickerPin(latVal, lngVal, false);
+                hubPickerLeafletMap.panTo([latVal, lngVal]);
+            }
+        }
+
+        async function resolveHubAddressFromPin(forceOverwrite = true) {
+            const latVal = parseFloat(document.getElementById('beHubLat')?.value);
+            const lngVal = parseFloat(document.getElementById('beHubLng')?.value);
+            const addrInput = document.getElementById('beHubAddress');
+            const statusEl = document.getElementById('hubPickerStatusText');
+
+            if (isNaN(latVal) || isNaN(lngVal)) {
+                if (forceOverwrite) alert('Click on the map first to place a pin before resolving an address.');
+                return;
+            }
+            if (!addrInput) return;
+            if (!forceOverwrite && addrInput.value.trim()) return;
+
+            if (statusEl) statusEl.textContent = '📡 Resolving street address from selected map pin...';
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latVal}&lon=${lngVal}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    addrInput.value = data.display_name;
+                    if (statusEl) {
+                        statusEl.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Address resolved for <span class="text-white font-bold">${latVal}, ${lngVal}</span>`;
+                    }
+                }
+            } catch (err) {
+                if (statusEl) statusEl.textContent = `Coordinates set: ${latVal}, ${lngVal}`;
+            }
+        }
+
+        function useCurrentBrowserGpsForHub() {
+            const statusEl = document.getElementById('hubPickerStatusText');
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by this browser.');
+                return;
+            }
+            if (statusEl) statusEl.textContent = '📡 Acquiring device GPS location...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    updateHubPickerPin(lat, lng, true);
+                    if (hubPickerLeafletMap) {
+                        hubPickerLeafletMap.setView([lat, lng], 16);
+                    }
+                },
+                (err) => {
+                    alert('Unable to retrieve device GPS: ' + err.message);
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        }
+
+        let hubSearchResultsCache = [];
+
+        async function searchHubLocationOnMap() {
+            const inputEl = document.getElementById('hubPickerSearchInput');
+            const btnEl = document.getElementById('hubPickerSearchBtn');
+            const resultsBox = document.getElementById('hubPickerSearchResults');
+            const statusEl = document.getElementById('hubPickerStatusText');
+
+            if (!inputEl || !resultsBox) return;
+            const query = inputEl.value.trim();
+            if (!query) {
+                alert('Enter a port, city, terminal, or street address to search.');
+                return;
+            }
+
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+            if (statusEl) {
+                statusEl.textContent = `🔎 Searching OpenStreetMap for "${query}"...`;
+            }
+
+            try {
+                // Bias search toward the Philippines (viewbox) while still allowing any global query
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&viewbox=116.9,21.1,126.6,4.5&q=${encodeURIComponent(query)}`;
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+
+                hubSearchResultsCache = Array.isArray(data) ? data : [];
+
+                if (hubSearchResultsCache.length === 0) {
+                    resultsBox.classList.remove('hidden');
+                    resultsBox.innerHTML = `
+                        <div class="p-2.5 text-[11px] text-amber-300 flex justify-between items-center">
+                            <span>No locations found for "${query}". Try a broader city or port name.</span>
+                            <button type="button" onclick="document.getElementById('hubPickerSearchResults').classList.add('hidden')" class="text-slate-400 hover:text-white px-1 font-bold">✕</button>
+                        </div>
+                    `;
+                    if (statusEl) statusEl.textContent = `No matches found for "${query}".`;
+                    return;
+                }
+
+                // Automatically jump to the top match immediately and show all matches to pick from
+                selectHubSearchResult(0, false);
+
+                resultsBox.classList.remove('hidden');
+                resultsBox.innerHTML = `
+                    <div class="flex justify-between items-center px-2.5 py-1 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-semibold">
+                        <span>Select a matching location (${hubSearchResultsCache.length} found):</span>
+                        <button type="button" onclick="document.getElementById('hubPickerSearchResults').classList.add('hidden')" class="text-slate-400 hover:text-white">Hide ✕</button>
+                    </div>
+                    ${hubSearchResultsCache.map((item, idx) => `
+                        <button type="button" onclick="selectHubSearchResult(${idx}, true)" class="w-full text-left px-2.5 py-2 hover:bg-slate-800 border-b border-slate-800/80 last:border-0 transition flex justify-between items-start gap-2">
+                            <span class="text-[11px] text-slate-200 leading-snug"><i class="fa-solid fa-location-dot text-sky-400 mr-1.5"></i>${item.display_name}</span>
+                            <span class="text-[10px] font-mono text-slate-400 shrink-0">${Number(item.lat).toFixed(4)}, ${Number(item.lon).toFixed(4)}</span>
+                        </button>
+                    `).join('')}
+                `;
+            } catch (err) {
+                console.error('Nominatim search error:', err);
+                if (statusEl) {
+                    statusEl.textContent = '❌ Location search failed. Check network connection or click directly on the map.';
+                }
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i> Search';
+                }
+            }
+        }
+
+        function selectHubSearchResult(index, hideDropdown = true) {
+            const item = hubSearchResultsCache[index];
+            if (!item) return;
+
+            const lat = parseFloat(item.lat);
+            const lng = parseFloat(item.lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            updateHubPickerPin(lat, lng, false);
+
+            if (hubPickerLeafletMap) {
+                hubPickerLeafletMap.setView([lat, lng], 15);
+            }
+
+            const addrInput = document.getElementById('beHubAddress');
+            if (addrInput && (!addrInput.value.trim() || hideDropdown)) {
+                addrInput.value = item.display_name;
+            }
+
+            const statusEl = document.getElementById('hubPickerStatusText');
+            if (statusEl) {
+                statusEl.innerHTML = `<i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Jumped to <span class="text-white font-bold">${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}</span>`;
+            }
+
+            if (hideDropdown) {
+                const resultsBox = document.getElementById('hubPickerSearchResults');
+                if (resultsBox) resultsBox.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // GPS & DISPATCH HUB ROUTE BUILDER HELPERS
+        // ==========================================
+        function requireDispatchExecution(actionLabel = "manage fleet dispatch") {
+            if (!['admin', 'dispatcher'].includes(currentUserRole)) {
+                alert(`⛔ RBAC Access Denied: Only an Administrator or Dispatcher has rights to ${actionLabel}.`);
+                return false;
+            }
+            return true;
+        }
+
+        function onDispatchHubSelectionChange() {
+            const originSelect = document.getElementById('beDispatchOriginHub');
+            const destSelect = document.getElementById('beDispatchDestHub');
+            const routeInput = document.getElementById('beInput2');
+            const infoBadge = document.getElementById('dispatchHubDistanceBadge');
+
+            if (!originSelect || !destSelect || !routeInput) return;
+
+            const originName = originSelect.value;
+            const destName = destSelect.value;
+
+            if (originName && destName) {
+                routeInput.value = `${originName} → ${destName}`;
+            } else if (originName) {
+                routeInput.value = `${originName} → `;
+            } else if (destName) {
+                routeInput.value = `→ ${destName}`;
+            }
+
+            if (infoBadge) {
+                const hubs = getActiveHubLocations();
+                const originHub = hubs.find(h => h.name === originName);
+                const destHub = hubs.find(h => h.name === destName);
+
+                if (originHub && destHub) {
+                    const distKm = calculateDistanceKm(
+                        parseFloat(originHub.lat),
+                        parseFloat(originHub.lng),
+                        parseFloat(destHub.lat),
+                        parseFloat(destHub.lng)
+                    ).toFixed(2);
+                    infoBadge.classList.remove('hidden');
+                    infoBadge.innerHTML = `<i class="fa-solid fa-route text-emerald-400 mr-1"></i> Direct Corridor Distance: <strong class="text-white">${distKm} km</strong> • Destination Pin: <span class="text-sky-300">${destHub.lat}, ${destHub.lng}</span>`;
+                } else if (destHub) {
+                    infoBadge.classList.remove('hidden');
+                    infoBadge.innerHTML = `<i class="fa-solid fa-location-dot text-sky-400 mr-1"></i> Destination Hub Coordinates: <span class="text-white">${destHub.lat}, ${destHub.lng}</span>`;
+                } else if (originHub) {
+                    infoBadge.classList.remove('hidden');
+                    infoBadge.innerHTML = `<i class="fa-solid fa-location-dot text-amber-400 mr-1"></i> Origin Hub Coordinates: <span class="text-white">${originHub.lat}, ${originHub.lng}</span>`;
+                } else {
+                    infoBadge.classList.add('hidden');
+                }
+            }
+        }
+
+        function swapDispatchHubs() {
+            const originSelect = document.getElementById('beDispatchOriginHub');
+            const destSelect = document.getElementById('beDispatchDestHub');
+            if (!originSelect || !destSelect) return;
+
+            const prevOrigin = originSelect.value;
+            originSelect.value = destSelect.value;
+            destSelect.value = prevOrigin;
+            onDispatchHubSelectionChange();
+        }
+
+        function getSelectedDispatchHubMetadata() {
+            const originName = document.getElementById('beDispatchOriginHub')?.value || '';
+            const destName = document.getElementById('beDispatchDestHub')?.value || '';
+            const hubs = getActiveHubLocations();
+            const originHub = hubs.find(h => h.name === originName) || null;
+            const destHub = hubs.find(h => h.name === destName) || null;
+            const anchorHub = destHub || originHub;
+
+            return {
+                originHub: originName || null,
+                destinationHub: destName || null,
+                nearestHub: destName || originName || null,
+                lat: anchorHub && !isNaN(parseFloat(anchorHub.lat)) ? parseFloat(anchorHub.lat) : null,
+                lng: anchorHub && !isNaN(parseFloat(anchorHub.lng)) ? parseFloat(anchorHub.lng) : null
+            };
+        }
         
         function openBackendEntryModal(type, editIndex = null) {
-            if (!requireAdminExecution(`${editIndex !== null ? 'edit' : 'add'} ${type} record`)) return;
+            if (type === 'Dispatch') {
+                if (!requireDispatchExecution(`${editIndex !== null ? 'edit' : 'create'} a GPS & Dispatch record`)) return;
+            } else {
+                if (!requireAdminExecution(`${editIndex !== null ? 'edit' : 'add'} ${type} record`)) return;
+            }
             currentBackendModuleType = type;
             currentEditingRecordIndex = editIndex;
             stagedBackendAttachments = [];
@@ -4908,6 +6747,14 @@ async function confirmResetAllDatabases() {
             const submitBtn = document.getElementById('backendEntrySubmitBtn');
             const attSection = document.getElementById('backendAttachmentSection');
             if(!modal || !titleEl || !fieldsContainer) return;
+
+            // Widen modal card when showing the interactive Leaflet map for Hub Locations
+            const modalBox = modal.firstElementChild;
+            if (modalBox) {
+                modalBox.className = type === 'Hub'
+                    ? 'glass-card w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl'
+                    : 'glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl';
+            }
 
             modal.classList.remove('hidden');
             if(filePreview) filePreview.innerHTML = '';
@@ -4920,19 +6767,58 @@ async function confirmResetAllDatabases() {
                 titleEl.innerHTML = `<i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> ${existing ? 'Edit' : 'Assign New'} Hub Location`;
                 html = `
                     <div><label class="block text-slate-300 mb-1 font-semibold">Hub Name *</label><input type="text" id="beInput1" required value="${existing ? existing.name : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Valenzuela Empty Container Depot"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Hub Type *</label><select id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                        <option ${existing && existing.type === 'Terminal Hub' ? 'selected' : ''}>Terminal Hub</option>
-                        <option ${existing && existing.type === 'Empty Container Depot' ? 'selected' : ''}>Empty Container Depot</option>
-                        <option ${existing && existing.type === 'Transshipment Port' ? 'selected' : ''}>Transshipment Port</option>
-                        <option ${existing && existing.type === 'Warehouse / Staging' ? 'selected' : ''}>Warehouse / Staging</option>
-                    </select></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Address / Corridor Description</label><input type="text" id="beHubAddress" value="${existing ? (existing.address || '') : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Maysan Rd, Valenzuela City"></div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-slate-300 mb-1 font-semibold">Latitude *</label><input type="number" step="any" id="beHubLat" required value="${existing ? existing.lat : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="14.7011"></div>
-                        <div><label class="block text-slate-300 mb-1 font-semibold">Longitude *</label><input type="number" step="any" id="beHubLng" required value="${existing ? existing.lng : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="120.9830"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Hub Type *</label><select id="beInput2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                            <option ${existing && existing.type === 'Terminal Hub' ? 'selected' : ''}>Terminal Hub</option>
+                            <option ${existing && existing.type === 'Empty Container Depot' ? 'selected' : ''}>Empty Container Depot</option>
+                            <option ${existing && existing.type === 'Transshipment Port' ? 'selected' : ''}>Transshipment Port</option>
+                            <option ${existing && existing.type === 'Warehouse / Staging' ? 'selected' : ''}>Warehouse / Staging</option>
+                        </select></div>
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Geofence Radius (km)</label><input type="number" step="any" id="beInput3" oninput="syncHubPickerFromInputs()" value="${existing ? (existing.radius || 5) : 5}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="5"></div>
                     </div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Geofence Radius (km)</label><input type="number" step="any" id="beInput3" value="${existing ? (existing.radius || 5) : 5}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="5"></div>
+
+                    <!-- INTERACTIVE LEAFLET MAP PICKER WITH NOMINATIM SEARCH -->
+                    <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 space-y-2">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <span class="text-[11px] font-bold text-sky-300"><i class="fa-solid fa-map-pin mr-1"></i> Interactive Map Picker (Search, click, or drag pin)</span>
+                            <div class="flex gap-1.5">
+                                <button type="button" onclick="useCurrentBrowserGpsForHub()" class="bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700/60 px-2 py-1 rounded text-[10px] font-semibold">
+                                    <i class="fa-solid fa-location-crosshairs mr-1"></i> Use My GPS
+                                </button>
+                                <button type="button" onclick="resolveHubAddressFromPin(true)" class="bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-700/60 px-2 py-1 rounded text-[10px] font-semibold">
+                                    <i class="fa-solid fa-magnifying-glass-location mr-1"></i> Fill Address
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- NOMINATIM LOCATION SEARCH BAR -->
+                        <div class="relative">
+                            <div class="flex gap-1.5">
+                                <input type="text" id="hubPickerSearchInput"
+                                       onkeydown="if(event.key==='Enter'){ event.preventDefault(); searchHubLocationOnMap(); }"
+                                       class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-400 focus:border-sky-500 outline-none"
+                                       placeholder="Search port, city, or street (e.g. Manila North Harbor, Subic Bay)...">
+                                <button type="button" id="hubPickerSearchBtn" onclick="searchHubLocationOnMap()"
+                                        class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition">
+                                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Search
+                                </button>
+                            </div>
+                            <div id="hubPickerSearchResults" class="hidden mt-1.5 bg-slate-900 border border-slate-700 rounded-lg max-h-40 overflow-y-auto shadow-xl divide-y divide-slate-800"></div>
+                        </div>
+
+                        <div id="hubLocationPickerMap" class="w-full h-56 rounded-lg border border-slate-700 z-10"></div>
+                        <div id="hubPickerStatusText" class="text-[10px] font-mono text-slate-400">Search a place above or click anywhere on the map to auto-fill coordinates.</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Latitude *</label><input type="number" step="any" id="beHubLat" oninput="syncHubPickerFromInputs()" required value="${existing ? existing.lat : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono" placeholder="14.7011"></div>
+                        <div><label class="block text-slate-300 mb-1 font-semibold">Longitude *</label><input type="number" step="any" id="beHubLng" oninput="syncHubPickerFromInputs()" required value="${existing ? existing.lng : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono" placeholder="120.9830"></div>
+                    </div>
+                    <div><label class="block text-slate-300 mb-1 font-semibold">Address / Corridor Description</label><input type="text" id="beHubAddress" value="${existing ? (existing.address || '') : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Maysan Rd, Valenzuela City"></div>
                 `;
+                fieldsContainer.innerHTML = html;
+                setTimeout(() => initHubLocationPickerMap(), 120);
+                return;
             } else if (type === 'Vehicle') {
                 const existing = (editIndex !== null && db.vehicles && db.vehicles[editIndex]) ? db.vehicles[editIndex] : null;
                 titleEl.innerHTML = `<i class="fa-solid fa-truck text-sky-400 mr-2"></i> ${existing ? 'Edit' : 'Add New'} Vehicle (Vehicle Masterlist)`;
@@ -4960,11 +6846,89 @@ async function confirmResetAllDatabases() {
             } else if (type === 'Dispatch') {
                 const existing = (editIndex !== null && db.dispatchLogs && db.dispatchLogs[editIndex]) ? db.dispatchLogs[editIndex] : null;
                 titleEl.innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-400 mr-2"></i> ${existing ? 'Edit' : 'New'} Fleet Dispatch (GPS & Dispatch)`;
+
+                const activeHubs = getActiveHubLocations();
+                let preselectedOrigin = existing && existing.originHub ? existing.originHub : '';
+                let preselectedDest = existing && existing.destinationHub ? existing.destinationHub : '';
+
+                // If editing an older route formatted as "Hub A → Hub B", pre-match dropdown values
+                if (existing && existing.route && (!preselectedOrigin || !preselectedDest)) {
+                    const parts = existing.route.split(/→|->/).map(s => s.trim());
+                    if (parts.length === 2) {
+                        if (!preselectedOrigin && activeHubs.some(h => h.name === parts[0])) preselectedOrigin = parts[0];
+                        if (!preselectedDest && activeHubs.some(h => h.name === parts[1])) preselectedDest = parts[1];
+                    }
+                }
+
+                const buildHubOptions = (selectedVal, placeholderText) => {
+                    const opts = [`<option value="">${placeholderText}</option>`];
+                    activeHubs.forEach(h => {
+                        const sel = h.name === selectedVal ? 'selected' : '';
+                        opts.push(`<option value="${h.name.replace(/"/g, '&quot;')}" ${sel}>${h.name} (${h.type || 'Hub'})</option>`);
+                    });
+                    return opts.join('');
+                };
+
+                const vehicleOptionsHtml = (db.vehicles || []).map(v => `<option value="${v.id}">${v.model || ''} (${v.status || 'Active'})</option>`).join('');
+                const driverOptionsHtml = (db.drivers || []).map(d => {
+                    const dName = d.driver_name || d.name || '';
+                    return dName ? `<option value="${dName}">${d.truck || 'Unassigned'}</option>` : '';
+                }).join('');
+
                 html = `
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label><input type="text" id="beInput1" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label><input type="text" id="beInput2" required value="${existing ? existing.route : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Origin Hub → Destination Hub"></div>
-                    <div><label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label><input type="text" id="beInput3" required value="${existing ? existing.driver : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos"></div>
+                    <div>
+                        <label class="block text-slate-300 mb-1 font-semibold">Unit ID *</label>
+                        <input type="text" id="beInput1" list="dispatchVehiclesDatalist" required value="${existing ? existing.unit : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. SKV-101">
+                        <datalist id="dispatchVehiclesDatalist">${vehicleOptionsHtml}</datalist>
+                    </div>
+
+                    <!-- ADMIN-ASSIGNED HUB ORIGIN & DESTINATION SELECTOR -->
+                    <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-bold text-emerald-300"><i class="fa-solid fa-map-location-dot mr-1"></i> Select Admin-Assigned Hubs</span>
+                            <button type="button" onclick="swapDispatchHubs()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold transition" title="Swap Origin and Destination Hubs">
+                                <i class="fa-solid fa-right-left mr-1"></i> Swap Hubs
+                            </button>
+                        </div>
+
+                        ${activeHubs.length === 0 ? `
+                            <div class="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded-lg p-2">
+                                <i class="fa-solid fa-circle-info mr-1"></i> No Admin-assigned hubs configured yet. You can type a custom route below or ask an Admin to add hubs under <strong>Hub Locations</strong>.
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-300 mb-1 font-semibold">Origin Hub</label>
+                                    <select id="beDispatchOriginHub" onchange="onDispatchHubSelectionChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                                        ${buildHubOptions(preselectedOrigin, 'Select Origin Hub...')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-300 mb-1 font-semibold">Destination Hub</label>
+                                    <select id="beDispatchDestHub" onchange="onDispatchHubSelectionChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                                        ${buildHubOptions(preselectedDest, 'Select Destination Hub...')}
+                                    </select>
+                                </div>
+                            </div>
+                        `}
+                        <div id="dispatchHubDistanceBadge" class="hidden text-[10px] font-mono text-slate-300 bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-300 mb-1 font-semibold">Route / Destination *</label>
+                        <input type="text" id="beInput2" required value="${existing ? existing.route : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="Auto-filled from selected hubs or type custom route...">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1 font-semibold">Assigned Driver *</label>
+                        <input type="text" id="beInput3" list="dispatchDriversDatalist" required value="${existing ? existing.driver : ''}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="e.g. Roberto Santos">
+                        <datalist id="dispatchDriversDatalist">${driverOptionsHtml}</datalist>
+                    </div>
                 `;
+                fieldsContainer.innerHTML = html;
+                if (preselectedOrigin || preselectedDest) {
+                    setTimeout(() => onDispatchHubSelectionChange(), 30);
+                }
+                return;
             } else if (type === 'Expense') {
                 const existing = (editIndex !== null && db.expenseLogs && db.expenseLogs[editIndex]) ? db.expenseLogs[editIndex] : null;
                 titleEl.innerHTML = `<i class="fa-solid fa-wallet text-teal-400 mr-2"></i> ${existing ? 'Edit' : 'Log'} Trip Expense (Fleet Expenses)`;
@@ -5056,17 +7020,105 @@ async function confirmResetAllDatabases() {
 
         function closeBackendEntryModal() {
             currentEditingRecordIndex = null;
+            if (hubPickerLeafletMap) {
+                hubPickerLeafletMap.remove();
+                hubPickerLeafletMap = null;
+                hubPickerMarker = null;
+                hubPickerCircle = null;
+            }
             const modal = document.getElementById('backendEntryModal');
             if(modal) modal.classList.add('hidden');
         }
 
+        // ==========================================
+        // AUTOMATED DRIVER DISPATCH SMS NOTIFICATION
+        // ==========================================
+        async function sendAutomatedDispatchSmsNotification(dispatchRec) {
+            if (!dispatchRec || !dispatchRec.driver) return null;
+
+            if (!Array.isArray(db.smsLogs)) db.smsLogs = [];
+
+            // Match assigned driver in db.drivers to resolve contact number
+            const normalizedDriverName = dispatchRec.driver.trim().toLowerCase();
+            const matchedDriver = (db.drivers || []).find(d => {
+                const candidate = (d.driver_name || d.name || '').trim().toLowerCase();
+                return candidate === normalizedDriverName;
+            });
+
+            const recipientPhone = matchedDriver
+                ? (matchedDriver.driver_phone || matchedDriver.phone || matchedDriver.contact || matchedDriver.mobile || 'In-App Driver Inbox')
+                : 'In-App Driver Inbox';
+
+            const targetHub = dispatchRec.destinationHub || dispatchRec.nearestHub || '';
+            const hubDetail = targetHub ? ` | Destination Hub: ${targetHub}` : '';
+            const coordsDetail = (dispatchRec.lat !== null && dispatchRec.lat !== undefined && dispatchRec.lng !== null && dispatchRec.lng !== undefined)
+                ? ` (${Number(dispatchRec.lat).toFixed(4)}, ${Number(dispatchRec.lng).toFixed(4)})`
+                : '';
+
+            const smsBody = `[SKYMOVER DISPATCH] Unit ${dispatchRec.unit} assigned to ${dispatchRec.driver}. Route: ${dispatchRec.route}${hubDetail}${coordsDetail}. Status: ${dispatchRec.status || 'In Transit'}.`;
+            const nowIso = new Date().toISOString();
+
+            const smsEntry = {
+                recipient: dispatchRec.driver,
+                driver: dispatchRec.driver,
+                driver_name: dispatchRec.driver,
+                phone: recipientPhone,
+                unit: dispatchRec.unit,
+                route: dispatchRec.route,
+                destinationHub: targetHub || null,
+                message: smsBody,
+                status: 'Delivered',
+                category: 'Dispatch Alert',
+                sentBy: currentUserEmail || 'Dispatch Control',
+                timestamp: nowIso,
+                sent_at: nowIso
+            };
+
+            db.smsLogs.unshift(smsEntry);
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('sms_logs')
+                        .insert({
+                            recipient: smsEntry.recipient,
+                            phone: smsEntry.phone,
+                            message: smsEntry.message,
+                            status: smsEntry.status,
+                            unit_id: smsEntry.unit,
+                            sent_at: nowIso
+                        })
+                        .select('id')
+                        .single();
+
+                    if (!error && data && data.id) {
+                        smsEntry.id = data.id;
+                    } else if (error) {
+                        console.warn('Supabase sms_logs insert notice:', error.message);
+                    }
+                } catch (err) {
+                    console.warn('Supabase sms_logs insert fallback:', err.message || err);
+                }
+            }
+
+            if (typeof refreshDriverSmsInbox === 'function') {
+                refreshDriverSmsInbox();
+            }
+
+            return smsEntry;
+        }
+        
         async function handleBackendEntrySubmit(e) {
             e.preventDefault();
-            if (!requireAdminExecution(`save ${currentBackendModuleType} entry`)) return;
+            if (currentBackendModuleType === 'Dispatch') {
+                if (!requireDispatchExecution("save GPS & Dispatch entry")) return;
+            } else {
+                if (!requireAdminExecution(`save ${currentBackendModuleType} entry`)) return;
+            }
             const val1 = document.getElementById('beInput1').value;
             const val2 = document.getElementById('beInput2').value;
             const val3 = document.getElementById('beInput3') ? document.getElementById('beInput3').value : '';
-
+    
             if (currentBackendModuleType === 'Hub') {
                 if (!db.hubLocations) db.hubLocations = [];
                 const hubObj = {
@@ -5153,25 +7205,68 @@ async function confirmResetAllDatabases() {
                 closeBackendEntryModal();
                 openSubModule('Maintenance');
             } else if (currentBackendModuleType === 'Dispatch') {
-                if(!db.dispatchLogs) db.dispatchLogs = [];
+                if (!db.dispatchLogs) db.dispatchLogs = [];
+                const hubMeta = getSelectedDispatchHubMetadata();
+                let dispatchedSmsAlert = null;
+
                 if (currentEditingRecordIndex !== null && db.dispatchLogs[currentEditingRecordIndex]) {
                     const existing = db.dispatchLogs[currentEditingRecordIndex];
-                    db.dispatchLogs[currentEditingRecordIndex] = {
+                    const updatedDispatch = {
                         ...existing,
                         unit: val1,
                         route: val2,
                         driver: val3,
+                        originHub: hubMeta.originHub || existing.originHub || null,
+                        destinationHub: hubMeta.destinationHub || existing.destinationHub || null,
+                        nearestHub: hubMeta.nearestHub || existing.nearestHub || null,
+                        lat: hubMeta.lat !== null ? hubMeta.lat : (existing.lat || null),
+                        lng: hubMeta.lng !== null ? hubMeta.lng : (existing.lng || null),
                         attachments: stagedBackendAttachments.length > 0 ? stagedBackendAttachments : (existing.attachments || [])
                     };
+                    db.dispatchLogs[currentEditingRecordIndex] = updatedDispatch;
+
+                    if (supabaseClient && existing.id) {
+                        try {
+                            await supabaseClient.from('dispatch_logs').update({
+                                unit_id: updatedDispatch.unit,
+                                route: updatedDispatch.route,
+                                driver_name: updatedDispatch.driver,
+                                latitude: updatedDispatch.lat,
+                                longitude: updatedDispatch.lng,
+                                nearest_hub: updatedDispatch.nearestHub,
+                                attachments: updatedDispatch.attachments,
+                                updated_at: new Date().toISOString()
+                            }).eq('id', existing.id);
+                        } catch (err) {
+                            console.warn("Supabase dispatch_logs update fallback:", err.message);
+                        }
+                    }
                 } else {
-                    const dispatchRec = { unit: val1, route: val2, driver: val3, status: 'In Transit', attachments: stagedBackendAttachments };
-                    db.dispatchLogs.push(dispatchRec);
+                    const dispatchRec = {
+                        unit: val1,
+                        route: val2,
+                        driver: val3,
+                        status: 'In Transit',
+                        originHub: hubMeta.originHub,
+                        destinationHub: hubMeta.destinationHub,
+                        nearestHub: hubMeta.nearestHub,
+                        lat: hubMeta.lat,
+                        lng: hubMeta.lng,
+                        attachments: stagedBackendAttachments
+                    };
+                    db.dispatchLogs.unshift(dispatchRec);
                     await insertDispatchLogToSupabase(dispatchRec);
+                    dispatchedSmsAlert = await sendAutomatedDispatchSmsNotification(dispatchRec);
                 }
+
                 currentEditingRecordIndex = null;
                 await saveCloudData();
                 closeBackendEntryModal();
                 openSubModule('GPS & Dispatch');
+
+                if (dispatchedSmsAlert) {
+                    alert(`✅ Dispatch created for Unit ${dispatchedSmsAlert.unit}!\n📲 Automated SMS notification sent to ${dispatchedSmsAlert.driver} (${dispatchedSmsAlert.phone}):\n\n"${dispatchedSmsAlert.message}"`);
+                }
             } else if (currentBackendModuleType === 'Expense') {
                 if(!db.expenseLogs) db.expenseLogs = [];
                 const tollsVal = document.getElementById('beInputTolls') ? document.getElementById('beInputTolls').value : '₱0.00';
@@ -5534,7 +7629,10 @@ async function confirmResetAllDatabases() {
             const target = (yardDb.containers || [])[idx];
             if (!target) return;
 
-            if (confirm(`Are you sure you want to permanently delete container ${target.number} from inventory?`)) {
+            if (confirm(`Are you sure you want to permanently delete container ${target.number} and its attached inspection/release photos?`)) {
+                // Remove both Gate-In photos and Gate-Out releasePhotos from Supabase Storage
+                await removeRecordAttachmentsFromStorage(target);
+
                 if (supabaseClient) {
                     try {
                         if (target.id) {
