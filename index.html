@@ -480,7 +480,7 @@
                             <div><label class="font-bold text-slate-800 mb-1 block">Tier</label><input name="tier" class="p-2 border rounded-lg w-full bg-white text-slate-900" placeholder="1"></div>
                             <div class="md:col-span-3"><label class="font-bold text-slate-800 mb-1 block">Gate-In Date & Time *</label><input name="date" id="gateInDateInput" type="datetime-local" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
                             <div class="md:col-span-3"><label class="font-bold text-slate-800 mb-1 block">(ETA) Estimated Time Arrival Date & Time *</label><input name="etaDate" id="gateInETADateInput" type="datetime-local" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Gate-In Time of Day</label><select name="gateInToD" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>MORNING</option><option>AFTERNOON</option><option>EVENING</option></select></div>
+                            <div><label class="font-bold text-slate-800 mb-1 block">Gate-In Time of Day *</label><select name="gateInToD" required class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>MORNING</option><option>AFTERNOON</option><option>EVENING</option></select></div>
                             <div class="md:col-span-3"><label class="font-bold text-slate-800 mb-1 block">Remarks / Damage Details</label><textarea name="remarks" rows="2" class="p-2 border rounded-lg w-full bg-white text-slate-900"></textarea></div>
 
                             <div class="md:col-span-3 bg-slate-50 p-4 rounded-xl border-2 border-dashed border-slate-300 transition-all text-center" id="gateInDropZone" 
@@ -526,7 +526,7 @@
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-In Date & Time (Read-only)</label><input type="text" id="calcGateInDisplay" readonly class="p-2 border rounded-lg w-full bg-slate-100 font-mono text-slate-900 font-bold"></div>
                             <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out Date & Time *</label><input name="date" id="calcGateOutDate" type="datetime-local" required class="p-2 border rounded-lg w-full bg-white text-slate-900" onchange="recalculateTotals()"></div>
                             <div class="md:col-span-3"><label class="font-bold text-slate-800 mb-1 block">(ETA) Estimated Time Pull-out Date & Time *</label><input name="etaPulloutDate" id="gateOutETADateInput" type="datetime-local" required class="p-2 border rounded-lg w-full bg-white text-slate-900"></div>
-                            <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out Time of Day</label><select name="gateOutToD" class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>MORNING</option><option>AFTERNOON</option><option>EVENING</option></select></div>                            
+                            <div><label class="font-bold text-slate-800 mb-1 block">Gate-Out Time of Day</label><select name="gateOutToD" required class="p-2 border rounded-lg w-full bg-white text-slate-900"><option>MORNING</option><option>AFTERNOON</option><option>EVENING</option></select></div>                            
 
                             <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex flex-col justify-center">
                                 <span class="font-bold text-amber-900 text-xs">Storage Days:</span>
@@ -718,8 +718,8 @@
             <!-- Yard Tab 8: Cloud Sync & Backup -->
             <div id="yardBackup" class="yard-tab hidden space-y-6">
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border">
-                    <h3 class="font-bold text-base text-slate-900 mb-2"><i class="fa-solid fa-cloud text-sky-600 mr-2"></i> Supabase Cloud Database & Storage Bucket Status (Active)</h3>
-                    <p class="text-xs text-slate-600 mb-4">Connected securely to your remote cloud database and Supabase storage bucket (`skymover-attachments`).</p>
+                    <h3 class="font-bold text-base text-slate-900 mb-2"><i class="fa-solid fa-cloud text-sky-600 mr-2"></i> Cloud Database & Storage Bucket Status (Active)</h3>
+                    <p class="text-xs text-slate-600 mb-4">Connected securely to your remote cloud database and storage bucket (`skymover-attachments`).</p>
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-700">
                         <div><strong>Project URL:</strong> https://ygghxpsddnjzgnkvbrtl.supabase.co</div>
                         <div class="mt-1"><strong>Status:</strong> <span class="text-emerald-700 font-bold">● Active Real-Time Websocket Synced & Storage Bucket Ready</span></div>
@@ -735,7 +735,7 @@
                                 Storage Bucket Orphan Cleaner (<span class="font-mono text-xs text-sky-700">skymover-attachments</span>)
                                 <span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">Admin Only</span>
                             </h3>
-                            <p class="text-xs text-slate-600 mt-1">Audit and purge unreferenced Gate-In, Gate-Out, Driver, and Expense photos from Supabase Storage.</p>
+                            <p class="text-xs text-slate-600 mt-1">Audit and purge unreferenced Gate-In, Gate-Out, Driver, and Expense photos from Database Storage.</p>
                         </div>
                         <button onclick="openStorageOrphanCleanerFromYard()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
                             <i class="fa-solid fa-magnifying-glass"></i> Scan & Clean Orphaned Files
