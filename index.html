@@ -488,7 +488,7 @@
                                     ondragleave="handleDragLeave(event, 'gateInDropZone')" 
                                     ondrop="handleDrop(event, 'gateIn')">
                                 <label class="font-bold text-slate-800 mb-1 block"><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-600"></i> Drag & Drop Photos / Files Here (Gate-In)</label>
-                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files (Automated Image Compression & Supabase Bucket Upload Enabled)</p>
+                                <p class="text-[11px] text-slate-600 mb-3">or click below to browse (Cloud Upload)</p>
                                 <input type="file" id="gateInPhotoInput" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'gateIn')" class="hidden">
                                 <button type="button" onclick="document.getElementById('gateInPhotoInput').click()" class="bg-sky-100 hover:bg-sky-200 text-sky-900 px-3 py-1.5 rounded-lg font-bold text-xs transition">Browse Files</button>
                                 <div id="gateInPhotoPreviewContainer" class="flex flex-wrap justify-center gap-3 mt-4"></div>
@@ -547,7 +547,7 @@
                                     ondragleave="handleDragLeave(event, 'gateOutDropZone')" 
                                     ondrop="handleDrop(event, 'gateOut')">
                                 <label class="font-bold text-slate-800 mb-1 block"><i class="fa-solid fa-cloud-arrow-up mr-1 text-amber-600"></i> Drag & Drop Photos / Files Here (Gate-Out)</label>
-                                <p class="text-[11px] text-slate-600 mb-3">or click the button below to browse files (Supabase Storage Direct Upload)</p>
+                                <p class="text-[11px] text-slate-600 mb-3">or click below to browse (Cloud Upload)</p>
                                 <input type="file" id="gateOutPhotoInput" accept="image/*,application/pdf" multiple onchange="handleFileInput(event, 'gateOut')" class="hidden">
                                 <button type="button" onclick="document.getElementById('gateOutPhotoInput').click()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-lg font-bold text-xs transition">Browse Files</button>
                                 <div id="gateOutPhotoPreviewContainer" class="flex flex-wrap justify-center gap-3 mt-4"></div>
