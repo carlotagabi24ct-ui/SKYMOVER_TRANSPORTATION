@@ -24,6 +24,8 @@
     <!-- Leaflet.js CSS & JS for Visual Map Marker Rendering -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- QRCode.js for Client-Facing QR Code Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -84,17 +86,17 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white" onload="initSupabase()">
 
     <!-- TOP NAVIGATION BAR -->
-    <header class="w-full bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex justify-between items-center shadow-lg">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('landing')">
+    <header id="mainTopHeader" class="w-full bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex justify-between items-center shadow-lg">
+        <div id="brandLogoArea" class="flex items-center gap-3 cursor-pointer" onclick="handleBrandLogoClick()">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-blue-500 flex items-center justify-center shadow-md shadow-sky-500/20">
                 <i class="fa-solid fa-truck-ramp-box text-white text-lg"></i>
             </div>
             <div>
                 <h1 class="font-extrabold text-sm tracking-wide text-white" data-i18n="topNavTitle">SKYMOVER TRANSPORTATION</h1>
-                <p class="text-[10px] text-slate-400" data-i18n="topNavSubtitle">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
+                <p id="topNavSubtitleEl" class="text-[10px] text-slate-400" data-i18n="topNavSubtitle">Enterprise Fleet, Hub & Yard Platform (RBAC Enabled)</p>
             </div>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div id="topNavControlsArea" class="flex items-center gap-2 sm:gap-3">
             <div id="syncStatusBadge" class="hidden sm:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-[11px]">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" id="syncDot"></span>
                 <span id="syncText" class="text-slate-300 font-medium" data-i18n="syncConnecting">Connecting to Cloud DB...</span>
@@ -114,7 +116,7 @@
                 <span class="hidden md:inline" id="desktopNotifLabel">Desktop Off</span>
             </button>
 
-            <button onclick="toggleLanguage()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
+            <button id="langToggleBtn" onclick="toggleLanguage()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
                 <i class="fa-solid fa-globe text-sky-400"></i>
                 <span id="langLabel">Chinese/English</span>
             </button>
@@ -126,6 +128,11 @@
             <button onclick="switchView('landing')" id="navHubPortalBtn" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow">
                 <i class="fa-solid fa-house mr-1"></i> <span data-i18n="hubPortalBtn">Hub Portal</span>
             </button>
+        </div>
+        <!-- CLIENT QR MODE BADGE (SHOWN ONLY IN CLIENT QR MODE) -->
+        <div id="clientQrHeaderBadge" class="hidden items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 px-3 py-1.5 rounded-full text-xs text-emerald-300 font-bold">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>Client Self-Service Yard Portal</span>
         </div>
     </header>
 
@@ -359,10 +366,41 @@
 
         <!-- VIEW 5: EMPTY CONTAINER YARD & REVENUE PLATFORM -->
         <section id="viewYard" class="hidden space-y-6">
+            <!-- CLIENT QR WELCOME GREETING & INSTRUCTIONS BANNER (VISIBLE ONLY IN CLIENT QR MODE) -->
+            <div id="clientQrWelcomeBanner" class="hidden bg-gradient-to-r from-sky-900/90 via-slate-900 to-emerald-900/80 border border-sky-500/40 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px] font-bold uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-qrcode"></i> Verified Client QR Access
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">Welcome to Skymover Empty Container Yard!</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">Use this self-service portal to submit your container <strong>Gate-In</strong> or <strong>Gate-Out</strong> entry directly to our yard operations team.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                        <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">1</span>Select Transaction</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Choose <strong>+ Gate-In</strong> to drop off an empty container, or <strong>Gate-Out</strong> to request a container release.</p>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                        <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">2</span>Enter Details</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Fill in the required fields marked with <strong>*</strong> (Container No., Size, Shipping Line, Truck Plate, and Date/Time).</p>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                        <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">3</span>Attach Photos / EIR</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Drag &amp; drop or browse to upload container inspection photos or EIR documents (up to 10 MB).</p>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                        <div class="text-emerald-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 mr-1.5">4</span>Save &amp; Notify</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Click <strong>Save Gate-In Entry</strong> (or <strong>Confirm Gate-Out</strong>). Our team is automatically notified via email.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                 <div>
                     <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-warehouse text-amber-500 mr-2"></i> <span data-i18n="yardHeading">Skymover Empty Container Yard</span></h2>
-                    <p class="text-xs text-slate-300" data-i18n="yardSub">Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.</p>
+                    <p id="yardSubHeadingEl" class="text-xs text-slate-300" data-i18n="yardSub">Live yard stock, Gate-In/Gate-Out billing, multi-currency revenue analytics, and photo audits.</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs" id="yardTabButtonsArea">
                     <button onclick="switchYardTab('yardDashboard')" id="yBtn1" class="btn px-3 py-1.5 rounded-lg font-semibold bg-amber-600 text-white" data-i18n="yTabDash">Dashboard</button>
@@ -373,6 +411,7 @@
                     <button onclick="switchYardTab('yardExpenses')" id="yBtn6" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabExp">Expenses</button>
                     <button onclick="switchYardTab('yardReports')" id="yBtn7" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabRep">Reports</button>
                     <button onclick="switchYardTab('yardBackup')" id="yBtn8" class="btn px-3 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-200" data-i18n="yTabSync">Cloud Sync & Backup</button>
+                    <button onclick="openClientQrModal()" id="yBtnClientQr" class="btn px-3 py-1.5 rounded-lg font-bold bg-sky-600 hover:bg-sky-700 text-white shadow"><i class="fa-solid fa-qrcode mr-1"></i> Client QR Access</button>
                 </div>
             </div>
 
@@ -495,7 +534,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 pt-2">
-                            <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-bold">Save Gate-In Entry</button>
+                            <button type="submit" id="saveGateInSubmitBtn" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-bold">Save Gate-In Entry</button>
                             <button type="reset" onclick="clearGateInFormAndPhotos()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-bold">Clear</button>
                         </div>
                     </form>
@@ -756,6 +795,48 @@
 
     </main>
 
+    <!-- CLIENT-FACING QR CODE GENERATOR & EMAIL NOTIFICATION CONFIG MODAL -->
+    <div id="clientQrModal" class="fixed inset-0 modal-glass z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative border border-slate-700 shadow-2xl space-y-5">
+            <button onclick="closeClientQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-qrcode text-sky-400"></i> Client-Facing Yard QR Access</h3>
+                <p class="text-xs text-slate-300 mt-1">Share this QR code with clients for direct, restricted access to Gate-In &amp; Gate-Out forms only.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 flex flex-col items-center justify-center shadow-inner">
+                <div id="clientQrCodeCanvas" class="p-2 bg-white rounded-xl"></div>
+                <p class="text-[11px] font-bold text-slate-700 mt-3 text-center">Scan to open Skymover Empty Container Yard (Client View)</p>
+            </div>
+
+            <div class="space-y-2 text-xs">
+                <label class="block text-slate-300 font-semibold">Direct Client Portal URL</label>
+                <div class="flex gap-2">
+                    <input type="text" id="clientQrLinkInput" readonly class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sky-300 font-mono text-[11px]">
+                    <button type="button" onclick="copyClientQrLink()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-2 rounded-lg font-semibold shrink-0"><i class="fa-solid fa-copy mr-1"></i> Copy</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-emerald-400"><i class="fa-solid fa-envelope-circle-check mr-1.5"></i> Gate-In Email Notification Recipient</label>
+                    <span class="text-[10px] text-slate-400 font-mono">Auto-Send on Save</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Whenever a client clicks <strong>Save Gate-In Entry</strong>, an automated email summary is sent to this assigned address.</p>
+                <div class="flex gap-2">
+                    <input type="email" id="clientQrNotifyEmailInput" placeholder="yard-ops@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                    <button type="button" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0">Save Email</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="downloadClientQrPng()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow"><i class="fa-solid fa-download mr-1.5"></i> Download QR (PNG)</button>
+                <a id="clientQrPreviewBtn" href="?mode=client_qr" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow"><i class="fa-solid fa-arrow-up-right-from-square mr-1.5"></i> Preview Client View</a>
+                <button type="button" onclick="closeClientQrModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN MODAL -->
     <div id="loginModal" class="skymover-modal-overlay">
         <div class="skymover-modal-container">
@@ -968,7 +1049,7 @@
         <p class="mt-1">© 2026 SKYMOVER. All rights reserved.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION, REAL-TIME WEBSOCKET SYNC & RBAC -->
+    <!-- JAVASCRIPT LOGIC WITH SUPABASE AUTHENTICATION, REAL-TIME WEBSOCKET SYNC, RBAC & CLIENT QR ACCESS -->
     <script>
         let stagedGateInPhotos = [];
         let stagedGateOutPhotos = [];
@@ -992,6 +1073,257 @@
         let currentEditingHubIndex = null;
         let currentEditingReportTemplateIndex = null;
         let currentExtractionFilter = 'ALL';
+
+        // ==========================================
+        // CLIENT-FACING QR ACCESS MODE STATE & CONFIGURATION
+        // ==========================================
+        const CLIENT_QR_NOTIFY_EMAIL_KEY = 'skymover_client_qr_notify_email';
+        const DEFAULT_CLIENT_NOTIFY_EMAIL = 'admin@skymover.com';
+        let clientQrCodeInstance = null;
+
+        function detectClientQrMode() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const modeParam = (params.get('mode') || '').toLowerCase();
+                const qrParam = (params.get('qr') || '').toLowerCase();
+                const clientParam = (params.get('client') || '').toLowerCase();
+                const hashVal = (window.location.hash || '').toLowerCase();
+                return (
+                    modeParam === 'client_qr' ||
+                    modeParam === 'client' ||
+                    qrParam === '1' ||
+                    qrParam === 'true' ||
+                    clientParam === '1' ||
+                    clientParam === 'true' ||
+                    hashVal.includes('client_qr')
+                );
+            } catch (e) {
+                return false;
+            }
+        }
+
+        let isClientQrMode = detectClientQrMode();
+
+        function getClientQrPortalUrl() {
+            const baseUrl = window.location.href.split('?')[0].split('#')[0];
+            return `${baseUrl}?mode=client_qr`;
+        }
+
+        function getAssignedNotificationEmail() {
+            if (db && db.clientQrNotifyEmail && db.clientQrNotifyEmail.trim()) {
+                return db.clientQrNotifyEmail.trim();
+            }
+            const stored = localStorage.getItem(CLIENT_QR_NOTIFY_EMAIL_KEY);
+            return (stored && stored.trim()) ? stored.trim() : DEFAULT_CLIENT_NOTIFY_EMAIL;
+        }
+
+        function handleBrandLogoClick() {
+            if (isClientQrMode) return;
+            switchView('landing');
+        }
+
+        function applyClientQrModeUI() {
+            if (!isClientQrMode) return;
+
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) loginModal.style.display = 'none';
+
+            const topNavControls = document.getElementById('topNavControlsArea');
+            if (topNavControls) topNavControls.style.display = 'none';
+
+            const clientBadge = document.getElementById('clientQrHeaderBadge');
+            if (clientBadge) {
+                clientBadge.classList.remove('hidden');
+                clientBadge.classList.add('flex');
+            }
+
+            const subtitleEl = document.getElementById('topNavSubtitleEl');
+            if (subtitleEl) subtitleEl.textContent = 'Empty Container Yard • Client Self-Service Portal';
+
+            const brandLogo = document.getElementById('brandLogoArea');
+            if (brandLogo) brandLogo.classList.remove('cursor-pointer');
+
+            ['viewLanding', 'viewBackend', 'viewDriver', 'viewHub'].forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.classList.add('hidden');
+            });
+
+            const viewYard = document.getElementById('viewYard');
+            if (viewYard) viewYard.classList.remove('hidden');
+
+            const welcomeBanner = document.getElementById('clientQrWelcomeBanner');
+            if (welcomeBanner) welcomeBanner.classList.remove('hidden');
+
+            const yardSub = document.getElementById('yardSubHeadingEl');
+            if (yardSub) yardSub.textContent = 'Submit your empty container Gate-In or Gate-Out entry below.';
+
+            ['yBtn1', 'yBtn2', 'yBtn5', 'yBtn6', 'yBtn7', 'yBtn8', 'yBtnClientQr'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = 'none';
+            });
+
+            ['yBtn3', 'yBtn4'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = 'inline-block';
+            });
+
+            const currentSavedTab = localStorage.getItem('skymover_client_qr_tab');
+            const initialClientTab = (currentSavedTab === 'yardGateOut') ? 'yardGateOut' : 'yardGateIn';
+            switchYardTab(initialClientTab);
+        }
+
+        function openClientQrModal() {
+            if (!requireYardOperationExecution("generate or configure Client QR Access")) return;
+            const modal = document.getElementById('clientQrModal');
+            const qrContainer = document.getElementById('clientQrCodeCanvas');
+            const linkInput = document.getElementById('clientQrLinkInput');
+            const emailInput = document.getElementById('clientQrNotifyEmailInput');
+            const previewBtn = document.getElementById('clientQrPreviewBtn');
+
+            if (!modal || !qrContainer) return;
+
+            const clientUrl = getClientQrPortalUrl();
+            if (linkInput) linkInput.value = clientUrl;
+            if (previewBtn) previewBtn.href = clientUrl;
+            if (emailInput) emailInput.value = getAssignedNotificationEmail();
+
+            qrContainer.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                clientQrCodeInstance = new QRCode(qrContainer, {
+                    text: clientUrl,
+                    width: 210,
+                    height: 210,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                qrContainer.innerHTML = `<div class="text-xs text-rose-600 font-bold p-4">QR library failed to load. Use the direct URL below.</div>`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeClientQrModal() {
+            const modal = document.getElementById('clientQrModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function copyClientQrLink() {
+            const linkInput = document.getElementById('clientQrLinkInput');
+            if (!linkInput) return;
+            try {
+                await navigator.clipboard.writeText(linkInput.value);
+                alert('✅ Client QR Portal URL copied to clipboard!');
+            } catch (e) {
+                linkInput.select();
+                document.execCommand('copy');
+                alert('✅ Client QR Portal URL copied to clipboard!');
+            }
+        }
+
+        function downloadClientQrPng() {
+            const qrContainer = document.getElementById('clientQrCodeCanvas');
+            if (!qrContainer) return;
+            const canvas = qrContainer.querySelector('canvas');
+            const img = qrContainer.querySelector('img');
+            let dataUrl = '';
+
+            if (canvas) {
+                dataUrl = canvas.toDataURL('image/png');
+            } else if (img && img.src) {
+                dataUrl = img.src;
+            }
+
+            if (!dataUrl) {
+                alert('QR code image is not ready yet.');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'Skymover_Empty_Yard_Client_QR.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function saveClientQrNotifyEmail() {
+            if (!requireYardOperationExecution("update the Gate-In notification email")) return;
+            const emailInput = document.getElementById('clientQrNotifyEmailInput');
+            if (!emailInput) return;
+            const emailVal = emailInput.value.trim();
+            if (!emailVal || !emailVal.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            localStorage.setItem(CLIENT_QR_NOTIFY_EMAIL_KEY, emailVal);
+            if (db) db.clientQrNotifyEmail = emailVal;
+            await saveCloudData();
+            alert(`✅ Gate-In email notifications will now be sent to: ${emailVal}`);
+        }
+
+        async function sendGateInEmailNotification(containerData) {
+            const recipientEmail = getAssignedNotificationEmail();
+            if (!recipientEmail) return { sent: false, reason: 'No recipient email configured' };
+
+            const subject = `[Skymover Yard] New Gate-In Entry: ${containerData.number} (${containerData.size || ''})`;
+            const payload = {
+                _subject: subject,
+                _template: "table",
+                _captcha: "false",
+                Source: isClientQrMode ? "Client QR Self-Service Portal" : "Skymover Yard Portal",
+                Container_Number: containerData.number || '—',
+                Size_and_Type: `${containerData.size || '—'} / ${containerData.type || 'Dry'}`,
+                Shipping_Line: containerData.line || '—',
+                Trucking_Name: containerData.truckingName || '—',
+                Truck_Plate_No: containerData.plate || '—',
+                Driver_Name: containerData.driver || '—',
+                EIR_Reference: containerData.eir || '—',
+                Condition_Status: `${containerData.condition || 'Good'} (${containerData.status || 'Available'})`,
+                Yard_Location: `Block ${containerData.block || 'A'}, ${containerData.bay || 'BAY-1'}, ${containerData.row || 'GROUND'}, Tier ${containerData.tier || '1'}`,
+                Gate_In_DateTime: containerData.date || '—',
+                ETA_DateTime: containerData.etaDate || '—',
+                Time_of_Day: containerData.gateInToD || '—',
+                Van_In_Amount: `PHP ${Number(containerData.vanInAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} (${containerData.vanInStats || 'PAID'})`,
+                Remarks: containerData.remarks || 'None',
+                Attachments_Count: String((containerData.photos || []).length),
+                Submitted_At: new Date().toLocaleString()
+            };
+
+            let sent = false;
+
+            // 1. Primary: FormSubmit AJAX Endpoint (works directly from GitHub Pages / static HTML)
+            try {
+                const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    sent = true;
+                }
+            } catch (err) {
+                console.warn("FormSubmit email notification notice:", err.message || err);
+            }
+
+            // 2. Optional Fallback: Supabase Edge Function (if deployed)
+            if (!sent && supabaseClient && supabaseClient.functions) {
+                try {
+                    const { error } = await supabaseClient.functions.invoke('send-gate-in-email', {
+                        body: { to: recipientEmail, subject, data: payload }
+                    });
+                    if (!error) sent = true;
+                } catch (fnErr) {
+                    console.warn("Supabase email edge function notice:", fnErr.message || fnErr);
+                }
+            }
+
+            return { sent, recipientEmail };
+        }
 
         // Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
         let isSavingCloudData = false;
@@ -1074,6 +1406,7 @@
         // RBAC PERMISSION & VIEWING CONTROL HELPERS
         // ==========================================
         function getRoleAllowedViews(role) {
+            if (isClientQrMode) return ['yard'];
             if (role === 'admin') return ['landing', 'backend', 'driver', 'hub', 'yard'];
             if (role === 'dispatcher') return ['landing', 'backend', 'driver', 'hub', 'yard'];
             if (role === 'yard_manager') return ['landing', 'hub', 'yard'];
@@ -1083,6 +1416,7 @@
         }
 
         function getRoleDefaultView(role) {
+            if (isClientQrMode) return 'yard';
             if (role === 'driver') return 'driver';
             if (role === 'yard_manager') return 'yard';
             if (role === 'accounting_reports') return 'yard';
@@ -1090,6 +1424,7 @@
         }
 
         function canRoleModifyYard() {
+            if (isClientQrMode) return true;
             return ['admin', 'yard_manager'].includes(currentUserRole);
         }
 
@@ -1102,6 +1437,7 @@
         }
 
         function requireYardOperationExecution(actionLabel = "perform this yard operation") {
+            if (isClientQrMode) return true;
             if (!['admin', 'yard_manager'].includes(currentUserRole)) {
                 alert(`⛔ RBAC Access Denied: Your role (${currentUserRole.replace('_', ' ')}) has read-only access and cannot ${actionLabel}.`);
                 return false;
@@ -1109,7 +1445,7 @@
             return true;
         }
 
-	// ==========================================
+        // ==========================================
         // FIXED UPLOAD & SAVE RECORD FUNCTION
         // ==========================================
         async function uploadAttachmentAndSaveRecord(fileObject, recordData) {
@@ -1246,7 +1582,7 @@
             }
         }
 
-		async function syncHubLocationToSupabase(hubObj) {
+        async function syncHubLocationToSupabase(hubObj) {
             if (!supabaseClient) return null;
             try {
                 const nowIso = new Date().toISOString();
@@ -1523,6 +1859,7 @@
         }
 
         function resetInactivityTimer() {
+            if (isClientQrMode) return;
             clearTimeout(inactivityTimer);
             if (currentUser && currentUserRole !== 'guest') {
                 recordUserActivityTimestamp();
@@ -1738,7 +2075,7 @@
         }
 
         function triggerDispatchSmsRealtimeAlertFeedback(smsObj) {
-            if (!smsObj) return;
+            if (!smsObj || isClientQrMode) return;
 
             if (currentUserRole === 'driver' && typeof resolveLoggedInDriverProfile === 'function') {
                 const profile = resolveLoggedInDriverProfile();
@@ -1761,7 +2098,7 @@
         }
 
         function triggerGeofenceRealtimeAlertFeedback(alertObj) {
-            if (!alertObj) return;
+            if (!alertObj || isClientQrMode) return;
             playSkymoverAlertChime('geofence');
             sendSkymoverDesktopNotification(
                 `📡 LogiTRACK Geofence Alert • ${alertObj.unitId || 'Fleet Unit'}`,
@@ -1773,14 +2110,26 @@
         
         function initSupabase() {
             try {
+                isClientQrMode = detectClientQrMode();
                 initSkymoverAlertSystem();
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 updateSyncBadge('connected', 'Cloud DB & Storage Bucket Active');
+
+                if (isClientQrMode) {
+                    applyClientQrModeUI();
+                    fetchCloudData();
+                    subscribeToRealtimeChanges();
+                    return;
+                }
+
                 checkActiveAuthSession();
                 fetchCloudData();
                 subscribeToRealtimeChanges();
             } catch(e) {
                 updateSyncBadge('error', 'Cloud Connection Failed');
+                if (isClientQrMode) {
+                    applyClientQrModeUI();
+                }
             }
         }
 
@@ -1788,6 +2137,10 @@
         // SESSION RESTORATION ON PAGE REFRESH + INACTIVITY CHECK
         // ==========================================
         async function checkActiveAuthSession() {
+            if (isClientQrMode) {
+                applyClientQrModeUI();
+                return;
+            }
             if(!supabaseClient) {
                 window.openSkymoverLogin();
                 return;
@@ -1821,6 +2174,7 @@
                     window.openSkymoverLogin();
                 }
                 supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (isClientQrMode) return;
                     if (event === 'SIGNED_OUT') {
                         currentUser = null;
                         currentUserEmail = '';
@@ -1879,6 +2233,11 @@
         // ROLE-BASED VIEWING CONTROL (preserveLastView = true on refresh/modification, false on fresh login)
         // ==========================================
         function applyRbacPermissions(role, preserveLastView = true) {
+            if (isClientQrMode) {
+                applyClientQrModeUI();
+                return;
+            }
+
             const resetBtn = document.getElementById('resetDbBtn');
             const dataBackupNavBtn = document.getElementById('dataBackupNavBtn');
             const cardBackend = document.getElementById('cardBackend');
@@ -1901,6 +2260,7 @@
             const yBtn6 = document.getElementById('yBtn6'); // Expenses
             const yBtn7 = document.getElementById('yBtn7'); // Reports
             const yBtn8 = document.getElementById('yBtn8'); // Cloud Sync & Backup
+            const yBtnClientQr = document.getElementById('yBtnClientQr'); // Client QR Access
 
             // Reset default visibility first
             if(cardBackend) cardBackend.style.display = 'block';
@@ -1915,6 +2275,7 @@
             if(yardOrphanCleanerPanel) yardOrphanCleanerPanel.style.display = (role === 'admin') ? 'block' : 'none';
             if(yardResetAllBtn) yardResetAllBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
             if(driverPortalRegBtn) driverPortalRegBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
+            if(yBtnClientQr) yBtnClientQr.style.display = ['admin', 'yard_manager'].includes(role) ? 'inline-block' : 'none';
 
             [yBtn1, yBtn2, yBtn3, yBtn4, yBtn5, yBtn6, yBtn7, yBtn8].forEach(b => {
                 if (b) b.style.display = 'inline-block';
@@ -1964,6 +2325,7 @@
         }
 
         window.openSkymoverLogin = function() {
+            if (isClientQrMode) return;
             const loginModal = document.getElementById('loginModal');
             if(loginModal) loginModal.style.display = 'flex';
         };
@@ -2106,8 +2468,12 @@
                         geofenceZones: cloudBackend.geofenceZones || db.geofenceZones || [],
                         hubLocations: cloudBackend.hubLocations || db.hubLocations || [],
                         reportTemplates: cloudBackend.reportTemplates || db.reportTemplates || [],
-                        systemUsers: cloudBackend.systemUsers || db.systemUsers || []
+                        systemUsers: cloudBackend.systemUsers || db.systemUsers || [],
+                        clientQrNotifyEmail: cloudBackend.clientQrNotifyEmail || db.clientQrNotifyEmail || localStorage.getItem(CLIENT_QR_NOTIFY_EMAIL_KEY) || DEFAULT_CLIENT_NOTIFY_EMAIL
                     };
+                    if (db.clientQrNotifyEmail) {
+                        localStorage.setItem(CLIENT_QR_NOTIFY_EMAIL_KEY, db.clientQrNotifyEmail);
+                    }
                     yardDb = {
                         containers: cloudYard.containers || yardDb.containers || [],
                         movements: cloudYard.movements || yardDb.movements || [],
@@ -2133,6 +2499,7 @@
                 
                 refreshHubDatalist();
                 refreshYard();
+                populateYardOutContainerDropdown();
                 renderTransshipmentTable();
                 refreshDriverSmsInbox();
                 renderDriverGeofenceAlerts();
@@ -2247,6 +2614,7 @@
                         safeLocalStorageSet(YARD_KEY, yardDb);
                         refreshHubDatalist();
                         refreshYard();
+                        populateYardOutContainerDropdown();
                         renderTransshipmentTable();
                         refreshDriverSmsInbox();
                         renderDriverGeofenceAlerts();
@@ -2465,7 +2833,7 @@
             }
         }
 
-		// ==========================================
+	// ==========================================
         // 1. RESET DB: MANAGEMENT BACKEND & DRIVER'S SIDE ONLY
         // Uses skymover_admin_reset_scope RPC + skymover-attachments storage cleanup
         // ==========================================
@@ -2594,6 +2962,7 @@
             }
 
             const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
+            const preservedNotifyEmail = db.clientQrNotifyEmail || localStorage.getItem(CLIENT_QR_NOTIFY_EMAIL_KEY) || DEFAULT_CLIENT_NOTIFY_EMAIL;
 
             db = {
                 vehicles: [],
@@ -2609,7 +2978,8 @@
                 geofenceZones: [],
                 hubLocations: [],
                 reportTemplates: [],
-                systemUsers: preservedAdmins
+                systemUsers: preservedAdmins,
+                clientQrNotifyEmail: preservedNotifyEmail
             };
 
             stagedDriverAttachments = [];
@@ -2789,7 +3159,7 @@
             alert(`🔄 Empty Yard reset complete! A safety backup was downloaded, ${clearedTablesCount} Empty Yard cloud table(s) and ${removedStorageCount} storage file(s) in skymover-attachments were deleted, and all Management Backend & Driver's Side records remain untouched.`);
         }
 
-	function openGeofenceSmsModal() {
+        function openGeofenceSmsModal() {
             if (!requireAdminExecution("configure Geofence Zones & SMS Templates")) return;
             const modal = document.getElementById('geofenceSmsConfigModal');
             if(modal) modal.classList.remove('hidden');
@@ -4307,7 +4677,8 @@
                 geofenceZones: [], 
                 hubLocations: [],
                 reportTemplates: [],
-                systemUsers: [] 
+                systemUsers: [],
+                clientQrNotifyEmail: localStorage.getItem(CLIENT_QR_NOTIFY_EMAIL_KEY) || DEFAULT_CLIENT_NOTIFY_EMAIL
             };
         }
         if (!Array.isArray(db.hubLocations)) db.hubLocations = [];
@@ -4467,6 +4838,10 @@
         }
 
         function switchView(viewName) {
+            if (isClientQrMode) {
+                applyClientQrModeUI();
+                return;
+            }
             if (!currentUser || currentUserRole === 'guest') {
                 window.openSkymoverLogin();
                 return;
@@ -5006,7 +5381,7 @@
             openSubModule('User Management');
         }
 
-	function switchAiTab(tab) {
+        function switchAiTab(tab) {
             localStorage.setItem('skymover_active_ai_tab', tab);
             ['tabBrainBtn', 'tabLensBtn', 'tabTrackBtn'].forEach(id => {
                 const b = document.getElementById(id);
@@ -6761,48 +7136,7 @@
             }
         }
 
-        async function fetchYardContainersFromSupabase() {
-            if (!supabaseClient) return;
-            try {
-                const { data, error } = await supabaseClient
-                    .from('yard_containers')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (!error && data && data.length > 0) {
-                    const cloudContainers = data.map(c => ({
-                        id: c.id,
-                        number: c.container_number,
-                        size: c.size,
-                        type: c.container_type || 'Dry',
-                        line: c.shipping_line,
-                        truckingName: c.trucking_name || '',
-                        plate: c.truck_plate,
-                        driver: c.driver_name || '',
-                        eir: c.eir_ref || '',
-                        condition: c.condition || 'Good',
-                        status: c.status || 'Available',
-                        block: c.block || 'A',
-                        bay: c.bay || 'BAY-1',
-                        row: c.yard_row || 'GROUND',
-                        tier: c.tier || '1',
-                        vanInAmount: Number(c.van_in_amount || 0),
-                        vanInStats: c.van_in_status || 'PAID',
-                        vanOutAmount: Number(c.van_out_amount || 0),
-                        date: c.gate_in_date ? c.gate_in_date.slice(0, 16) : '',
-                        etaDate: c.eta_date ? c.eta_date.slice(0, 16) : '',
-                        gateOutDate: c.gate_out_date ? c.gate_out_date.slice(0, 16) : null,
-                        remarks: c.remarks || '',
-                        photos: c.photos || [],
-                        releasePhotos: c.release_photos || []
-                    }));
-                    yardDb.containers = mergeRecordsSafely(yardDb.containers, cloudContainers, c => `cnt:${(c.number || '').trim().toUpperCase()}_${(c.date || '').trim()}`);
-                    refreshYard();
-                }
-            } catch (e) {}
-        }
-
-		async function syncYardContainerToSupabase(c) {
+        async function syncYardContainerToSupabase(c) {
             if (!supabaseClient) return false;
             try {
                 const payload = {
@@ -6837,7 +7171,7 @@
                     remarks: c.remarks || null,
                     photos: c.photos || [],
                     release_photos: c.releasePhotos || [],
-                    logged_by: currentUser ? currentUser.email : 'system',
+                    logged_by: isClientQrMode ? 'client_qr' : (currentUser ? currentUser.email : 'system'),
                     updated_at: new Date().toISOString()
                 };
 
@@ -6866,7 +7200,7 @@
             }
         }
 
-		async function fetchYardContainersFromSupabase() {
+        async function fetchYardContainersFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient
@@ -6915,12 +7249,41 @@
                         c => `cnt:${(c.number || '').trim().toUpperCase()}_${(c.date || '').trim()}`
                     );
                     refreshYard();
+                    populateYardOutContainerDropdown();
                 }
             } catch (e) {
                 console.warn("fetchYardContainersFromSupabase fallback:", e.message);
             }
         }
-		
+
+        async function fetchYardRevenuesFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('yard_revenues')
+                    .select('*')
+                    .order('transaction_date', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    const cloudRevs = data.map(r => ({
+                        id: r.id,
+                        date: r.transaction_date ? r.transaction_date.slice(0, 16) : '',
+                        source: r.source_type || 'Yard Fee',
+                        container: r.container_number || '',
+                        eir: r.eir_ref || '—',
+                        amount: Number(r.amount || 0)
+                    }));
+                    yardDb.revenues = mergeRecordsSafely(
+                        yardDb.revenues,
+                        cloudRevs,
+                        r => r.id ? `id:${r.id}` : `rev:${r.source}_${r.container}_${r.date}_${r.amount}`
+                    );
+                    renderYardRevenue();
+                    refreshYardDashboard();
+                }
+            } catch (e) {}
+        }
+        
         async function insertYardRevenueToSupabase(r) {
             if (!supabaseClient) return false;
             try {
@@ -6932,7 +7295,7 @@
                         eir_ref: r.eir || null,
                         amount: parseFloat(r.amount) || 0,
                         transaction_date: r.date ? new Date(r.date).toISOString() : new Date().toISOString(),
-                        logged_by: currentUser ? currentUser.email : 'system'
+                        logged_by: isClientQrMode ? 'client_qr' : (currentUser ? currentUser.email : 'system')
                     })
                     .select()
                     .single();
@@ -6944,7 +7307,7 @@
             }
         }
 
-		async function fetchYardMovementsFromSupabase() {
+        async function fetchYardMovementsFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient
@@ -7044,7 +7407,7 @@
                         eta_pullout_date: m.etaPulloutDate ? new Date(m.etaPulloutDate).toISOString() : null,
                         remarks: m.remarks || null,
                         photos: Array.isArray(m.photos) ? m.photos : [],
-                        logged_by: currentUser ? currentUser.email : 'system'
+                        logged_by: isClientQrMode ? 'client_qr' : (currentUser ? currentUser.email : 'system')
                     })
                     .select()
                     .single();
@@ -8601,16 +8964,22 @@
         }
         
         function switchYardTab(tabId) {
-            // Enforce role-based tab restrictions
-            if (currentUserRole === 'accounting_reports' && ['yardGateIn', 'yardGateOut', 'yardBackup'].includes(tabId)) {
-                tabId = 'yardRevenue';
-            } else if (currentUserRole === 'dispatcher' && ['yardGateIn', 'yardGateOut', 'yardBackup'].includes(tabId)) {
-                tabId = 'yardDashboard';
-            } else if (currentUserRole === 'yard_manager' && tabId === 'yardBackup') {
-                tabId = 'yardDashboard';
+            if (isClientQrMode) {
+                if (tabId !== 'yardGateIn' && tabId !== 'yardGateOut') {
+                    tabId = 'yardGateIn';
+                }
+                localStorage.setItem('skymover_client_qr_tab', tabId);
+            } else {
+                // Enforce role-based tab restrictions
+                if (currentUserRole === 'accounting_reports' && ['yardGateIn', 'yardGateOut', 'yardBackup'].includes(tabId)) {
+                    tabId = 'yardRevenue';
+                } else if (currentUserRole === 'dispatcher' && ['yardGateIn', 'yardGateOut', 'yardBackup'].includes(tabId)) {
+                    tabId = 'yardDashboard';
+                } else if (currentUserRole === 'yard_manager' && tabId === 'yardBackup') {
+                    tabId = 'yardDashboard';
+                }
+                localStorage.setItem('skymover_active_yard_tab', tabId);
             }
-
-            localStorage.setItem('skymover_active_yard_tab', tabId);
 
             document.querySelectorAll('.yard-tab').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(tabId);
@@ -8835,6 +9204,7 @@
             if (!requireYardOperationExecution("record or update container Gate-In")) return;
 
             const form = document.getElementById('yardGateInForm');
+            const submitBtn = document.getElementById('saveGateInSubmitBtn') || form.querySelector('button[type="submit"]');
             const formData = new FormData(form);
             const containerNo = formData.get('number').trim().toUpperCase();
 
@@ -8883,86 +9253,108 @@
                 await saveCloudData();
                 clearGateInFormAndPhotos();
                 alert('✅ Container inventory record successfully updated and synced to Supabase!');
-                switchYardTab('yardInventory');
+                switchYardTab(isClientQrMode ? 'yardGateIn' : 'yardInventory');
                 return;
             }
 
-            const containerData = {
-                number: containerNo,
-                size: formData.get('size'),
-                type: formData.get('type'),
-                line: formData.get('line'),
-                truckingName: formData.get('truckingName'),
-                plate: formData.get('plate').trim().toUpperCase(),
-                driver: formData.get('driver'),
-                eir: formData.get('eir'),
-                condition: formData.get('condition'),
-                status: formData.get('status'),
-                block: formData.get('block'),
-                bay: formData.get('bay'),
-                row: formData.get('row'),
-                tier: formData.get('tier'),
-                date: formData.get('date'),
-                etaDate: formData.get('etaDate'),
-                gateInToD: formData.get('gateInToD') || 'MORNING',
-                remarks: formData.get('remarks'),
-                vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
-                vanInStats: formData.get('vanInStats'),
-                vanOutAmount: 0,
-                photos: stagedGateInPhotos
-            };
-
-            yardDb.containers.unshift(containerData);
-            await syncYardContainerToSupabase(containerData);
-            
-            const movementRecord = {
-                date: containerData.date,
-                etaDate: containerData.etaDate,
-                gateInToD: containerData.gateInToD,
-                kind: 'GATE-IN',
-                container: containerData.number,
-                size: containerData.size,
-                type: containerData.type,
-                line: containerData.line,
-                truckingName: containerData.truckingName,
-                plate: containerData.plate,
-                driver: containerData.driver,
-                eir: containerData.eir,
-                condition: containerData.condition,
-                status: containerData.status,
-                block: containerData.block,
-                bay: containerData.bay,
-                row: containerData.row,
-                tier: containerData.tier,
-                vanInAmount: containerData.vanInAmount,
-                vanInStats: containerData.vanInStats,
-                remarks: containerData.remarks,
-                amount: containerData.vanInAmount,
-                totalAmount: containerData.vanInAmount,
-                photos: stagedGateInPhotos
-            };
-
-            if(!yardDb.movements) yardDb.movements = [];
-            yardDb.movements.unshift(movementRecord);
-            await insertYardMovementToSupabase(movementRecord);
-
-            if (containerData.vanInAmount > 0 && containerData.vanInStats === 'PAID') {
-                const revenueRecord = {
-                    date: containerData.date,
-                    source: 'Gate-In Van In Fee',
-                    container: containerData.number,
-                    eir: containerData.eir || '—',
-                    amount: containerData.vanInAmount
-                };
-                if(!yardDb.revenues) yardDb.revenues = [];
-                yardDb.revenues.unshift(revenueRecord);
-                await insertYardRevenueToSupabase(revenueRecord);
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving & Notifying...';
             }
 
-            await saveCloudData();
-            clearGateInFormAndPhotos();
-            alert('✅ Container Gate-In successfully recorded and synced with Supabase storage & cloud database!');
-            switchYardTab('yardInventory');
+            try {
+                const containerData = {
+                    number: containerNo,
+                    size: formData.get('size'),
+                    type: formData.get('type'),
+                    line: formData.get('line'),
+                    truckingName: formData.get('truckingName'),
+                    plate: formData.get('plate').trim().toUpperCase(),
+                    driver: formData.get('driver'),
+                    eir: formData.get('eir'),
+                    condition: formData.get('condition'),
+                    status: formData.get('status'),
+                    block: formData.get('block'),
+                    bay: formData.get('bay'),
+                    row: formData.get('row'),
+                    tier: formData.get('tier'),
+                    date: formData.get('date'),
+                    etaDate: formData.get('etaDate'),
+                    gateInToD: formData.get('gateInToD') || 'MORNING',
+                    remarks: formData.get('remarks'),
+                    vanInAmount: parseFloat(formData.get('vanInAmount')) || 0,
+                    vanInStats: formData.get('vanInStats'),
+                    vanOutAmount: 0,
+                    photos: [...stagedGateInPhotos]
+                };
+
+                yardDb.containers.unshift(containerData);
+                await syncYardContainerToSupabase(containerData);
+                
+                const movementRecord = {
+                    date: containerData.date,
+                    etaDate: containerData.etaDate,
+                    gateInToD: containerData.gateInToD,
+                    kind: 'GATE-IN',
+                    container: containerData.number,
+                    size: containerData.size,
+                    type: containerData.type,
+                    line: containerData.line,
+                    truckingName: containerData.truckingName,
+                    plate: containerData.plate,
+                    driver: containerData.driver,
+                    eir: containerData.eir,
+                    condition: containerData.condition,
+                    status: containerData.status,
+                    block: containerData.block,
+                    bay: containerData.bay,
+                    row: containerData.row,
+                    tier: containerData.tier,
+                    vanInAmount: containerData.vanInAmount,
+                    vanInStats: containerData.vanInStats,
+                    remarks: containerData.remarks,
+                    amount: containerData.vanInAmount,
+                    totalAmount: containerData.vanInAmount,
+                    photos: [...stagedGateInPhotos]
+                };
+
+                if(!yardDb.movements) yardDb.movements = [];
+                yardDb.movements.unshift(movementRecord);
+                await insertYardMovementToSupabase(movementRecord);
+
+                if (containerData.vanInAmount > 0 && containerData.vanInStats === 'PAID') {
+                    const revenueRecord = {
+                        date: containerData.date,
+                        source: 'Gate-In Van In Fee',
+                        container: containerData.number,
+                        eir: containerData.eir || '—',
+                        amount: containerData.vanInAmount
+                    };
+                    if(!yardDb.revenues) yardDb.revenues = [];
+                    yardDb.revenues.unshift(revenueRecord);
+                    await insertYardRevenueToSupabase(revenueRecord);
+                }
+
+                await saveCloudData();
+
+                // Automated Email Notification on Save Gate-In Entry
+                const emailResult = await sendGateInEmailNotification(containerData);
+
+                clearGateInFormAndPhotos();
+                populateYardOutContainerDropdown();
+
+                const emailMsg = emailResult && emailResult.sent
+                    ? `\n📧 Automated email notification sent to ${emailResult.recipientEmail}.`
+                    : `\n📧 Notification queued for ${emailResult ? emailResult.recipientEmail : getAssignedNotificationEmail()}.`;
+
+                alert(`✅ Container Gate-In (${containerNo}) successfully recorded and synced with cloud database!${emailMsg}`);
+                switchYardTab(isClientQrMode ? 'yardGateIn' : 'yardInventory');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Gate-In Entry';
+                }
+            }
         }
 
         function populateYardOutContainerDropdown() {
@@ -9106,8 +9498,9 @@
             await saveCloudData();
             form.reset();
             clearGateOutPhotos();
+            populateYardOutContainerDropdown();
             alert('✅ Container successfully gated out, billed, and synced with cloud database!');
-            switchYardTab('yardInventory');
+            switchYardTab(isClientQrMode ? 'yardGateOut' : 'yardInventory');
         }
 
         function renderYardRevenue() {
