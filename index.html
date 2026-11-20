@@ -1246,23 +1246,38 @@
             }
         }
 
-        async function syncHubLocationToSupabase(hubObj) {
+		async function syncHubLocationToSupabase(hubObj) {
             if (!supabaseClient) return null;
             try {
+                const nowIso = new Date().toISOString();
                 const payload = {
                     name: hubObj.name,
                     hub_type: hubObj.type || 'Terminal Hub',
                     address: hubObj.address || '',
                     latitude: parseFloat(hubObj.lat),
                     longitude: parseFloat(hubObj.lng),
-                    radius_km: parseFloat(hubObj.radius) || 5
+                    radius_km: parseFloat(hubObj.radius) || 5,
+                    updated_at: nowIso
                 };
                 if (hubObj.id && typeof hubObj.id === 'number') {
-                    await supabaseClient.from('hub_locations').update(payload).eq('id', hubObj.id);
+                    const { error } = await supabaseClient
+                        .from('hub_locations')
+                        .update(payload)
+                        .eq('id', hubObj.id);
+                    if (error) console.warn("hub_locations update notice:", error.message);
                 } else {
-                    const { data } = await supabaseClient.from('hub_locations').insert(payload).select().single();
-                    if (data && data.id) hubObj.id = data.id;
+                    const { data, error } = await supabaseClient
+                        .from('hub_locations')
+                        .insert(payload)
+                        .select()
+                        .single();
+                    if (!error && data && data.id) {
+                        hubObj.id = data.id;
+                    } else if (error) {
+                        console.warn("hub_locations insert notice:", error.message);
+                    }
                 }
+                hubObj.updatedAt = nowIso;
                 return hubObj;
             } catch (e) {
                 console.warn("hub_locations standalone sync fallback:", e.message);
@@ -2450,9 +2465,9 @@
             }
         }
 
-        // ==========================================
+		// ==========================================
         // 1. RESET DB: MANAGEMENT BACKEND & DRIVER'S SIDE ONLY
-        // (Includes full deletion in skymover-attachments storage bucket)
+        // Uses skymover_admin_reset_scope RPC + skymover-attachments storage cleanup
         // ==========================================
         async function confirmResetBackendAndDriverDB() {
             if (!requireAdminExecution("reset Management Backend & Driver's Side records")) return;
@@ -2486,6 +2501,7 @@
             let clearedTablesCount = 0;
 
             if (supabaseClient) {
+                // 1. Purge backend & driver attachments from skymover-attachments bucket
                 try {
                     const pathsToPurge = new Set();
                     const backendCollections = [
@@ -2547,52 +2563,34 @@
                             .remove(batch);
                         if (!removeErr) {
                             removedStorageCount += batch.length;
-                        } else {
-                            console.warn("Backend storage batch purge notice:", removeErr.message);
                         }
                     }
                 } catch (storageResetErr) {
                     console.warn("Backend storage purge notice:", storageResetErr.message || storageResetErr);
                 }
 
-                try {
-                    const { error: alertsDelErr } = await supabaseClient
-                        .from('geofence_alerts')
-                        .delete()
-                        .not('id', 'is', null);
-                    if (!alertsDelErr) clearedTablesCount++;
-                } catch (e) {
-                    console.warn("geofence_alerts reset notice:", e.message);
-                }
+                // 2. Call atomic SQL RPC (bypasses per-row audit_logs flooding)
+                const { data: resetSummary, error: rpcErr } = await supabaseClient.rpc('skymover_admin_reset_scope', {
+                    p_scope: 'backend_and_driver',
+                    p_log_summary: true
+                });
 
-                const backendTables = [
-                    'vehicles',
-                    'drivers',
-                    'fuel_logs',
-                    'maintenance_logs',
-                    'dispatch_logs',
-                    'fleet_expenses',
-                    'geofence_zones',
-                    'sms_logs',
-                    'hub_locations'
-                ];
-
-                await Promise.all(backendTables.map(async (tbl) => {
-                    try {
-                        const { error } = await supabaseClient
-                            .from(tbl)
-                            .delete()
-                            .not('id', 'is', null);
-
-                        if (!error) {
-                            clearedTablesCount++;
-                        } else {
-                            console.warn(`Backend table reset notice (${tbl}):`, error.message);
-                        }
-                    } catch (tblErr) {
-                        console.warn(`Backend table reset skipped (${tbl}):`, tblErr.message);
+                if (!rpcErr && resetSummary && resetSummary.deleted_rows_by_table) {
+                    clearedTablesCount = Object.keys(resetSummary.deleted_rows_by_table).length;
+                } else {
+                    console.warn("RPC fallback to direct table deletes:", rpcErr ? rpcErr.message : '');
+                    const backendTables = [
+                        'geofence_alerts', 'vehicles', 'drivers', 'fuel_logs',
+                        'maintenance_logs', 'dispatch_logs', 'fleet_expenses',
+                        'geofence_zones', 'sms_logs', 'hub_locations'
+                    ];
+                    for (const tbl of backendTables) {
+                        try {
+                            const { error } = await supabaseClient.from(tbl).delete().not('id', 'is', null);
+                            if (!error) clearedTablesCount++;
+                        } catch (e) {}
                     }
-                }));
+                }
             }
 
             const preservedAdmins = (db.systemUsers || []).filter(u => u.role === 'admin');
@@ -2650,7 +2648,7 @@
 
         // ==========================================
         // 2. RESET ALL RECORDS: EMPTY CONTAINER YARD ONLY
-        // (Includes complete purge of gate-in / gate-out files in skymover-attachments)
+        // Uses skymover_admin_reset_scope RPC + skymover-attachments storage cleanup
         // ==========================================
         async function confirmResetEmptyYardDB() {
             if (!requireAdminExecution("reset Empty Yard records")) return;
@@ -2684,6 +2682,7 @@
             let clearedTablesCount = 0;
 
             if (supabaseClient) {
+                // 1. Purge Empty Yard attachments from skymover-attachments bucket
                 try {
                     const pathsToPurge = new Set();
                     const yardCollections = [
@@ -2729,37 +2728,30 @@
                             .remove(batch);
                         if (!removeErr) {
                             removedStorageCount += batch.length;
-                        } else {
-                            console.warn("Yard storage batch purge notice:", removeErr.message);
                         }
                     }
                 } catch (storageResetErr) {
                     console.warn("Yard storage purge notice:", storageResetErr.message || storageResetErr);
                 }
 
-                const yardTables = [
-                    'yard_containers',
-                    'yard_revenues',
-                    'yard_movements',
-                    'yard_expenses'
-                ];
+                // 2. Call atomic SQL RPC (bypasses per-row audit_logs flooding)
+                const { data: resetSummary, error: rpcErr } = await supabaseClient.rpc('skymover_admin_reset_scope', {
+                    p_scope: 'empty_yard',
+                    p_log_summary: true
+                });
 
-                await Promise.all(yardTables.map(async (tbl) => {
-                    try {
-                        const { error } = await supabaseClient
-                            .from(tbl)
-                            .delete()
-                            .not('id', 'is', null);
-
-                        if (!error) {
-                            clearedTablesCount++;
-                        } else {
-                            console.warn(`Yard table reset notice (${tbl}):`, error.message);
-                        }
-                    } catch (tblErr) {
-                        console.warn(`Yard table reset skipped (${tbl}):`, tblErr.message);
+                if (!rpcErr && resetSummary && resetSummary.deleted_rows_by_table) {
+                    clearedTablesCount = Object.keys(resetSummary.deleted_rows_by_table).length;
+                } else {
+                    console.warn("RPC fallback to direct table deletes:", rpcErr ? rpcErr.message : '');
+                    const yardTables = ['yard_containers', 'yard_revenues', 'yard_movements', 'yard_expenses'];
+                    for (const tbl of yardTables) {
+                        try {
+                            const { error } = await supabaseClient.from(tbl).delete().not('id', 'is', null);
+                            if (!error) clearedTablesCount++;
+                        } catch (e) {}
                     }
-                }));
+                }
             }
 
             yardDb = {
@@ -6810,7 +6802,7 @@
             } catch (e) {}
         }
 
-        async function syncYardContainerToSupabase(c) {
+		async function syncYardContainerToSupabase(c) {
             if (!supabaseClient) return false;
             try {
                 const payload = {
@@ -6833,7 +6825,15 @@
                     van_out_amount: parseFloat(c.vanOutAmount) || 0,
                     gate_in_date: c.date ? new Date(c.date).toISOString() : null,
                     eta_date: c.etaDate ? new Date(c.etaDate).toISOString() : null,
+                    gate_in_tod: c.gateInToD || null,
                     gate_out_date: c.gateOutDate ? new Date(c.gateOutDate).toISOString() : null,
+                    eta_pullout_date: c.etaPulloutDate ? new Date(c.etaPulloutDate).toISOString() : null,
+                    gate_out_tod: c.gateOutToD || null,
+                    release_customer: c.releaseCustomer || null,
+                    storage_fee_type: c.storageFeeType || null,
+                    storage_rate: c.storageRate !== undefined && c.storageRate !== null && c.storageRate !== '' ? parseFloat(c.storageRate) : null,
+                    storage_days: c.storageDays !== undefined && c.storageDays !== null && c.storageDays !== '' ? parseInt(c.storageDays, 10) : null,
+                    total_billed_amount: c.totalBilledAmount !== undefined && c.totalBilledAmount !== null && c.totalBilledAmount !== '' ? parseFloat(c.totalBilledAmount) : null,
                     remarks: c.remarks || null,
                     photos: c.photos || [],
                     release_photos: c.releasePhotos || [],
@@ -6842,40 +6842,85 @@
                 };
 
                 if (c.id) {
-                    await supabaseClient.from('yard_containers').update(payload).eq('id', c.id);
+                    const { error } = await supabaseClient
+                        .from('yard_containers')
+                        .update(payload)
+                        .eq('id', c.id);
+                    if (error) console.warn("yard_containers update notice:", error.message);
                 } else {
-                    const { data } = await supabaseClient.from('yard_containers').insert(payload).select().single();
-                    if (data && data.id) c.id = data.id;
+                    const { data, error } = await supabaseClient
+                        .from('yard_containers')
+                        .insert(payload)
+                        .select()
+                        .single();
+                    if (!error && data && data.id) {
+                        c.id = data.id;
+                    } else if (error) {
+                        console.warn("yard_containers insert notice:", error.message);
+                    }
                 }
                 return true;
             } catch (e) {
+                console.warn("syncYardContainerToSupabase fallback:", e.message);
                 return false;
             }
         }
 
-        async function fetchYardRevenuesFromSupabase() {
+		async function fetchYardContainersFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient
-                    .from('yard_revenues')
+                    .from('yard_containers')
                     .select('*')
-                    .order('transaction_date', { ascending: false });
+                    .order('created_at', { ascending: false });
 
                 if (!error && data && data.length > 0) {
-                    const cloudRevs = data.map(r => ({
-                        id: r.id,
-                        date: r.transaction_date ? r.transaction_date.slice(0, 16) : '',
-                        source: r.source_type,
-                        container: r.container_number,
-                        eir: r.eir_ref || '—',
-                        amount: Number(r.amount || 0)
+                    const cloudContainers = data.map(c => ({
+                        id: c.id,
+                        number: c.container_number,
+                        size: c.size,
+                        type: c.container_type || 'Dry',
+                        line: c.shipping_line,
+                        truckingName: c.trucking_name || '',
+                        plate: c.truck_plate,
+                        driver: c.driver_name || '',
+                        eir: c.eir_ref || '',
+                        condition: c.condition || 'Good',
+                        status: c.status || 'Available',
+                        block: c.block || 'A',
+                        bay: c.bay || 'BAY-1',
+                        row: c.yard_row || 'GROUND',
+                        tier: c.tier || '1',
+                        vanInAmount: Number(c.van_in_amount || 0),
+                        vanInStats: c.van_in_status || 'PAID',
+                        vanOutAmount: Number(c.van_out_amount || 0),
+                        date: c.gate_in_date ? c.gate_in_date.slice(0, 16) : '',
+                        etaDate: c.eta_date ? c.eta_date.slice(0, 16) : '',
+                        gateInToD: c.gate_in_tod || 'MORNING',
+                        gateOutDate: c.gate_out_date ? c.gate_out_date.slice(0, 16) : null,
+                        etaPulloutDate: c.eta_pullout_date ? c.eta_pullout_date.slice(0, 16) : null,
+                        gateOutToD: c.gate_out_tod || null,
+                        releaseCustomer: c.release_customer || '',
+                        storageFeeType: c.storage_fee_type || '',
+                        storageRate: c.storage_rate !== null && c.storage_rate !== undefined ? Number(c.storage_rate) : null,
+                        storageDays: c.storage_days !== null && c.storage_days !== undefined ? Number(c.storage_days) : null,
+                        totalBilledAmount: c.total_billed_amount !== null && c.total_billed_amount !== undefined ? Number(c.total_billed_amount) : null,
+                        remarks: c.remarks || '',
+                        photos: c.photos || [],
+                        releasePhotos: c.release_photos || []
                     }));
-                    yardDb.revenues = mergeRecordsSafely(yardDb.revenues, cloudRevs, r => r.id ? `id:${r.id}` : `key:${r.container}_${r.date}_${r.amount}`);
-                    renderYardRevenue();
+                    yardDb.containers = mergeRecordsSafely(
+                        yardDb.containers,
+                        cloudContainers,
+                        c => `cnt:${(c.number || '').trim().toUpperCase()}_${(c.date || '').trim()}`
+                    );
+                    refreshYard();
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("fetchYardContainersFromSupabase fallback:", e.message);
+            }
         }
-
+		
         async function insertYardRevenueToSupabase(r) {
             if (!supabaseClient) return false;
             try {
@@ -6899,7 +6944,7 @@
             }
         }
 
-        async function fetchYardMovementsFromSupabase() {
+		async function fetchYardMovementsFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient
@@ -6913,41 +6958,105 @@
                         date: m.movement_date ? m.movement_date.slice(0, 16) : '',
                         kind: m.movement_kind,
                         container: m.container_number,
+                        size: m.size || '',
+                        type: m.container_type || '',
+                        line: m.shipping_line || '',
+                        truckingName: m.trucking_name || '',
                         plate: m.truck_plate || '',
+                        driver: m.driver_name || '',
+                        customer: m.customer || '',
                         eir: m.eir_ref || '',
+                        condition: m.condition || '',
+                        status: m.status || '',
+                        block: m.block || '',
+                        bay: m.bay || '',
+                        row: m.yard_row || '',
+                        tier: m.tier || '',
+                        storageFeeType: m.storage_fee_type || '',
+                        storageRate: m.storage_rate !== null && m.storage_rate !== undefined ? Number(m.storage_rate) : null,
                         storageDays: m.storage_days || 0,
+                        vanInAmount: Number(m.van_in_amount || 0),
+                        vanInStats: m.van_in_status || '',
+                        vanOutAmount: Number(m.van_out_amount || 0),
                         amount: Number(m.amount || 0),
-                        totalAmount: Number(m.total_amount || m.amount || 0)
+                        totalAmount: Number(m.total_amount || m.amount || 0),
+                        gateInToD: m.movement_kind === 'GATE-IN' ? (m.time_of_day || '') : '',
+                        gateOutToD: m.movement_kind === 'GATE-OUT' ? (m.time_of_day || '') : '',
+                        etaDate: m.eta_date ? m.eta_date.slice(0, 16) : '',
+                        etaPulloutDate: m.eta_pullout_date ? m.eta_pullout_date.slice(0, 16) : '',
+                        remarks: m.remarks || '',
+                        photos: Array.isArray(m.photos) ? m.photos : []
                     }));
-                    yardDb.movements = mergeRecordsSafely(yardDb.movements, cloudMoves, m => m.id ? `id:${m.id}` : `key:${m.kind}_${m.container}_${m.date}`);
+                    yardDb.movements = mergeRecordsSafely(
+                        yardDb.movements,
+                        cloudMoves,
+                        m => m.id ? `id:${m.id}` : `key:${m.kind}_${m.container}_${m.date}`
+                    );
                     refreshYardDashboard();
                     renderYardReports();
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("fetchYardMovementsFromSupabase fallback:", e.message);
+            }
         }
 
         async function insertYardMovementToSupabase(m) {
             if (!supabaseClient) return false;
             try {
+                const resolvedToD = m.kind === 'GATE-OUT'
+                    ? (m.gateOutToD || null)
+                    : (m.gateInToD || null);
+
+                const resolvedVanIn = m.vanInAmount !== undefined && m.vanInAmount !== null
+                    ? (parseFloat(m.vanInAmount) || 0)
+                    : (m.kind === 'GATE-IN' ? (parseFloat(m.amount) || 0) : 0);
+
                 const { data, error } = await supabaseClient
                     .from('yard_movements')
                     .insert({
                         movement_kind: m.kind,
                         container_number: m.container,
+                        size: m.size || null,
+                        container_type: m.type || null,
+                        shipping_line: m.line || null,
+                        trucking_name: m.truckingName || null,
                         truck_plate: m.plate || null,
+                        driver_name: m.driver || null,
+                        customer: m.customer || null,
                         eir_ref: m.eir || null,
-                        storage_days: parseInt(m.storageDays) || 0,
+                        condition: m.condition || null,
+                        status: m.status || null,
+                        block: m.block || null,
+                        bay: m.bay || null,
+                        yard_row: m.row || null,
+                        tier: m.tier || null,
+                        storage_fee_type: m.storageFeeType || null,
+                        storage_rate: m.storageRate !== undefined && m.storageRate !== null && m.storageRate !== '' ? parseFloat(m.storageRate) : null,
+                        storage_days: parseInt(m.storageDays, 10) || 0,
+                        van_in_amount: resolvedVanIn,
+                        van_in_status: m.vanInStats || null,
+                        van_out_amount: parseFloat(m.vanOutAmount) || 0,
                         amount: parseFloat(m.amount) || 0,
                         total_amount: parseFloat(m.totalAmount || m.amount) || 0,
+                        time_of_day: resolvedToD,
                         movement_date: m.date ? new Date(m.date).toISOString() : new Date().toISOString(),
+                        eta_date: m.etaDate ? new Date(m.etaDate).toISOString() : null,
+                        eta_pullout_date: m.etaPulloutDate ? new Date(m.etaPulloutDate).toISOString() : null,
+                        remarks: m.remarks || null,
+                        photos: Array.isArray(m.photos) ? m.photos : [],
                         logged_by: currentUser ? currentUser.email : 'system'
                     })
                     .select()
                     .single();
 
-                if (!error && data && data.id) m.id = data.id;
+                if (!error && data && data.id) {
+                    m.id = data.id;
+                } else if (error) {
+                    console.warn("yard_movements insert notice:", error.message);
+                }
                 return !error;
             } catch (e) {
+                console.warn("insertYardMovementToSupabase fallback:", e.message);
                 return false;
             }
         }
