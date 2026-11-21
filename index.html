@@ -4650,13 +4650,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </a>`;
             }).join('') || `<span class="text-slate-400 italic text-[10px]">${emptyLabel}</span>`;
         }
-	// ==========================================
-        // FULL-DETAIL PDF & EXCEL REPORT GENERATORS (WITH ACTUAL EMBEDDED PHOTOS)
+		// ==========================================
+        // FULL-DETAIL PDF & EXCEL REPORT GENERATORS (WITH ACTUAL EMBEDDED PHOTOS & UNCROPPED LAYOUT)
         // ==========================================
         async function generateModulePDFReport(moduleName) {
             if (!requireAdminExecution(`export PDF Report for ${moduleName}`)) return;
-            const element = document.createElement('div');
-            element.className = 'p-6 bg-white text-slate-900 font-sans space-y-4';
 
             let reportTitle = `Skymover Transportation - ${moduleName} Full Detailed Report`;
             let reportContentHTML = '';
@@ -4765,11 +4763,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         <th class="border p-1">Container No.</th>
                         <th class="border p-1">Size / Type</th>
                         <th class="border p-1">Shipping Line</th>
-                        <th class="border p-1">Trucking & Plate</th>
-                        <th class="border p-1">Driver & EIR</th>
+                        <th class="border p-1">Trucking &amp; Plate</th>
+                        <th class="border p-1">Driver &amp; EIR</th>
                         <th class="border p-1">Cond. / Status</th>
                         <th class="border p-1">Block/Bay/Row/Tier</th>
-                        <th class="border p-1">Gate-In & ToD</th>
+                        <th class="border p-1">Gate-In &amp; ToD</th>
                         <th class="border p-1">Gate-Out</th>
                         <th class="border p-1">Van In / Out</th>
                         <th class="border p-1">Remarks</th>
@@ -4808,14 +4806,24 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 reportContentHTML = `<p class="text-sm">Comprehensive operational statement generated for ${moduleName} on ${new Date().toLocaleString()}.</p>`;
             }
 
+            const targetWidthPx = orientationMode === 'landscape' ? '1040px' : '730px';
+
+            const element = document.createElement('div');
+            element.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
+            element.style.width = targetWidthPx;
+            element.style.maxWidth = targetWidthPx;
+            element.style.padding = '16px';
+            element.style.margin = '0';
+            element.style.boxSizing = 'border-box';
+
             element.innerHTML = `
-                <div class="flex justify-between items-center border-b pb-3 mb-3">
+                <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3 mb-3">
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
                         <p class="text-xs text-slate-600">${reportTitle}</p>
                     </div>
                     <div class="text-right text-[11px] text-slate-500 font-mono">
-                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified • Complete Field & Photo Extract
+                        Generated: ${new Date().toLocaleString()}<br>RBAC Verified • Complete Field &amp; Photo Extract
                     </div>
                 </div>
                 ${reportContentHTML}
@@ -4824,14 +4832,24 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </div>
             `;
 
+            element.querySelectorAll('table').forEach(tbl => {
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
+            });
+            element.querySelectorAll('th, td').forEach(cell => {
+                cell.style.wordBreak = 'break-word';
+                cell.style.overflowWrap = 'anywhere';
+            });
+
             await embedAllImagesInElementForPdf(element);
 
             const opt = {
-                margin:        8,
+                margin:        [6, 6, 6, 6],
                 filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Full_Report.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, allowTaint: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: orientationMode }
+                html2canvas:   { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                jsPDF:         { unit: 'mm', format: 'a4', orientation: orientationMode },
+                pagebreak:     { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             html2pdf().from(element).set(opt).save();
@@ -8350,7 +8368,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 }
             }
         }
-		
+
         function exportVisualExtractionExcel() {
             generateModuleExcelReport('Empty Container Inventory');
         }
