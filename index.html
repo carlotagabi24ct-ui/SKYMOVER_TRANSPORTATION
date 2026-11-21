@@ -2968,6 +2968,18 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
         }
 
+		function formatIsoToLocalDateTimeInput(isoStr) {
+            if (!isoStr) return '';
+            // If already a local datetime-local string without timezone (e.g. "2026-11-21T10:58")
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(isoStr).trim())) {
+                return String(isoStr).trim();
+            }
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return String(isoStr).slice(0, 16);
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
         function deduplicateAllCollections() {
             db.vehicles = deduplicateArrayByKey(db.vehicles, v => `id:${(v.id || '').trim().toUpperCase()}`);
             db.drivers = deduplicateArrayByKey(db.drivers, d => `lic:${(d.driver_license_number || d.driver_license || d.license || d.driver_name || '').trim().toLowerCase()}`);
@@ -2975,7 +2987,12 @@ Skymover Transport is not liable for charges incurred due to operational constra
             db.systemUsers = deduplicateArrayByKey(db.systemUsers, u => `email:${(u.email || '').trim().toLowerCase()}`);
             db.transshipments = deduplicateArrayByKey(db.transshipments, t => `id:${(t.id || '').trim().toUpperCase()}`);
 
-            yardDb.containers = deduplicateArrayByKey(yardDb.containers, c => `cnt:${(c.number || '').trim().toUpperCase()}_${(c.date || '').trim()}`);
+            // Deduplicate active containers by ID or Container Number (prevents timezone-shifted duplicates)
+            yardDb.containers = deduplicateArrayByKey(yardDb.containers, c => {
+                const num = (c.number || '').trim().toUpperCase();
+                if (c.status !== 'Released') return `active_cnt:${num}`;
+                return c.id ? `id:${c.id}` : `rel_cnt:${num}_${(c.gateOutDate || c.date || '').trim()}`;
+            });
             yardDb.movements = deduplicateArrayByKey(yardDb.movements, m => m.id ? `id:${m.id}` : `mov:${(m.kind || '').toUpperCase()}_${(m.container || '').trim().toUpperCase()}_${(m.date || '').trim()}`);
             yardDb.revenues = deduplicateArrayByKey(yardDb.revenues, r => r.id ? `id:${r.id}` : `rev:${(r.source || '').trim()}_${(r.container || '').trim().toUpperCase()}_${(r.date || '').trim()}_${Number(r.amount || 0)}`);
             yardDb.expenses = deduplicateArrayByKey(yardDb.expenses, ex => ex.id ? `id:${ex.id}` : `exp:${(ex.category || '').trim()}_${(ex.description || '').trim()}_${(ex.date || '').trim()}_${Number(ex.amount || 0)}`);
@@ -7171,16 +7188,18 @@ Skymover Transport is not liable for charges incurred due to operational constra
             } catch (err) { return false; }
         }
 
-        async function fetchYardExpensesFromSupabase() {
+		async function fetchYardExpensesFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('yard_expenses').select('*').order('expense_date', { ascending: false });
                 if (error) return;
                 if (data && data.length > 0) {
                     const cloudYardExp = data.map(ex => ({
-                        id: ex.id, category: ex.category, description: ex.description,
+                        id: ex.id,
+                        category: ex.category,
+                        description: ex.description,
                         amount: Number(ex.amount || 0),
-                        date: ex.expense_date ? ex.expense_date.slice(0, 16) : new Date().toISOString().slice(0, 16)
+                        date: ex.expense_date ? formatIsoToLocalDateTimeInput(ex.expense_date) : formatIsoToLocalDateTimeInput(new Date().toISOString())
                     }));
                     yardDb.expenses = mergeRecordsSafely(yardDb.expenses, cloudYardExp, ex => ex.id ? `id:${ex.id}` : `key:${ex.date}_${ex.description}_${ex.amount}`);
                 }
@@ -7342,7 +7361,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             } catch (e) { return false; }
         }
 
-        async function fetchYardContainersFromSupabase() {
+		async function fetchYardContainersFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('yard_containers').select('*').order('created_at', { ascending: false });
@@ -7355,11 +7374,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         row: c.yard_row || 'GROUND', tier: c.tier || '1',
                         vanInAmount: Number(c.van_in_amount || 0), vanInStats: c.van_in_status || 'PAID',
                         vanOutAmount: Number(c.van_out_amount || 0),
-                        date: c.gate_in_date ? c.gate_in_date.slice(0, 16) : '',
-                        etaDate: c.eta_date ? c.eta_date.slice(0, 16) : '',
+                        date: formatIsoToLocalDateTimeInput(c.gate_in_date),
+                        etaDate: formatIsoToLocalDateTimeInput(c.eta_date),
                         gateInToD: c.gate_in_tod || 'MORNING',
-                        gateOutDate: c.gate_out_date ? c.gate_out_date.slice(0, 16) : null,
-                        etaPulloutDate: c.eta_pullout_date ? c.eta_pullout_date.slice(0, 16) : null,
+                        gateOutDate: c.gate_out_date ? formatIsoToLocalDateTimeInput(c.gate_out_date) : null,
+                        etaPulloutDate: c.eta_pullout_date ? formatIsoToLocalDateTimeInput(c.eta_pullout_date) : null,
                         gateOutToD: c.gate_out_tod || null, releaseCustomer: c.release_customer || '',
                         storageFeeType: c.storage_fee_type || '',
                         storageRate: c.storage_rate !== null && c.storage_rate !== undefined ? Number(c.storage_rate) : null,
@@ -7367,22 +7386,28 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         totalBilledAmount: c.total_billed_amount !== null && c.total_billed_amount !== undefined ? Number(c.total_billed_amount) : null,
                         remarks: c.remarks || '', photos: c.photos || [], releasePhotos: c.release_photos || []
                     }));
-                    yardDb.containers = mergeRecordsSafely(yardDb.containers, cloudContainers, c => `cnt:${(c.number || '').trim().toUpperCase()}_${(c.date || '').trim()}`);
+                    yardDb.containers = mergeRecordsSafely(yardDb.containers, cloudContainers, c => {
+                        const num = (c.number || '').trim().toUpperCase();
+                        return c.status !== 'Released' ? `active_cnt:${num}` : (c.id ? `id:${c.id}` : `rel_cnt:${num}_${(c.gateOutDate || c.date || '').trim()}`);
+                    });
                     refreshYard();
                     populateYardOutContainerDropdown();
                 }
             } catch (e) {}
         }
 
-        async function fetchYardRevenuesFromSupabase() {
+		async function fetchYardRevenuesFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('yard_revenues').select('*').order('transaction_date', { ascending: false });
                 if (!error && data && data.length > 0) {
                     const cloudRevs = data.map(r => ({
-                        id: r.id, date: r.transaction_date ? r.transaction_date.slice(0, 16) : '',
-                        source: r.source_type || 'Yard Fee', container: r.container_number || '',
-                        eir: r.eir_ref || '—', amount: Number(r.amount || 0)
+                        id: r.id,
+                        date: formatIsoToLocalDateTimeInput(r.transaction_date),
+                        source: r.source_type || 'Yard Fee',
+                        container: r.container_number || '',
+                        eir: r.eir_ref || '—',
+                        amount: Number(r.amount || 0)
                     }));
                     yardDb.revenues = mergeRecordsSafely(yardDb.revenues, cloudRevs, r => r.id ? `id:${r.id}` : `rev:${r.source}_${r.container}_${r.date}_${r.amount}`);
                     renderYardRevenue();
@@ -7390,7 +7415,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 }
             } catch (e) {}
         }
-
+		
         async function insertYardRevenueToSupabase(r) {
             if (!supabaseClient) return false;
             try {
@@ -7405,13 +7430,13 @@ Skymover Transport is not liable for charges incurred due to operational constra
             } catch (e) { return false; }
         }
 
-        async function fetchYardMovementsFromSupabase() {
+		async function fetchYardMovementsFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('yard_movements').select('*').order('movement_date', { ascending: false });
                 if (!error && data && data.length > 0) {
                     const cloudMoves = data.map(m => ({
-                        id: m.id, date: m.movement_date ? m.movement_date.slice(0, 16) : '',
+                        id: m.id, date: formatIsoToLocalDateTimeInput(m.movement_date),
                         kind: m.movement_kind, container: m.container_number, size: m.size || '',
                         type: m.container_type || '', line: m.shipping_line || '', truckingName: m.trucking_name || '',
                         plate: m.truck_plate || '', driver: m.driver_name || '', customer: m.customer || '',
@@ -7424,8 +7449,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         amount: Number(m.amount || 0), totalAmount: Number(m.total_amount || m.amount || 0),
                         gateInToD: m.movement_kind === 'GATE-IN' ? (m.time_of_day || '') : '',
                         gateOutToD: m.movement_kind === 'GATE-OUT' ? (m.time_of_day || '') : '',
-                        etaDate: m.eta_date ? m.eta_date.slice(0, 16) : '',
-                        etaPulloutDate: m.eta_pullout_date ? m.eta_pullout_date.slice(0, 16) : '',
+                        etaDate: formatIsoToLocalDateTimeInput(m.eta_date),
+                        etaPulloutDate: formatIsoToLocalDateTimeInput(m.eta_pullout_date),
                         remarks: m.remarks || '', photos: Array.isArray(m.photos) ? m.photos : []
                     }));
                     yardDb.movements = mergeRecordsSafely(yardDb.movements, cloudMoves, m => m.id ? `id:${m.id}` : `key:${m.kind}_${m.container}_${m.date}`);
