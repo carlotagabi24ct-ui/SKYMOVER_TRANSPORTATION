@@ -6157,7 +6157,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (btn) btn.textContent = 'Update Template';
         }
 
-        async function runCustomReportTemplate(idx, format = 'pdf') {
+		async function runCustomReportTemplate(idx, format = 'pdf') {
             if (!requireAdminExecution("generate a custom template report")) return;
             const tpl = (db.reportTemplates || [])[idx];
             if (!tpl) return;
@@ -6181,10 +6181,19 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 return;
             }
 
+            const orientationMode = tpl.orientation || 'portrait';
+            const targetWidthPx = orientationMode === 'landscape' ? '1040px' : '730px';
+
             const el = document.createElement('div');
-            el.className = 'p-8 bg-white text-slate-900 font-sans space-y-4';
+            el.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
+            el.style.width = targetWidthPx;
+            el.style.maxWidth = targetWidthPx;
+            el.style.padding = '16px';
+            el.style.margin = '0';
+            el.style.boxSizing = 'border-box';
+
             el.innerHTML = `
-                <div class="flex justify-between items-center border-b pb-4">
+                <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3 mb-2">
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
                         <p class="text-sm font-bold text-purple-800">${tpl.name} (${schema.label})</p>
@@ -6203,14 +6212,24 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 <div class="mt-6 text-center text-[10px] text-slate-400 border-t pt-3">© 2026 Skymover Transport Corporation • Custom Report Template Output</div>
             `;
 
+            el.querySelectorAll('table').forEach(tbl => {
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
+            });
+            el.querySelectorAll('th, td').forEach(cell => {
+                cell.style.wordBreak = 'break-word';
+                cell.style.overflowWrap = 'anywhere';
+            });
+
             await embedAllImagesInElementForPdf(el);
 
             html2pdf().from(el).set({
-                margin: 8,
+                margin: [6, 6, 6, 6],
                 filename: `${tpl.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: tpl.orientation || 'portrait' }
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: orientationMode },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).save();
         }
 
@@ -9216,7 +9235,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-500">No monthly financial records available.</td></tr>';
         }
 
-        function downloadMonthlyStatementPDF() {
+		function downloadMonthlyStatementPDF() {
             const selectedMonth = document.getElementById('statementMonthSelect').value;
             if(!selectedMonth) { alert('Please select a month to download.'); return; }
 
@@ -9228,10 +9247,19 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const netIncome = monthlyRev - monthlyExp;
 
             const element = document.createElement('div');
-            element.className = 'p-8 bg-white text-slate-900 font-sans space-y-6';
+            element.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-5';
+            element.style.width = '730px';
+            element.style.maxWidth = '730px';
+            element.style.padding = '16px';
+            element.style.margin = '0';
+            element.style.boxSizing = 'border-box';
+
             element.innerHTML = `
-                <div class="flex justify-between items-center border-b pb-4">
-                    <div><h1 class="text-2xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1><p class="text-xs text-slate-600">Official Monthly Financial Statement - ${selectedMonth}</p></div>
+                <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3">
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
+                        <p class="text-xs text-slate-600">Official Monthly Financial Statement - ${selectedMonth}</p>
+                    </div>
                     <div class="text-right text-xs font-mono text-slate-500">Generated: ${new Date().toLocaleString()}</div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
@@ -9239,10 +9267,42 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     <div class="bg-rose-50 p-4 rounded-xl border border-rose-200"><div class="text-[10px] font-bold text-rose-900">TOTAL EXPENSES</div><div class="text-xl font-extrabold text-rose-800">₱${monthlyExp.toLocaleString('en-US', {minimumFractionDigits: 2})}</div></div>
                     <div class="bg-blue-50 p-4 rounded-xl border border-blue-200"><div class="text-[10px] font-bold text-blue-900">NET INCOME</div><div class="text-xl font-extrabold text-blue-800">₱${netIncome.toLocaleString('en-US', {minimumFractionDigits: 2})}</div></div>
                 </div>
-                <div><h3 class="font-bold text-sm mb-2">Revenue Line Items (${revList.length})</h3><table class="w-full text-left text-xs border-collapse border border-slate-300"><tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2">EIR</th><th class="border p-2 text-right">Amount</th></tr>${revList.map(r => `<tr><td class="border p-2">${r.date}</td><td class="border p-2">${r.source}</td><td class="border p-2 font-mono">${r.container}</td><td class="border p-2 font-mono">${r.eir || '—'}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('')}</table></div>
-                <div><h3 class="font-bold text-sm mb-2">Operating Expense Line Items (${expList.length})</h3><table class="w-full text-left text-xs border-collapse border border-slate-300"><tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Category</th><th class="border p-2">Description</th><th class="border p-2 text-right">Amount</th></tr>${expList.map(ex => `<tr><td class="border p-2">${ex.date}</td><td class="border p-2">${ex.category}</td><td class="border p-2">${ex.description}</td><td class="border p-2 text-right">₱${Number(ex.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('')}</table></div>
+                <div>
+                    <h3 class="font-bold text-sm mb-2">Revenue Line Items (${revList.length})</h3>
+                    <table class="w-full text-left text-xs border-collapse border border-slate-300">
+                        <thead><tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Source</th><th class="border p-2">Container</th><th class="border p-2">EIR</th><th class="border p-2 text-right">Amount</th></tr></thead>
+                        <tbody>${revList.length ? revList.map(r => `<tr><td class="border p-2">${r.date}</td><td class="border p-2">${r.source}</td><td class="border p-2 font-mono">${r.container}</td><td class="border p-2 font-mono">${r.eir || '—'}</td><td class="border p-2 text-right">₱${Number(r.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('') : '<tr><td colspan="5" class="border p-3 text-center text-slate-500">No revenue items for this month.</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm mb-2">Operating Expense Line Items (${expList.length})</h3>
+                    <table class="w-full text-left text-xs border-collapse border border-slate-300">
+                        <thead><tr class="bg-slate-100 font-bold"><th class="border p-2">Date</th><th class="border p-2">Category</th><th class="border p-2">Description</th><th class="border p-2 text-right">Amount</th></tr></thead>
+                        <tbody>${expList.length ? expList.map(ex => `<tr><td class="border p-2">${ex.date}</td><td class="border p-2">${ex.category}</td><td class="border p-2">${ex.description}</td><td class="border p-2 text-right">₱${Number(ex.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>`).join('') : '<tr><td colspan="4" class="border p-3 text-center text-slate-500">No expense items for this month.</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200 text-center text-[10px] text-slate-400">
+                    © 2026 Skymover Transport Corporation • Official Monthly Financial Statement
+                </div>
             `;
-            html2pdf().from(element).set({ margin: 10, filename: `Skymover_Monthly_Statement_${selectedMonth}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save();
+
+            element.querySelectorAll('table').forEach(tbl => {
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
+            });
+            element.querySelectorAll('th, td').forEach(cell => {
+                cell.style.wordBreak = 'break-word';
+                cell.style.overflowWrap = 'anywhere';
+            });
+
+            html2pdf().from(element).set({
+                margin: [6, 6, 6, 6],
+                filename: `Skymover_Monthly_Statement_${selectedMonth}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            }).save();
         }
 
         async function handleYardExpenseSubmit(e) {
