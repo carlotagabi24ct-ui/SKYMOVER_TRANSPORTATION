@@ -8269,7 +8269,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             `;
         }
 
-        // ==========================================
+		// ==========================================
         // BUG FIX #2: FULL UNCROPPED PDF EXPORT FOR VISUAL EXTRACTION REPORT
         // ==========================================
         async function exportVisualExtractionPDF() {
@@ -8280,24 +8280,19 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 exportBtn.textContent = 'Generating Full PDF...';
             }
 
-            // Build a dedicated off-screen container with fixed landscape width so html2canvas never clips modal overflow
-            const hostContainer = document.createElement('div');
-            hostContainer.style.position = 'fixed';
-            hostContainer.style.left = '-99999px';
-            hostContainer.style.top = '0';
-            hostContainer.style.width = '1120px';
-            hostContainer.style.background = '#ffffff';
-            hostContainer.style.zIndex = '-1';
-
+            // Keep wrapper detached (no off-screen fixed positioning) so html2pdf mounts it cleanly at (0,0)
             const wrapper = document.createElement('div');
-            wrapper.className = 'pdf-export-wrapper p-6 bg-white text-slate-900 font-sans space-y-5';
-            wrapper.style.width = '1120px';
-            wrapper.style.overflow = 'visible';
+            wrapper.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
+            wrapper.style.width = '1040px';
+            wrapper.style.maxWidth = '1040px';
+            wrapper.style.padding = '16px';
+            wrapper.style.margin = '0';
+            wrapper.style.boxSizing = 'border-box';
             wrapper.innerHTML = `
                 <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3 mb-2">
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
-                        <p class="text-xs font-semibold text-slate-600">Visual Extraction Report & Photo Audit • Active Filter: <span class="text-sky-700 font-bold">${filterMode}</span></p>
+                        <p class="text-xs font-semibold text-slate-600">Visual Extraction Report &amp; Photo Audit • Active Filter: <span class="text-sky-700 font-bold">${filterMode}</span></p>
                     </div>
                     <div class="text-right text-[11px] font-mono text-slate-600">
                         Generated: ${new Date().toLocaleString()}<br>
@@ -8306,24 +8301,31 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </div>
                 ${buildVisualExtractionSectionsHtml(filterMode)}
                 <div class="mt-4 pt-3 border-t border-slate-200 text-center text-[10px] text-slate-400">
-                    © 2026 Skymover Transport Corporation • Visual Extraction & Photo Audit Report
+                    © 2026 Skymover Transport Corporation • Visual Extraction &amp; Photo Audit Report
                 </div>
             `;
 
-            // Remove overflow-x-auto clipping inside the export wrapper so every column renders fully
+            // Ensure tables fit comfortably within 1040px with no horizontal clipping
             wrapper.querySelectorAll('.overflow-x-auto').forEach(el => {
                 el.classList.remove('overflow-x-auto');
                 el.style.overflow = 'visible';
             });
-
-            hostContainer.appendChild(wrapper);
-            document.body.appendChild(hostContainer);
+            wrapper.querySelectorAll('table').forEach(tbl => {
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
+                tbl.style.fontSize = '10px';
+            });
+            wrapper.querySelectorAll('th, td').forEach(cell => {
+                cell.style.padding = '5px 4px';
+                cell.style.wordBreak = 'break-word';
+                cell.style.overflowWrap = 'anywhere';
+            });
 
             try {
                 await embedAllImagesInElementForPdf(wrapper);
 
                 await html2pdf().from(wrapper).set({
-                    margin: [8, 8, 8, 8],
+                    margin: [6, 6, 6, 6],
                     filename: 'Skymover_Visual_Extraction_' + filterMode + '_' + new Date().toISOString().slice(0, 10) + '.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: {
@@ -8332,8 +8334,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         allowTaint: true,
                         scrollX: 0,
                         scrollY: 0,
-                        windowWidth: 1120,
-                        width: 1120
+                        x: 0,
+                        y: 0
                     },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
                     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -8342,14 +8344,13 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 console.error('exportVisualExtractionPDF error:', err);
                 alert('❌ PDF export encountered an error: ' + (err.message || err));
             } finally {
-                if (hostContainer.parentNode) hostContainer.parentNode.removeChild(hostContainer);
                 if (exportBtn) {
                     exportBtn.disabled = false;
                     exportBtn.textContent = 'Export PDF Report';
                 }
             }
         }
-
+		
         function exportVisualExtractionExcel() {
             generateModuleExcelReport('Empty Container Inventory');
         }
