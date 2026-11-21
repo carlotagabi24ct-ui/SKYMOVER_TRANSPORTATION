@@ -35,6 +35,7 @@
         .pill.Available { background: #d1fae5; color: #065f46; }
         .pill.Reserved { background: #fef3c7; color: #92400e; }
         .pill.Hold { background: #fee2e2; color: #991b1b; }
+        .pill.Pending { background: #e0f2fe; color: #075985; }
         .pill.Released { background: #f1f5f9; color: #334155; }
         .drag-over { border-color: #0284c7 !important; background-color: rgba(2, 132, 199, 0.05) !important; }
 
@@ -78,6 +79,11 @@
         .modal-footer { margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 1.25rem; }
         .modal-footer a { color: #0284c7; text-decoration: none; font-weight: 500; }
         .modal-footer a:hover { text-decoration: underline; }
+
+        /* Print / PDF Export Safety */
+        .pdf-export-wrapper table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+        .pdf-export-wrapper th, .pdf-export-wrapper td { word-wrap: break-word !important; overflow-wrap: anywhere !important; vertical-align: top !important; }
+        .pdf-export-wrapper tr { page-break-inside: avoid !important; break-inside: avoid !important; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -132,7 +138,7 @@
         <!-- CLIENT QR MODE BADGE (SHOWN ONLY IN CLIENT QR MODE) -->
         <div id="clientQrHeaderBadge" class="hidden items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 px-3 py-1.5 rounded-full text-xs text-emerald-300 font-bold">
             <i class="fa-solid fa-qrcode"></i>
-            <span>Client Self-Service Yard Portal (Notification Only)</span>
+            <span>Client Self-Service Yard Portal (Direct Yard Submission)</span>
         </div>
     </header>
 
@@ -376,8 +382,8 @@
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
                                     <i class="fa-solid fa-qrcode"></i> Verified Client QR Access
                                 </span>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
-                                    <i class="fa-solid fa-bell"></i> Notification Purposes Only
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[11px] font-bold uppercase tracking-wider">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Direct Yard Submission
                                 </span>
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-semibold">
                                     <i class="fa-solid fa-location-dot text-emerald-400"></i> Valenzuela CY
@@ -391,7 +397,7 @@
                                 Powered by <span class="text-slate-200 font-semibold">Skymovers Transport Corporation</span> • 91 Malinis Road, Valenzuela City
                             </p>
                             <p class="text-xs sm:text-sm text-slate-300 mt-3 max-w-2xl leading-relaxed">
-                                Use this self-service portal for <strong class="text-amber-300">Gate-In &amp; Gate-Out Notification Purposes Only</strong>. Submissions notify our yard operations team and do not execute an automated container release.
+                                Use this self-service portal to submit <strong class="text-sky-300">Gate-In &amp; Gate-Out</strong> records directly to our cloud database. Yard personnel will immediately receive, review, edit, or accept your submission.
                             </p>
                         </div>
                     </div>
@@ -425,16 +431,16 @@ Operation: 9:00 AM – 12:00 MN</div>
                                 </span>
                             </div>
                             <div id="clientDisplayFacilityRates" class="bg-slate-900/70 border border-slate-700/80 rounded-lg p-3.5 text-xs text-slate-200 whitespace-pre-line leading-relaxed font-mono">CTAP RATE (Member)
-• Control Fee: ₱1,800.00 /tx
-• Storage (20ft): ₱300.00 /day
-• Storage (40ft): ₱600.00 /day
-• Facility Coupon: ₱300.00
+- Control Fee: ₱1,800.00 /tx
+- Storage (20ft): ₱300.00 /day
+- Storage (40ft): ₱600.00 /day
+- Facility Coupon: ₱300.00
 
 REGULAR RATE (Standard)
-• Control Fee: ₱1,800.00 /tx
-• Storage (20ft): ₱400.00 /day
-• Storage (40ft): ₱800.00 /day
-• Facility Coupon: ₱300.00</div>
+- Control Fee: ₱1,800.00 /tx
+- Storage (20ft): ₱400.00 /day
+- Storage (40ft): ₱800.00 /day
+- Facility Coupon: ₱300.00</div>
                         </div>
                     </div>
 
@@ -457,8 +463,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                     <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                        <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">1</span>Select Notification</div>
-                        <p class="text-[11px] text-slate-300 leading-relaxed">Choose <strong>+ Gate-In</strong> to notify a container drop-off, or <strong>Gate-Out</strong> to send a pull-out notification.</p>
+                        <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">1</span>Select Transaction</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Choose <strong>+ Gate-In</strong> to submit a container drop-off, or <strong>Gate-Out</strong> to submit a pull-out request.</p>
                     </div>
                     <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
                         <div class="text-sky-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 mr-1.5">2</span>Enter Details</div>
@@ -469,8 +475,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         <p class="text-[11px] text-slate-300 leading-relaxed">Electronically sign the mandatory waiver (Gate-In) and attach container inspection photos or EIR.</p>
                     </div>
                     <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                        <div class="text-emerald-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 mr-1.5">4</span>Submit Notification</div>
-                        <p class="text-[11px] text-slate-300 leading-relaxed">Click <strong>Submit Gate-In / Gate-Out Notification</strong>. Our yard team is alerted automatically via email.</p>
+                        <div class="text-emerald-400 font-extrabold text-xs mb-1"><span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 mr-1.5">4</span>Direct Cloud Save</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Click <strong>Submit</strong>. Your record saves directly to Supabase for immediate Yard Personnel review and email alert.</p>
                     </div>
                 </div>
             </div>
@@ -576,8 +582,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
             <!-- Yard Tab 3: Gate-In -->
             <div id="yardGateIn" class="yard-tab hidden">
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border border-slate-200">
-                    <div id="gateInClientNotice" class="hidden bg-amber-50 border border-amber-300 text-amber-900 p-3.5 rounded-xl mb-4 text-xs">
-                        <strong><i class="fa-solid fa-bell mr-1 text-amber-600"></i> Gate-In Notification Only:</strong> Submitting this form notifies our yard operations team of your container arrival. Van-In Amount &amp; Payment Status are locked for Yard Admin review.
+                    <div id="gateInClientNotice" class="hidden bg-sky-50 border border-sky-300 text-sky-900 p-3.5 rounded-xl mb-4 text-xs">
+                        <strong><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-600"></i> Direct Yard Submission:</strong> Submitting this form saves your container directly to Supabase as <strong>Pending</strong> so Yard Personnel can immediately review, edit, or accept it. Van-In Amount &amp; Payment Status remain locked for Yard Admin review.
                     </div>
                     <h3 id="yardGateInHeading" class="font-bold text-base text-slate-900 mb-2">Record Container Gate-In</h3>
                     <p id="yardGateInSubheading" class="text-xs text-slate-600 mb-6">Input container specs, trucking details, location block/bay/tier, and attach actual inspection photos.</p>
@@ -657,8 +663,8 @@ Skymover Transport is not liable for charges incurred due to operational constra
             <!-- Yard Tab 4: Gate-Out -->
             <div id="yardGateOut" class="yard-tab hidden">
                 <div class="panel bg-white text-slate-900 p-6 rounded-2xl shadow border border-slate-200">
-                    <div id="gateOutClientNotice" class="hidden bg-amber-50 border border-amber-300 text-amber-900 p-3.5 rounded-xl mb-4 text-xs">
-                        <strong><i class="fa-solid fa-bell mr-1 text-amber-600"></i> Gate-Out Notification Only (No Release Function):</strong> Submitting this form logs a Gate-Out Pull-Out Notification and alerts our yard team via email. Actual container release is processed exclusively by Yard Operations.
+                    <div id="gateOutClientNotice" class="hidden bg-sky-50 border border-sky-300 text-sky-900 p-3.5 rounded-xl mb-4 text-xs">
+                        <strong><i class="fa-solid fa-cloud-arrow-up mr-1 text-sky-600"></i> Direct Gate-Out Request Submission:</strong> Submitting this form saves your Gate-Out request directly to Supabase and alerts Yard Operations so personnel can immediately review, edit, or accept and process the release.
                     </div>
                     <h3 id="yardGateOutHeading" class="font-bold text-base text-slate-900 mb-4">Container Gate-Out / Release</h3>
                     <form id="yardGateOutForm" onsubmit="handleYardGateOut(event)" class="space-y-4 text-xs font-medium text-slate-900">
@@ -967,12 +973,12 @@ Skymover Transport is not liable for charges incurred due to operational constra
             <button onclick="closeClientQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <div>
                 <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-qrcode text-sky-400"></i> Client-Facing Yard QR Access</h3>
-                <p class="text-xs text-slate-300 mt-1">Share this QR code with clients for direct, restricted access to Gate-In &amp; Gate-Out Notification forms only.</p>
+                <p class="text-xs text-slate-300 mt-1">Share this QR code with clients for direct Gate-In &amp; Gate-Out submission saved straight to Supabase for Yard Personnel review.</p>
             </div>
 
             <div class="bg-white rounded-2xl p-5 flex flex-col items-center justify-center shadow-inner">
                 <div id="clientQrCodeCanvas" class="p-2 bg-white rounded-xl"></div>
-                <p class="text-[11px] font-bold text-slate-700 mt-3 text-center">Scan to open Skymover Empty Container Yard (Client Notification Portal)</p>
+                <p class="text-[11px] font-bold text-slate-700 mt-3 text-center">Scan to open Skymover Empty Container Yard (Client Portal)</p>
             </div>
 
             <div class="space-y-2 text-xs">
@@ -988,7 +994,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     <label class="font-bold text-emerald-400"><i class="fa-solid fa-envelope-circle-check mr-1.5"></i> Gate-In / Gate-Out Email Notification Recipient</label>
                     <span class="text-[10px] text-slate-400 font-mono">Auto-Send on Submit</span>
                 </div>
-                <p class="text-[11px] text-slate-400">Whenever a client submits a <strong>Gate-In or Gate-Out Notification</strong>, an automated branded email with clickable photo links is sent to this assigned address.</p>
+                <p class="text-[11px] text-slate-400">Whenever a client or yard operator submits a <strong>Gate-In or Gate-Out</strong> record, an automated email with clickable photo links is sent to this assigned address.</p>
                 <div class="flex gap-2">
                     <input type="email" id="clientQrNotifyEmailInput" placeholder="yard-ops@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
                     <button type="button" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0">Save Email</button>
@@ -1257,16 +1263,16 @@ Sunday
 Booking: 9:00 AM – 12:00 MN
 Operation: 9:00 AM – 12:00 MN`,
             facility_rates: `CTAP RATE (Member)
-• Control Fee: ₱1,800.00 /tx
-• Storage (20ft): ₱300.00 /day
-• Storage (40ft): ₱600.00 /day
-• Facility Coupon: ₱300.00
+- Control Fee: ₱1,800.00 /tx
+- Storage (20ft): ₱300.00 /day
+- Storage (40ft): ₱600.00 /day
+- Facility Coupon: ₱300.00
 
 REGULAR RATE (Standard)
-• Control Fee: ₱1,800.00 /tx
-• Storage (20ft): ₱400.00 /day
-• Storage (40ft): ₱800.00 /day
-• Facility Coupon: ₱300.00`,
+- Control Fee: ₱1,800.00 /tx
+- Storage (20ft): ₱400.00 /day
+- Storage (40ft): ₱800.00 /day
+- Facility Coupon: ₱300.00`,
             waiver_terms: `(Please sign by typing your name below). By typing your name, you electronically sign this waiver, agree to the following terms and conditions, and accept liability for damage. Skymover Transport Corp. reserves the right to reject any booking request for any reason, including damaged condition or dangerous cargo, and will not be liable for damages caused by misdeclaration of container weight, contents, or condition.
 
 Skymover Transport is not liable for charges incurred due to operational constraints at the yard (e.g., No Show, Late Show, SL Detention/Demurrage, etc.). Booking parties agree that placing the container in the Skymover Transport Corporation facility for SAFEKEEPING is at their own risk and responsibility.`
@@ -1463,7 +1469,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
 
             const subtitleEl = document.getElementById('topNavSubtitleEl');
-            if (subtitleEl) subtitleEl.textContent = 'Empty Container Yard • Client Self-Service Portal (Notification Only)';
+            if (subtitleEl) subtitleEl.textContent = 'Empty Container Yard • Client Self-Service Portal (Direct Yard Submission)';
 
             const brandLogo = document.getElementById('brandLogoArea');
             if (brandLogo) brandLogo.classList.remove('cursor-pointer');
@@ -1480,7 +1486,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (welcomeBanner) welcomeBanner.classList.remove('hidden');
 
             const yardSub = document.getElementById('yardSubHeadingEl');
-            if (yardSub) yardSub.textContent = 'Gate-In & Gate-Out Notification Purposes Only (No Container Release Function).';
+            if (yardSub) yardSub.textContent = 'Submit Gate-In & Gate-Out details directly to Supabase for immediate Yard Personnel review.';
 
             // Hide all admin-only tabs
             ['yBtn1', 'yBtn2', 'yBtn5', 'yBtn6', 'yBtn7', 'yBtn8', 'yBtnSettings', 'yBtnClientQr'].forEach(id => {
@@ -1493,17 +1499,17 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 if (btn) btn.style.display = 'inline-block';
             });
 
-            // ---- GATE-IN CLIENT SELF-SERVICE RESTRICTIONS ----
+            // ---- GATE-IN CLIENT SELF-SERVICE SETUP ----
             const gateInNotice = document.getElementById('gateInClientNotice');
             if (gateInNotice) gateInNotice.classList.remove('hidden');
 
             const gateInHeading = document.getElementById('yardGateInHeading');
-            if (gateInHeading) gateInHeading.textContent = 'Submit Container Gate-In Notification';
+            if (gateInHeading) gateInHeading.textContent = 'Submit Container Gate-In Entry';
 
             const gateInSub = document.getElementById('yardGateInSubheading');
-            if (gateInSub) gateInSub.textContent = 'Notification Purposes Only — Enter container details, sign the mandatory waiver, and submit.';
+            if (gateInSub) gateInSub.textContent = 'Enter container details, sign the mandatory waiver, and submit directly to our Yard database for immediate review.';
 
-            // Lock / Disable Van in Amount & Van in Status
+            // Lock / Disable Van in Amount & Van in Status for Yard Admin review
             const vanInAmountEl = document.getElementById('gateInVanAmount');
             if (vanInAmountEl) {
                 vanInAmountEl.value = '';
@@ -1525,14 +1531,14 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (waiverSig) waiverSig.required = true;
 
             const gateInBtn = document.getElementById('saveGateInSubmitBtn');
-            if (gateInBtn) gateInBtn.textContent = 'Submit Gate-In Notification';
+            if (gateInBtn) gateInBtn.textContent = 'Submit Gate-In Entry';
 
-            // ---- GATE-OUT CLIENT SELF-SERVICE UNLOCKS (NOTIFICATION ONLY, NO RELEASE) ----
+            // ---- GATE-OUT CLIENT SELF-SERVICE SETUP ----
             const gateOutNotice = document.getElementById('gateOutClientNotice');
             if (gateOutNotice) gateOutNotice.classList.remove('hidden');
 
             const gateOutHeading = document.getElementById('yardGateOutHeading');
-            if (gateOutHeading) gateOutHeading.textContent = 'Submit Container Gate-Out Notification';
+            if (gateOutHeading) gateOutHeading.textContent = 'Submit Container Gate-Out Request';
 
             // Unlock Container Number as direct text input (hide admin dropdown)
             const outSelect = document.getElementById('yardOutContainer');
@@ -1570,7 +1576,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (calcGateOutDateEl) calcGateOutDateEl.required = false;
 
             const gateOutBtn = document.getElementById('confirmGateOutSubmitBtn');
-            if (gateOutBtn) gateOutBtn.textContent = 'Submit Gate-Out Notification';
+            if (gateOutBtn) gateOutBtn.textContent = 'Submit Gate-Out Request';
 
             renderYardPortalSettingsToUI(activeYardPortalSettings);
 
@@ -1670,6 +1676,94 @@ Skymover Transport is not liable for charges incurred due to operational constra
             alert(`✅ Gate-In & Gate-Out email notifications will now be sent to: ${emailVal}`);
         }
 
+        // ==========================================
+        // RELIABLE MULTI-PROVIDER EMAIL DISPATCHER (BUG FIX #1)
+        // ==========================================
+        async function dispatchReliableYardEmail(recipientEmail, subject, payload) {
+            if (!recipientEmail || !recipientEmail.includes('@')) {
+                return { sent: false, recipientEmail: recipientEmail || '', provider: 'none', errorDetail: 'Invalid or missing recipient email' };
+            }
+
+            let lastError = '';
+
+            // Provider 1: Supabase Edge Function (send-gate-in-email)
+            if (supabaseClient && supabaseClient.functions) {
+                try {
+                    const { data, error } = await supabaseClient.functions.invoke('send-gate-in-email', {
+                        body: { to: recipientEmail, subject, data: payload }
+                    });
+                    if (!error && (!data || data.success !== false)) {
+                        return { sent: true, recipientEmail, provider: 'supabase_edge_function' };
+                    }
+                    lastError = (error && error.message) ? error.message : (data && data.error ? data.error : 'Edge function returned failure');
+                } catch (fnErr) {
+                    lastError = fnErr.message || String(fnErr);
+                    console.warn("Supabase email edge function fallback triggered:", lastError);
+                }
+            }
+
+            // Prepare flat string-only payload for FormSubmit
+            const flatPayload = {};
+            Object.keys(payload || {}).forEach(k => {
+                if (k === 'Attachment_Links') return;
+                const val = payload[k];
+                if (val === null || val === undefined) {
+                    flatPayload[k] = '—';
+                } else if (typeof val === 'object') {
+                    flatPayload[k] = JSON.stringify(val);
+                } else {
+                    flatPayload[k] = String(val);
+                }
+            });
+
+            // Provider 2: FormSubmit AJAX JSON
+            try {
+                const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify(flatPayload)
+                });
+                const resText = await res.text();
+                let resJson = null;
+                try { resJson = JSON.parse(resText); } catch (e) {}
+
+                if (res.ok && (!resJson || resJson.success === true || resJson.success === 'true')) {
+                    return { sent: true, recipientEmail, provider: 'formsubmit_json' };
+                }
+                lastError = (resJson && resJson.message) ? resJson.message : `FormSubmit JSON HTTP ${res.status}`;
+            } catch (err) {
+                lastError = err.message || String(err);
+                console.warn("FormSubmit JSON fallback triggered:", lastError);
+            }
+
+            // Provider 3: FormSubmit FormData POST (bypasses strict JSON CORS preflight)
+            try {
+                const fd = new FormData();
+                Object.keys(flatPayload).forEach(k => fd.append(k, flatPayload[k]));
+                const res2 = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+                    method: "POST",
+                    headers: { "Accept": "application/json" },
+                    body: fd
+                });
+                const res2Text = await res2.text();
+                let res2Json = null;
+                try { res2Json = JSON.parse(res2Text); } catch (e) {}
+
+                if (res2.ok && (!res2Json || res2Json.success === true || res2Json.success === 'true')) {
+                    return { sent: true, recipientEmail, provider: 'formsubmit_formdata' };
+                }
+                lastError = (res2Json && res2Json.message) ? res2Json.message : `FormSubmit FormData HTTP ${res2.status}`;
+            } catch (err2) {
+                lastError = err2.message || String(err2);
+                console.warn("FormSubmit FormData notice:", lastError);
+            }
+
+            return { sent: false, recipientEmail, provider: 'failed', errorDetail: lastError };
+        }
+
         async function sendGateInEmailNotification(containerData) {
             const recipientEmail = getAssignedNotificationEmail();
             if (!recipientEmail) return { sent: false, reason: 'No recipient email configured' };
@@ -1683,12 +1777,12 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 })
                 .filter(item => item.url && /^https?:\/\//i.test(item.url));
 
-            const subject = `[Skymover Yard] New Gate-In Notification: ${containerData.number} (${containerData.size || ''})`;
+            const subject = `[Skymover Yard] New Gate-In Submission: ${containerData.number} (${containerData.size || ''})`;
             const payload = {
                 _subject: subject,
                 _template: "table",
                 _captcha: "false",
-                Source: isClientQrMode ? "Client QR Self-Service Portal (Notification Only)" : "Skymover Yard Portal",
+                Source: isClientQrMode ? "Client QR Self-Service Portal (Saved to Supabase)" : "Skymover Yard Portal",
                 Container_Number: containerData.number || '—',
                 Size_and_Type: `${containerData.size || '—'} / ${containerData.type || 'Dry'}`,
                 Shipping_Line: containerData.line || '—',
@@ -1696,7 +1790,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 Truck_Plate_No: containerData.plate || '—',
                 Driver_Name: containerData.driver || '—',
                 EIR_Reference: containerData.eir || '—',
-                Condition_Status: `${containerData.condition || 'Good'} (${containerData.status || 'Available'})`,
+                Condition_Status: `${containerData.condition || 'Good'} (${containerData.status || 'Pending'})`,
                 Yard_Location: `Block ${containerData.block || 'A'}, ${containerData.bay || 'BAY-1'}, ${containerData.row || 'GROUND'}, Tier ${containerData.tier || '1'}`,
                 Gate_In_DateTime: containerData.date || '—',
                 ETA_DateTime: containerData.etaDate || '—',
@@ -1710,38 +1804,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 Submitted_At: new Date().toLocaleString()
             };
 
-            let sent = false;
-
-            if (supabaseClient && supabaseClient.functions) {
-                try {
-                    const { error } = await supabaseClient.functions.invoke('send-gate-in-email', {
-                        body: { to: recipientEmail, subject, data: payload }
-                    });
-                    if (!error) sent = true;
-                } catch (fnErr) {
-                    console.warn("Supabase email edge function notice:", fnErr.message || fnErr);
-                }
-            }
-
-            if (!sent) {
-                try {
-                    const formSubmitPayload = { ...payload };
-                    delete formSubmitPayload.Attachment_Links;
-                    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(formSubmitPayload)
-                    });
-                    if (res.ok) sent = true;
-                } catch (err) {
-                    console.warn("FormSubmit email notification notice:", err.message || err);
-                }
-            }
-
-            return { sent, recipientEmail };
+            return await dispatchReliableYardEmail(recipientEmail, subject, payload);
         }
 
         async function sendGateOutEmailNotification(notifData) {
@@ -1757,12 +1820,12 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 })
                 .filter(item => item.url && /^https?:\/\//i.test(item.url));
 
-            const subject = `[Skymover Yard] New Gate-Out Pull-Out Notification: ${notifData.container_number}`;
+            const subject = `[Skymover Yard] New Gate-Out Submission: ${notifData.container_number}`;
             const payload = {
                 _subject: subject,
                 _template: "table",
                 _captcha: "false",
-                Source: "Client QR Self-Service Portal (Notification Only — No Release Executed)",
+                Source: isClientQrMode ? "Client QR Self-Service Portal (Saved to Supabase for Yard Review)" : "Skymover Yard Portal (Released)",
                 Container_Number: notifData.container_number || '—',
                 Release_To_Customer: notifData.release_to_customer || '—',
                 Truck_Plate_No: notifData.truck_plate_number || '—',
@@ -1777,37 +1840,9 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 Submitted_At: new Date().toLocaleString()
             };
 
-            let sent = false;
-
-            if (supabaseClient && supabaseClient.functions) {
-                try {
-                    const { error } = await supabaseClient.functions.invoke('send-gate-in-email', {
-                        body: { to: recipientEmail, subject, data: payload }
-                    });
-                    if (!error) sent = true;
-                } catch (fnErr) {}
-            }
-
-            if (!sent) {
-                try {
-                    const formSubmitPayload = { ...payload };
-                    delete formSubmitPayload.Attachment_Links;
-                    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(formSubmitPayload)
-                    });
-                    if (res.ok) sent = true;
-                } catch (err) {}
-            }
-
-            return { sent, recipientEmail };
+            return await dispatchReliableYardEmail(recipientEmail, subject, payload);
         }
-
-        // Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
+	// Sync Echo Guard & In-Flight Lock to prevent Realtime events from wiping newly added rows
         let isSavingCloudData = false;
         let lastLocalSaveTimestamp = 0;
 
@@ -2806,7 +2841,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 window.openSkymoverLogin();
                 return;
             }
-            const loginModal = document.getElementById('loginModal');
+	    const loginModal = document.getElementById('loginModal');
             if(loginModal) loginModal.style.display = 'none';
         }
 
@@ -3207,7 +3242,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 refreshYard();
                 refreshHubDatalist();
 
-                if(supabaseClient && !isClientQrMode) {
+                if(supabaseClient) {
                     const { error } = await supabaseClient.from('skymover_enterprise_db').upsert({
                         id: 1,
                         payload: { managementBackend: db, emptyYard: yardDb },
@@ -4536,7 +4571,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     if(type === 'gateIn') stagedGateInPhotos.push(fileObj);
                     else if(type === 'gateOut') stagedGateOutPhotos.push(fileObj);
                     else if(type === 'driverReg') stagedDriverAttachments.push(fileObj);
-		    else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
+                    else if(type === 'backendEntry') stagedBackendAttachments.push(fileObj);
                     else if(type === 'driverProof') stagedDriverProofPhotos.push(fileObj);
 
                     const thumb = document.createElement('div');
@@ -4615,8 +4650,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </a>`;
             }).join('') || `<span class="text-slate-400 italic text-[10px]">${emptyLabel}</span>`;
         }
-
-        // ==========================================
+	// ==========================================
         // FULL-DETAIL PDF & EXCEL REPORT GENERATORS (WITH ACTUAL EMBEDDED PHOTOS)
         // ==========================================
         async function generateModulePDFReport(moduleName) {
@@ -4948,7 +4982,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 form.reset();
                 const submitBtn = document.getElementById('saveGateInSubmitBtn') || form.querySelector('button[type="submit"]');
                 if (submitBtn) {
-                    submitBtn.textContent = isClientQrMode ? 'Submit Gate-In Notification' : 'Save Gate-In Entry';
+                    submitBtn.textContent = isClientQrMode ? 'Submit Gate-In Entry' : 'Save Gate-In Entry';
                     submitBtn.className = 'bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-bold';
                 }
                 if (isClientQrMode) {
@@ -6162,7 +6196,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }).save();
         }
 
-	function openSubModule(title) {
+        function openSubModule(title) {
             if(!currentUser || currentUserRole === 'guest') { window.openSkymoverLogin(); return; }
             if(!['admin', 'dispatcher'].includes(currentUserRole)) {
                 alert('⛔ RBAC Access Denied: Your role is not permitted to open Management Backend sub-modules.');
@@ -6841,8 +6875,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 if (delBtn) { delBtn.disabled = false; delBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete Selected Orphans'; }
             }
         }
-
-        async function fetchDriversFromSupabase() {
+	async function fetchDriversFromSupabase() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient.from('drivers').select('*').order('created_at', { ascending: false });
@@ -7360,11 +7393,39 @@ Skymover Transport is not liable for charges incurred due to operational constra
             refreshYardDashboard();
         }
 
-        function editContainerEntry(index) {
-            if (!requireAdminExecution("edit a container inventory record")) return;
+        // ==========================================
+        // FEATURE ENHANCEMENT #3 & #4: ACCEPT PENDING & LOCK RELEASED CONTAINERS
+        // ==========================================
+        async function acceptPendingContainerEntry(index) {
+            if (!requireYardOperationExecution("accept a pending container submission")) return;
             const containers = yardDb.containers || [];
             const target = containers[index];
             if (!target) return;
+            if (target.status === 'Released') {
+                alert('🔒 This container is already Released and locked from modification.');
+                return;
+            }
+            if (!confirm(`Accept client submission for Container ${target.number} and mark status as Available?`)) return;
+
+            target.status = 'Available';
+            await syncYardContainerToSupabase(target);
+            await saveCloudData();
+            refreshYard();
+            populateYardOutContainerDropdown();
+            alert(`✅ Container ${target.number} has been accepted and marked as Available!`);
+        }
+
+        function editContainerEntry(index) {
+            if (!requireYardOperationExecution("edit a container inventory record")) return;
+            const containers = yardDb.containers || [];
+            const target = containers[index];
+            if (!target) return;
+
+            // FEATURE ENHANCEMENT #4: Lock Edit for Released containers
+            if (target.status === 'Released') {
+                alert('🔒 Action Locked: Released containers cannot be edited to preserve billing and audit integrity.');
+                return;
+            }
 
             currentEditingYardContainerIndex = index;
             switchYardTab('yardGateIn');
@@ -8113,13 +8174,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
         function setExtractionReportFilter(filterMode) { currentExtractionFilter = filterMode; openExtractionReport(); }
 
-        function openExtractionReport() {
-            const modal = document.getElementById('subModuleModal');
-            const content = document.getElementById('subModuleContent');
-            if(!modal || !content) return;
-            modal.classList.remove('hidden');
-
-            const filterMode = currentExtractionFilter || 'ALL';
+        function buildVisualExtractionSectionsHtml(filterMode) {
             const allContainers = (yardDb.containers || []);
             const gateInContainers = allContainers;
             const gateOutMovements = (yardDb.movements || []).filter(m => m.kind === 'GATE-OUT');
@@ -8129,50 +8184,64 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const showGateOutSection = (filterMode === 'ALL' || filterMode === 'GATE-OUT');
             const showReleaseSection = (filterMode === 'RELEASE');
 
-            let gateInHtml = gateInContainers.length ? gateInContainers.map(c => `
+            const gateInHtml = gateInContainers.length ? gateInContainers.map(c => `
                 <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                    <td class="p-2.5 font-mono font-bold text-sky-800">${c.number}</td>
-                    <td class="p-2.5">${c.size} / ${c.type || 'Dry'}<br><span class="text-[10px] text-slate-600">${c.line}</span></td>
-                    <td class="p-2.5">${c.truckingName || '—'}<br><span class="font-mono text-[10px]">${c.plate || '—'} • ${c.driver || 'No Driver'}</span></td>
-                    <td class="p-2.5 font-mono text-[10px]">EIR: ${c.eir || '—'}<br>${c.block || 'A'}/${c.bay || '1'}/${c.row || 'GROUND'}/T${c.tier || '1'}</td>
-                    <td class="p-2.5">${c.condition || 'Good'}<br><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900">${c.status}</span></td>
-                    <td class="p-2.5 font-mono text-[10px]">In: ${c.date ? new Date(c.date).toLocaleString() : '—'} (${c.gateInToD || '—'})<br>ETA: ${c.etaDate ? new Date(c.etaDate).toLocaleString() : '—'}</td>
-                    <td class="p-2.5 font-mono text-[10px]">₱${Number(c.vanInAmount || 0).toLocaleString()}<br><span class="font-bold">${c.vanInStats || 'PAID'}</span></td>
-                    <td class="p-2.5 text-[10px] max-w-[140px]">${c.remarks || '—'}</td>
-                    <td class="p-2.5">${renderPhotoThumbnailsForReport(c.photos, 'No inspection photos')}</td>
+                    <td class="p-2 font-mono font-bold text-sky-800">${c.number}</td>
+                    <td class="p-2">${c.size} / ${c.type || 'Dry'}<br><span class="text-[10px] text-slate-600">${c.line}</span></td>
+                    <td class="p-2">${c.truckingName || '—'}<br><span class="font-mono text-[10px]">${c.plate || '—'} • ${c.driver || 'No Driver'}</span></td>
+                    <td class="p-2 font-mono text-[10px]">EIR: ${c.eir || '—'}<br>${c.block || 'A'}/${c.bay || '1'}/${c.row || 'GROUND'}/T${c.tier || '1'}</td>
+                    <td class="p-2">${c.condition || 'Good'}<br><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900">${c.status}</span></td>
+                    <td class="p-2 font-mono text-[10px]">In: ${c.date ? new Date(c.date).toLocaleString() : '—'} (${c.gateInToD || '—'})<br>ETA: ${c.etaDate ? new Date(c.etaDate).toLocaleString() : '—'}</td>
+                    <td class="p-2 font-mono text-[10px]">₱${Number(c.vanInAmount || 0).toLocaleString()}<br><span class="font-bold">${c.vanInStats || 'PAID'}</span></td>
+                    <td class="p-2 text-[10px]">${c.remarks || '—'}</td>
+                    <td class="p-2">${renderPhotoThumbnailsForReport(c.photos, 'No inspection photos')}</td>
                 </tr>
             `).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500">No Gate-In records found.</td></tr>';
 
-            let gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => `
+            const gateOutHtml = gateOutMovements.length ? gateOutMovements.map(m => `
                 <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                    <td class="p-2.5 font-mono font-bold text-purple-800">${m.container}</td>
-                    <td class="p-2.5">${m.customer || '—'}<br><span class="font-mono text-[10px]">${m.plate || '—'} • ${m.driver || '—'}</span></td>
-                    <td class="p-2.5 font-mono text-[10px]">EIR: ${m.eir || '—'}<br>${m.storageFeeType || 'Dry Van'} @ ₱${m.storageRate || 450}/d</td>
-                    <td class="p-2.5">${m.storageDays || 0} Days<br><span class="font-mono text-[10px]">In: ₱${m.vanInAmount || 0} | Out: ₱${m.vanOutAmount || 0}</span></td>
-                    <td class="p-2.5 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                    <td class="p-2.5 font-mono text-[10px]">Out: ${m.date ? new Date(m.date).toLocaleString() : '—'} (${m.gateOutToD || '—'})</td>
-                    <td class="p-2.5 text-[10px] max-w-[140px]">${m.remarks || '—'}</td>
-                    <td class="p-2.5">${renderPhotoThumbnailsForReport(m.photos, 'No release photos')}</td>
+                    <td class="p-2 font-mono font-bold text-purple-800">${m.container}</td>
+                    <td class="p-2">${m.customer || '—'}<br><span class="font-mono text-[10px]">${m.plate || '—'} • ${m.driver || '—'}</span></td>
+                    <td class="p-2 font-mono text-[10px]">EIR: ${m.eir || '—'}<br>${m.storageFeeType || 'Dry Van'} @ ₱${m.storageRate || 450}/d</td>
+                    <td class="p-2">${m.storageDays || 0} Days<br><span class="font-mono text-[10px]">In: ₱${m.vanInAmount || 0} | Out: ₱${m.vanOutAmount || 0}</span></td>
+                    <td class="p-2 font-bold text-emerald-700">₱${Number(m.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td class="p-2 font-mono text-[10px]">Out: ${m.date ? new Date(m.date).toLocaleString() : '—'} (${m.gateOutToD || '—'})</td>
+                    <td class="p-2 text-[10px]">${m.remarks || '—'}</td>
+                    <td class="p-2">${renderPhotoThumbnailsForReport(m.photos, 'No release photos')}</td>
                 </tr>
             `).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">No Gate-Out records found.</td></tr>';
 
-            let releaseMergedHtml = releasedContainers.length ? releasedContainers.map(c => {
+            const releaseMergedHtml = releasedContainers.length ? releasedContainers.map(c => {
                 const matchingOut = gateOutMovements.find(m => (m.container || '').toUpperCase() === (c.number || '').toUpperCase()) || {};
                 const allPhotos = [...(c.photos || []), ...(c.releasePhotos || []), ...(matchingOut.photos || [])];
                 return `
                     <tr class="border-b font-medium text-slate-900 hover:bg-slate-50">
-                        <td class="p-2.5 font-mono font-bold text-emerald-800">${c.number}<br><span class="text-[10px] text-slate-600">${c.size} / ${c.line}</span></td>
-                        <td class="p-2.5"><strong>Customer:</strong> ${c.releaseCustomer || matchingOut.customer || '—'}<br><span class="font-mono text-[10px]">Trucking: ${c.truckingName || '—'} | Plate: ${c.plate || '—'}</span></td>
-                        <td class="p-2.5 font-mono text-[10px]">In EIR: ${c.eir || '—'}<br>Out EIR: ${matchingOut.eir || '—'}</td>
-                        <td class="p-2.5 font-mono text-[10px]">In: ${c.date ? new Date(c.date).toLocaleString() : '—'}<br>Out: ${c.gateOutDate ? new Date(c.gateOutDate).toLocaleString() : '—'}</td>
-                        <td class="p-2.5 font-mono text-[10px]">${c.storageDays || matchingOut.storageDays || 0} Days</td>
-                        <td class="p-2.5 font-bold text-emerald-700">₱${Number(c.totalBilledAmount || matchingOut.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                        <td class="p-2.5 text-[10px] max-w-[140px]">${c.remarks || '—'}</td>
-                        <td class="p-2.5">${renderPhotoThumbnailsForReport(allPhotos, 'No photos')}</td>
+                        <td class="p-2 font-mono font-bold text-emerald-800">${c.number}<br><span class="text-[10px] text-slate-600">${c.size} / ${c.line}</span></td>
+                        <td class="p-2"><strong>Customer:</strong> ${c.releaseCustomer || matchingOut.customer || '—'}<br><span class="font-mono text-[10px]">Trucking: ${c.truckingName || '—'} | Plate: ${c.plate || '—'}</span></td>
+                        <td class="p-2 font-mono text-[10px]">In EIR: ${c.eir || '—'}<br>Out EIR: ${matchingOut.eir || '—'}</td>
+                        <td class="p-2 font-mono text-[10px]">In: ${c.date ? new Date(c.date).toLocaleString() : '—'}<br>Out: ${c.gateOutDate ? new Date(c.gateOutDate).toLocaleString() : '—'}</td>
+                        <td class="p-2 font-mono text-[10px]">${c.storageDays || matchingOut.storageDays || 0} Days</td>
+                        <td class="p-2 font-bold text-emerald-700">₱${Number(c.totalBilledAmount || matchingOut.totalAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-2 text-[10px]">${c.remarks || '—'}</td>
+                        <td class="p-2">${renderPhotoThumbnailsForReport(allPhotos, 'No photos')}</td>
                     </tr>
                 `;
             }).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">No Released containers found.</td></tr>';
 
+            return `
+                ${showGateInSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Gate-In Logs (${gateInContainers.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-100"><tr class="border-b font-bold"><th class="p-2">Container</th><th class="p-2">Specs</th><th class="p-2">Trucking/Plate</th><th class="p-2">EIR/Slot</th><th class="p-2">Status</th><th class="p-2">Dates</th><th class="p-2">Van In</th><th class="p-2">Remarks</th><th class="p-2">Photos</th></tr></thead><tbody>${gateInHtml}</tbody></table></div></div>` : ''}
+                ${showGateOutSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Gate-Out Logs (${gateOutMovements.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-100"><tr class="border-b font-bold"><th class="p-2">Container</th><th class="p-2">Customer/Plate</th><th class="p-2">EIR/Rate</th><th class="p-2">Storage</th><th class="p-2">Total</th><th class="p-2">Dates</th><th class="p-2">Remarks</th><th class="p-2">Photos</th></tr></thead><tbody>${gateOutHtml}</tbody></table></div></div>` : ''}
+                ${showReleaseSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Released Containers (${releasedContainers.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-100"><tr class="border-b font-bold"><th class="p-2">Container</th><th class="p-2">Customer</th><th class="p-2">EIR</th><th class="p-2">Dates</th><th class="p-2">Storage</th><th class="p-2">Total</th><th class="p-2">Remarks</th><th class="p-2">Photos</th></tr></thead><tbody>${releaseMergedHtml}</tbody></table></div></div>` : ''}
+            `;
+        }
+
+        function openExtractionReport() {
+            const modal = document.getElementById('subModuleModal');
+            const content = document.getElementById('subModuleContent');
+            if(!modal || !content) return;
+            modal.classList.remove('hidden');
+
+            const filterMode = currentExtractionFilter || 'ALL';
             const btnClass = (mode) => filterMode === mode ? 'bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700';
 
             content.innerHTML = `
@@ -8181,7 +8250,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-file-arrow-down text-purple-400 mr-2"></i> Visual Extraction Report & Photo Audit</h3>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="exportVisualExtractionPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow">Export PDF Report</button>
+                        <button id="exportVisualPdfBtn" onclick="exportVisualExtractionPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow">Export PDF Report</button>
                         <button onclick="exportVisualExtractionExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold shadow">Export Excel (CSV)</button>
                     </div>
                 </div>
@@ -8195,29 +8264,90 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     </div>
                 </div>
                 <div id="visualExtractionPrintableArea" class="space-y-6">
-                    ${showGateInSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Gate-In Logs (${gateInContainers.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><tr class="border-b font-bold"><th class="p-2.5">Container</th><th class="p-2.5">Specs</th><th class="p-2.5">Trucking/Plate</th><th class="p-2.5">EIR/Slot</th><th class="p-2.5">Status</th><th class="p-2.5">Dates</th><th class="p-2.5">Van In</th><th class="p-2.5">Remarks</th><th class="p-2.5">Photos</th></tr>${gateInHtml}</table></div></div>` : ''}
-                    ${showGateOutSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Gate-Out Logs (${gateOutMovements.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><tr class="border-b font-bold"><th class="p-2.5">Container</th><th class="p-2.5">Customer/Plate</th><th class="p-2.5">EIR/Rate</th><th class="p-2.5">Storage</th><th class="p-2.5">Total</th><th class="p-2.5">Dates</th><th class="p-2.5">Remarks</th><th class="p-2.5">Photos</th></tr>${gateOutHtml}</table></div></div>` : ''}
-                    ${showReleaseSection ? `<div class="bg-white text-slate-900 rounded-xl p-4 shadow border"><h4 class="font-bold text-sm mb-3">Released Containers (${releasedContainers.length})</h4><div class="overflow-x-auto"><table class="w-full text-left text-xs"><tr class="border-b font-bold"><th class="p-2.5">Container</th><th class="p-2.5">Customer</th><th class="p-2.5">EIR</th><th class="p-2.5">Dates</th><th class="p-2.5">Storage</th><th class="p-2.5">Total</th><th class="p-2.5">Remarks</th><th class="p-2.5">Photos</th></tr>${releaseMergedHtml}</table></div></div>` : ''}
+                    ${buildVisualExtractionSectionsHtml(filterMode)}
                 </div>
             `;
         }
 
+        // ==========================================
+        // BUG FIX #2: FULL UNCROPPED PDF EXPORT FOR VISUAL EXTRACTION REPORT
+        // ==========================================
         async function exportVisualExtractionPDF() {
-            const sourceEl = document.getElementById('visualExtractionPrintableArea') || document.getElementById('subModuleContent');
-            if (!sourceEl) return;
-            const clone = sourceEl.cloneNode(true);
+            const filterMode = currentExtractionFilter || 'ALL';
+            const exportBtn = document.getElementById('exportVisualPdfBtn');
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                exportBtn.textContent = 'Generating Full PDF...';
+            }
+
+            // Build a dedicated off-screen container with fixed landscape width so html2canvas never clips modal overflow
+            const hostContainer = document.createElement('div');
+            hostContainer.style.position = 'fixed';
+            hostContainer.style.left = '-99999px';
+            hostContainer.style.top = '0';
+            hostContainer.style.width = '1120px';
+            hostContainer.style.background = '#ffffff';
+            hostContainer.style.zIndex = '-1';
+
             const wrapper = document.createElement('div');
-            wrapper.className = 'p-5 bg-white text-slate-900 font-sans space-y-4';
-            wrapper.innerHTML = `<div class="flex justify-between items-center border-b pb-3 mb-3"><div><h1 class="text-xl font-extrabold">SKYMOVER TRANSPORTATION</h1><p class="text-xs text-slate-600">Visual Extraction Report • Filter: ${currentExtractionFilter || 'ALL'}</p></div><div class="text-right text-[11px] font-mono">Generated: ${new Date().toLocaleString()}</div></div>`;
-            wrapper.appendChild(clone);
-            await embedAllImagesInElementForPdf(wrapper);
-            html2pdf().from(wrapper).set({
-                margin: 0.3,
-                filename: 'Skymover_Visual_Extraction_' + (currentExtractionFilter || 'ALL') + '_' + new Date().toISOString().slice(0,10) + '.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
-            }).save();
+            wrapper.className = 'pdf-export-wrapper p-6 bg-white text-slate-900 font-sans space-y-5';
+            wrapper.style.width = '1120px';
+            wrapper.style.overflow = 'visible';
+            wrapper.innerHTML = `
+                <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3 mb-2">
+                    <div>
+                        <h1 class="text-xl font-extrabold text-slate-900">SKYMOVER TRANSPORTATION</h1>
+                        <p class="text-xs font-semibold text-slate-600">Visual Extraction Report & Photo Audit • Active Filter: <span class="text-sky-700 font-bold">${filterMode}</span></p>
+                    </div>
+                    <div class="text-right text-[11px] font-mono text-slate-600">
+                        Generated: ${new Date().toLocaleString()}<br>
+                        Complete Uncropped Filter Export
+                    </div>
+                </div>
+                ${buildVisualExtractionSectionsHtml(filterMode)}
+                <div class="mt-4 pt-3 border-t border-slate-200 text-center text-[10px] text-slate-400">
+                    © 2026 Skymover Transport Corporation • Visual Extraction & Photo Audit Report
+                </div>
+            `;
+
+            // Remove overflow-x-auto clipping inside the export wrapper so every column renders fully
+            wrapper.querySelectorAll('.overflow-x-auto').forEach(el => {
+                el.classList.remove('overflow-x-auto');
+                el.style.overflow = 'visible';
+            });
+
+            hostContainer.appendChild(wrapper);
+            document.body.appendChild(hostContainer);
+
+            try {
+                await embedAllImagesInElementForPdf(wrapper);
+
+                await html2pdf().from(wrapper).set({
+                    margin: [8, 8, 8, 8],
+                    filename: 'Skymover_Visual_Extraction_' + filterMode + '_' + new Date().toISOString().slice(0, 10) + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 1120,
+                        width: 1120
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                }).save();
+            } catch (err) {
+                console.error('exportVisualExtractionPDF error:', err);
+                alert('❌ PDF export encountered an error: ' + (err.message || err));
+            } finally {
+                if (hostContainer.parentNode) hostContainer.parentNode.removeChild(hostContainer);
+                if (exportBtn) {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = 'Export PDF Report';
+                }
+            }
         }
 
         function exportVisualExtractionExcel() {
@@ -8343,6 +8473,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if(!tbody) return;
             const search = (document.getElementById('yardSearchInput') ? document.getElementById('yardSearchInput').value : '').toLowerCase();
             const isAdmin = currentUserRole === 'admin';
+            const canYardEdit = ['admin', 'yard_manager'].includes(currentUserRole);
 
             const allContainers = (yardDb.containers || []).map((c, idx) => ({ ...c, originalIdx: idx }));
             const containers = allContainers.filter(c => {
@@ -8354,7 +8485,26 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 let badgeClass = 'Available';
                 if(c.status === 'Reserved') badgeClass = 'Reserved';
                 else if(c.status === 'Hold' || c.condition === 'Damaged') badgeClass = 'Hold';
+                else if(c.status === 'Pending') badgeClass = 'Pending';
                 else if(c.status === 'Released') badgeClass = 'Released';
+
+                const isReleased = c.status === 'Released';
+                const isPending = c.status === 'Pending';
+
+                let actionsHtml = '<span class="text-[10px] text-slate-400">Read Only</span>';
+                if (isReleased) {
+                    // FEATURE ENHANCEMENT #4: Hide/disable Edit and Delete for Released containers
+                    actionsHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200"><i class="fa-solid fa-lock text-[9px]"></i> Locked (Released)</span>`;
+                } else if (canYardEdit) {
+                    const acceptBtn = isPending
+                        ? `<button onclick="acceptPendingContainerEntry(${c.originalIdx})" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-2.5 py-1 rounded font-bold text-[10px]">Accept</button>`
+                        : '';
+                    const editBtn = `<button onclick="editContainerEntry(${c.originalIdx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-bold text-[10px]">Edit</button>`;
+                    const deleteBtn = isAdmin
+                        ? `<button onclick="deleteContainerEntry(${c.originalIdx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>`
+                        : '';
+                    actionsHtml = `${acceptBtn} ${editBtn} ${deleteBtn}`;
+                }
 
                 return `
                     <tr class="border-b hover:bg-slate-50">
@@ -8366,10 +8516,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         <td class="p-3 font-mono text-[11px]">${c.date ? new Date(c.date).toLocaleString() : '—'}</td>
                         <td class="p-3 font-mono text-[11px]">${c.gateOutDate ? new Date(c.gateOutDate).toLocaleString() : 'Active'}</td>
                         <td class="p-3 font-mono text-[11px]">In: ₱${c.vanInAmount || 0} (${c.vanInStats || 'PAID'})<br>Out: ₱${c.vanOutAmount || 0}</td>
-                        <td class="p-3 text-right space-x-1">
-                            ${isAdmin ? `<button onclick="editContainerEntry(${c.originalIdx})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-bold text-[10px]">Edit</button>
-                            <button onclick="deleteContainerEntry(${c.originalIdx})" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 rounded font-bold text-[10px]">Delete</button>` : '<span class="text-[10px] text-slate-400">Read Only</span>'}
-                        </td>
+                        <td class="p-3 text-right space-x-1">${actionsHtml}</td>
                     </tr>
                 `;
             }).join('') : '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-medium">No container inventory records found.</td></tr>';
@@ -8379,6 +8526,12 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (!requireAdminExecution("delete a container inventory record")) return;
             const target = (yardDb.containers || [])[idx];
             if (!target) return;
+
+            // FEATURE ENHANCEMENT #4: Lock Delete for Released containers
+            if (target.status === 'Released') {
+                alert('🔒 Action Locked: Released containers cannot be deleted to preserve billing and audit integrity.');
+                return;
+            }
 
             if (confirm(`Are you sure you want to permanently delete container ${target.number}, its Recent Yard Movement logs, and its attached photos from ${STORAGE_BUCKET_NAME}?`)) {
                 await removeRecordAttachmentsFromStorage(target);
@@ -8406,7 +8559,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
         }
 
         // ==========================================
-        // GATE-IN HANDLER (CLIENT QR = NOTIFICATION ONLY + WAIVER SIGNATURE | ADMIN = FULL ENTRY)
+        // GATE-IN HANDLER (FEATURE ENHANCEMENT #3: DIRECT SAVE TO SUPABASE FOR CLIENT & ADMIN)
         // ==========================================
         async function handleYardGateIn(e) {
             e.preventDefault();
@@ -8417,7 +8570,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const formData = new FormData(form);
             const containerNo = formData.get('number').trim().toUpperCase();
 
-            // CLIENT SELF-SERVICE PORTAL: NOTIFICATION ONLY + MANDATORY ELECTRONIC WAIVER SIGNATURE
+            // CLIENT SELF-SERVICE PORTAL: DIRECT SAVE TO SUPABASE FOR IMMEDIATE YARD PERSONNEL REVIEW
             if (isClientQrMode) {
                 const waiverAccepted = document.getElementById('gateInWaiverAccepted')?.checked || false;
                 const waiverSignature = (document.getElementById('gateInWaiverSignature')?.value || '').trim();
@@ -8431,68 +8584,103 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 const tsField = document.getElementById('gateInWaiverTimestamp');
                 if (tsField) tsField.value = new Date(signedAtIso).toLocaleString();
 
+                if (!yardDb.containers) yardDb.containers = [];
+                const duplicateActiveIdx = yardDb.containers.findIndex(c =>
+                    (c.number || '').trim().toUpperCase() === containerNo &&
+                    c.status !== 'Released'
+                );
+                if (duplicateActiveIdx !== -1) {
+                    alert(`⚠️ Container ${containerNo} is already recorded in the yard (${yardDb.containers[duplicateActiveIdx].status}). Please contact Yard Operations if you need to update it.`);
+                    return;
+                }
+
                 if (submitBtn) {
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Submitting Notification...';
+                    submitBtn.textContent = 'Saving to Cloud DB...';
                 }
 
                 try {
-                    const notifPayload = {
-                        movement_type: 'GATE_IN',
-                        container_number: containerNo,
-                        trucking_name: (formData.get('truckingName') || '').trim(),
-                        truck_plate_number: (formData.get('plate') || '').trim().toUpperCase(),
-                        driver_name: (formData.get('driver') || '').trim(),
-                        van_in_amount: null,
-                        van_in_status: 'PENDING_REVIEW',
-                        waiver_accepted: true,
-                        waiver_signature: waiverSignature,
-                        waiver_signed_at: signedAtIso
-                    };
-
-                    if (supabaseClient) {
-                        const { error } = await supabaseClient.from('gate_notifications').insert([notifPayload]);
-                        if (error) console.warn('gate_notifications insert notice:', error.message);
-                    }
-
-                    const emailData = {
+                    const containerData = {
                         number: containerNo,
                         size: formData.get('size'),
-                        type: formData.get('type'),
+                        type: formData.get('type') || 'Dry',
                         line: formData.get('line'),
-                        truckingName: notifPayload.trucking_name,
-                        plate: notifPayload.truck_plate_number,
-                        driver: notifPayload.driver_name,
-                        eir: formData.get('eir'),
-                        condition: formData.get('condition'),
-                        status: 'PENDING_REVIEW',
-                        block: formData.get('block'),
-                        bay: formData.get('bay'),
-                        row: formData.get('row'),
-                        tier: formData.get('tier'),
+                        truckingName: (formData.get('truckingName') || '').trim(),
+                        plate: (formData.get('plate') || '').trim().toUpperCase(),
+                        driver: (formData.get('driver') || '').trim(),
+                        eir: (formData.get('eir') || '').trim(),
+                        condition: formData.get('condition') || 'Good',
+                        status: 'Pending',
+                        block: formData.get('block') || 'A',
+                        bay: formData.get('bay') || 'BAY-1',
+                        row: formData.get('row') || 'GROUND',
+                        tier: formData.get('tier') || '1',
                         date: formData.get('date'),
                         etaDate: formData.get('etaDate'),
                         gateInToD: formData.get('gateInToD') || 'MORNING',
-                        remarks: formData.get('remarks'),
+                        remarks: (formData.get('remarks') || '').trim() + (waiverSignature ? ` [Client Waiver Signed: ${waiverSignature}]` : ''),
+                        vanInAmount: 0,
+                        vanInStats: 'PENDING_REVIEW',
+                        vanOutAmount: 0,
                         waiverSignature: waiverSignature,
                         waiverSignedAt: signedAtIso,
                         photos: [...stagedGateInPhotos]
                     };
 
-                    const emailResult = await sendGateInEmailNotification(emailData);
+                    // 1. Save directly to yard_containers in Supabase
+                    yardDb.containers.unshift(containerData);
+                    await syncYardContainerToSupabase(containerData);
+
+                    // 2. Save directly to yard_movements in Supabase
+                    const movementRecord = {
+                        date: containerData.date, etaDate: containerData.etaDate, gateInToD: containerData.gateInToD,
+                        kind: 'GATE-IN', container: containerData.number, size: containerData.size, type: containerData.type,
+                        line: containerData.line, truckingName: containerData.truckingName, plate: containerData.plate,
+                        driver: containerData.driver, eir: containerData.eir, condition: containerData.condition,
+                        status: 'Pending', block: containerData.block, bay: containerData.bay,
+                        row: containerData.row, tier: containerData.tier, vanInAmount: 0,
+                        vanInStats: 'PENDING_REVIEW', remarks: containerData.remarks,
+                        amount: 0, totalAmount: 0,
+                        photos: [...stagedGateInPhotos]
+                    };
+                    if (!yardDb.movements) yardDb.movements = [];
+                    yardDb.movements.unshift(movementRecord);
+                    await insertYardMovementToSupabase(movementRecord);
+
+                    // 3. Also log to gate_notifications audit table if present
+                    if (supabaseClient) {
+                        try {
+                            await supabaseClient.from('gate_notifications').insert([{
+                                movement_type: 'GATE_IN',
+                                container_number: containerNo,
+                                trucking_name: containerData.truckingName,
+                                truck_plate_number: containerData.plate,
+                                driver_name: containerData.driver,
+                                van_in_amount: null,
+                                van_in_status: 'PENDING_REVIEW',
+                                waiver_accepted: true,
+                                waiver_signature: waiverSignature,
+                                waiver_signed_at: signedAtIso
+                            }]);
+                        } catch (notifErr) {}
+                    }
+
+                    // 4. Sync unified cloud payload & send email alert
+                    await saveCloudData();
+                    const emailResult = await sendGateInEmailNotification(containerData);
                     clearGateInFormAndPhotos();
 
                     const emailMsg = emailResult && emailResult.sent
-                        ? `\n📧 Notification email sent to ${emailResult.recipientEmail}.`
-                        : `\n📧 Notification queued for ${emailResult ? emailResult.recipientEmail : getAssignedNotificationEmail()}.`;
+                        ? `\n📧 Email alert delivered to ${emailResult.recipientEmail}.`
+                        : `\n⚠️ Record saved to Supabase, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
 
-                    alert(`✅ Gate-In Notification (${containerNo}) submitted successfully! Electronic waiver signed by ${waiverSignature}.${emailMsg}`);
+                    alert(`✅ Gate-In Entry (${containerNo}) saved directly to Supabase for Yard Personnel review! Electronic waiver signed by ${waiverSignature}.${emailMsg}`);
                 } catch (err) {
-                    alert(`❌ Failed to submit Gate-In notification: ${err.message || err}`);
+                    alert(`❌ Failed to save Gate-In entry: ${err.message || err}`);
                 } finally {
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.textContent = 'Submit Gate-In Notification';
+                        submitBtn.textContent = 'Submit Gate-In Entry';
                     }
                 }
                 return;
@@ -8513,6 +8701,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
             if (currentEditingYardContainerIndex !== null && yardDb.containers[currentEditingYardContainerIndex]) {
                 const existing = yardDb.containers[currentEditingYardContainerIndex];
+                if (existing.status === 'Released') {
+                    alert('🔒 Action Locked: Released containers cannot be edited.');
+                    clearGateInFormAndPhotos();
+                    return;
+                }
                 const updatedContainer = {
                     ...existing,
                     number: containerNo,
@@ -8614,7 +8807,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
                 const emailMsg = emailResult && emailResult.sent
                     ? `\n📧 Automated email notification sent to ${emailResult.recipientEmail}.`
-                    : `\n📧 Notification queued for ${emailResult ? emailResult.recipientEmail : getAssignedNotificationEmail()}.`;
+                    : `\n⚠️ Record saved, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
 
                 alert(`✅ Container Gate-In (${containerNo}) successfully recorded and synced with cloud database!${emailMsg}`);
                 switchYardTab('yardInventory');
@@ -8685,7 +8878,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
         }
 
         // ==========================================
-        // GATE-OUT HANDLER (CLIENT QR = NOTIFICATION ONLY, NO RELEASE | ADMIN = FULL RELEASE)
+        // GATE-OUT HANDLER (FEATURE ENHANCEMENT #3: DIRECT SAVE TO SUPABASE FOR CLIENT & ADMIN)
         // ==========================================
         async function handleYardGateOut(e) {
             e.preventDefault();
@@ -8694,7 +8887,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const form = document.getElementById('yardGateOutForm');
             const submitBtn = document.getElementById('confirmGateOutSubmitBtn') || form.querySelector('button[type="submit"]');
 
-            // CLIENT SELF-SERVICE PORTAL: GATE-OUT NOTIFICATION ONLY (NO CONTAINER RELEASE)
+            // CLIENT SELF-SERVICE PORTAL: DIRECT SAVE TO SUPABASE FOR YARD PERSONNEL REVIEW
             if (isClientQrMode) {
                 const containerNo = (document.getElementById('yardOutContainerInput')?.value || '').trim().toUpperCase();
                 const customer = (document.getElementById('gateOutCustomer')?.value || '').trim();
@@ -8706,16 +8899,63 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 const remarks = (document.getElementById('gateOutRemarks')?.value || '').trim();
 
                 if (!containerNo || !customer || !plate || !eirRef || !etaPulloutDate) {
-                    alert('⚠️ Please complete all required Gate-Out Notification fields marked with *.');
+                    alert('⚠️ Please complete all required Gate-Out fields marked with *.');
                     return;
                 }
 
                 if (submitBtn) {
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Submitting Notification...';
+                    submitBtn.textContent = 'Saving to Cloud DB...';
                 }
 
                 try {
+                    const nowLocalIso = new Date().toISOString().slice(0, 16);
+
+                    // 1. Update matching active container in yard_containers if present (mark Reserved for Yard Review)
+                    const existingContainer = (yardDb.containers || []).find(c =>
+                        (c.number || '').trim().toUpperCase() === containerNo && c.status !== 'Released'
+                    );
+                    if (existingContainer) {
+                        existingContainer.status = 'Reserved';
+                        existingContainer.releaseCustomer = customer;
+                        existingContainer.etaPulloutDate = etaPulloutDate;
+                        existingContainer.gateOutToD = gateOutToD;
+                        if (remarks) {
+                            existingContainer.remarks = existingContainer.remarks
+                                ? `${existingContainer.remarks} | Client Gate-Out Request: ${remarks}`
+                                : `Client Gate-Out Request: ${remarks}`;
+                        }
+                        if (stagedGateOutPhotos.length > 0) {
+                            existingContainer.releasePhotos = [...(existingContainer.releasePhotos || []), ...stagedGateOutPhotos];
+                        }
+                        await syncYardContainerToSupabase(existingContainer);
+                    }
+
+                    // 2. Save directly to yard_movements in Supabase
+                    const movementRecord = {
+                        date: nowLocalIso,
+                        etaPulloutDate: etaPulloutDate,
+                        gateOutToD: gateOutToD,
+                        kind: 'GATE-OUT',
+                        container: containerNo,
+                        customer: customer,
+                        plate: plate,
+                        driver: driver,
+                        eir: eirRef,
+                        status: 'Pending Review',
+                        storageDays: 0,
+                        vanInAmount: existingContainer ? (existingContainer.vanInAmount || 0) : 0,
+                        vanOutAmount: 0,
+                        totalAmount: 0,
+                        amount: 0,
+                        remarks: remarks || 'Client Self-Service Gate-Out Request',
+                        photos: [...stagedGateOutPhotos]
+                    };
+                    if (!yardDb.movements) yardDb.movements = [];
+                    yardDb.movements.unshift(movementRecord);
+                    await insertYardMovementToSupabase(movementRecord);
+
+                    // 3. Also log to gate_notifications audit table if present
                     const notifPayload = {
                         movement_type: 'GATE_OUT',
                         container_number: containerNo,
@@ -8730,10 +8970,13 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     };
 
                     if (supabaseClient) {
-                        const { error } = await supabaseClient.from('gate_notifications').insert([notifPayload]);
-                        if (error) console.warn('gate_notifications GATE_OUT insert notice:', error.message);
+                        try {
+                            await supabaseClient.from('gate_notifications').insert([notifPayload]);
+                        } catch (notifErr) {}
                     }
 
+                    // 4. Sync unified cloud payload & send email alert
+                    await saveCloudData();
                     const emailResult = await sendGateOutEmailNotification({
                         ...notifPayload,
                         remarks,
@@ -8744,16 +8987,16 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     clearGateOutPhotos();
 
                     const emailMsg = emailResult && emailResult.sent
-                        ? `\n📧 Notification email sent to ${emailResult.recipientEmail}.`
-                        : `\n📧 Notification queued for ${emailResult ? emailResult.recipientEmail : getAssignedNotificationEmail()}.`;
+                        ? `\n📧 Email alert delivered to ${emailResult.recipientEmail}.`
+                        : `\n⚠️ Record saved to Supabase, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
 
-                    alert(`✅ Gate-Out Pull-Out Notification (${containerNo}) submitted successfully! (Notification only — yard staff will process the actual release.)${emailMsg}`);
+                    alert(`✅ Gate-Out Request (${containerNo}) saved directly to Supabase for Yard Personnel review!${emailMsg}`);
                 } catch (err) {
-                    alert(`❌ Failed to submit Gate-Out notification: ${err.message || err}`);
+                    alert(`❌ Failed to save Gate-Out request: ${err.message || err}`);
                 } finally {
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.textContent = 'Submit Gate-Out Notification';
+                        submitBtn.textContent = 'Submit Gate-Out Request';
                     }
                 }
                 return;
@@ -8818,10 +9061,22 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
 
             await saveCloudData();
+            await sendGateOutEmailNotification({
+                container_number: containerNo,
+                release_to_customer: customer,
+                truck_plate_number: match.plate || '',
+                driver_name: match.driver || '',
+                gate_out_eir_ref: eirRef || '',
+                eta_pullout_datetime: etaPulloutDate || gateOutDate,
+                gate_out_time_of_day: gateOutToD,
+                remarks: remarks,
+                photos: [...stagedGateOutPhotos]
+            });
+
             form.reset();
             clearGateOutPhotos();
             populateYardOutContainerDropdown();
-            alert('✅ Container successfully gated out, billed, and synced with cloud database!');
+            alert('✅ Container successfully gated out, billed, locked as Released, and synced with cloud database!');
             switchYardTab('yardInventory');
         }
 
