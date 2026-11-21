@@ -973,7 +973,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             <button onclick="closeClientQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             <div>
                 <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-qrcode text-sky-400"></i> Client-Facing Yard QR Access</h3>
-                <p class="text-xs text-slate-300 mt-1">Share this QR code with clients for direct Gate-In &amp; Gate-Out submission saved straight to Supabase for Yard Personnel review.</p>
+                <p class="text-xs text-slate-300 mt-1">Share this QR code with clients for direct Gate-In &amp; Gate-Out submission saved straight to Database for Yard Personnel review.</p>
             </div>
 
             <div class="bg-white rounded-2xl p-5 flex flex-col items-center justify-center shadow-inner">
@@ -998,6 +998,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 <div class="flex gap-2">
                     <input type="text" id="clientQrNotifyEmailInput" placeholder="ops1@skymover.com, ops2@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
                     <button type="button" id="saveClientQrEmailBtn" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0 transition">Save Email</button>
+					<button type="button" onclick="testClientQrEmailNotification()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-2 rounded-lg font-bold shrink-0 transition">Test</button>
                 </div>
                 <div id="clientQrEmailSaveStatus" class="text-[11px] font-semibold hidden"></div>
             </div>
@@ -1751,6 +1752,27 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
         }
 
+		async function testClientQrEmailNotification() {
+            const emailInput = document.getElementById('clientQrNotifyEmailInput');
+            const target = emailInput ? emailInput.value.trim() : getAssignedNotificationEmail();
+            const res = await dispatchReliableYardEmail(
+                target,
+                '[Skymover Yard] Test Email Notification',
+                {
+                    _subject: '[Skymover Yard] Test Email Notification',
+                    _template: 'table',
+                    _captcha: 'false',
+                    Message: 'If you received this email, automated Gate-In & Gate-Out notifications are working!',
+                    Sent_At: new Date().toLocaleString()
+                }
+            );
+            if (res.sent) {
+                alert(`✅ Test email sent via ${res.provider} to:\n${res.recipientEmail}\n\n(If this is your first time using FormSubmit, check Inbox/Spam for the one-time "Activate Form" email.)`);
+            } else {
+                alert(`❌ Test email failed (${res.provider}):\n${res.errorDetail}`);
+            }
+        }
+		
         // ==========================================
         // RELIABLE MULTI-RECIPIENT EMAIL DISPATCHER (BUG FIX #1)
         // ==========================================
@@ -1907,7 +1929,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 _subject: subject,
                 _template: "table",
                 _captcha: "false",
-                Source: isClientQrMode ? "Client QR Self-Service Portal (Saved to Supabase for Yard Review)" : "Skymover Yard Portal (Released)",
+                Source: isClientQrMode ? "Client QR Self-Service Portal (Saved to Database for Yard Review)" : "Skymover Yard Portal (Released)",
                 Container_Number: notifData.container_number || '—',
                 Release_To_Customer: notifData.release_to_customer || '—',
                 Truck_Plate_No: notifData.truck_plate_number || '—',
@@ -2880,7 +2902,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
         async function handleSupabaseSignIn(email, password, rememberMe) {
             if(!supabaseClient) {
-                alert('Supabase client not initialized.');
+                alert('Database client not initialized.');
                 return;
             }
             const submitBtn = document.getElementById('signInSubmitBtn');
@@ -5708,7 +5730,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     });
 
                     if (error) {
-                        alert("Supabase Auth Notice: " + error.message);
+                        alert("Database Auth Notice: " + error.message);
                         return;
                     }
 
@@ -5728,7 +5750,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             db.systemUsers.push({ id: createdAuthUserId, email, role, createdAt: new Date().toISOString() });
             await saveCloudData();
 
-            alert(`✅ Successfully provisioned user account for ${email} with role [${role.toUpperCase()}]. Saved to cloud & Supabase Authentication.`);
+            alert(`✅ Successfully provisioned user account for ${email} with role [${role.toUpperCase()}]. Saved to cloud & Database Authentication.`);
             closeSubModule();
             openSubModule('User Management');
         }
@@ -5771,7 +5793,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 return;
             }
 
-            if(!confirm(`⚠️ Are you sure you want to permanently delete user account "${targetEmail}" from both RBAC Users and Supabase Authentication?`)) {
+            if(!confirm(`⚠️ Are you sure you want to permanently delete user account "${targetEmail}" from both RBAC Users and Database Authentication?`)) {
                 return;
             }
 
@@ -5804,9 +5826,9 @@ Skymover Transport is not liable for charges incurred due to operational constra
             await saveCloudData();
 
             if (authDeleted) {
-                alert(`✅ Successfully removed "${targetEmail}" from RBAC Users AND deleted their account from Supabase Authentication (auth.users).`);
+                alert(`✅ Successfully removed "${targetEmail}" from RBAC Users AND deleted their account from Database Authentication (auth.users).`);
             } else {
-                alert(`✅ Removed "${targetEmail}" from RBAC Users.\n\nℹ️ Supabase Auth Note: Browser anon keys cannot delete auth.users directly without a server-side RPC.`);
+                alert(`✅ Removed "${targetEmail}" from RBAC Users.\n\nℹ️ Database Auth Note: Browser anon keys cannot delete auth.users directly without a server-side RPC.`);
             }
 
             openSubModule('User Management');
@@ -5842,7 +5864,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 container.innerHTML = `
                     <div>
                         <h3 class="text-xl font-bold text-blue-400 mb-2 flex items-center"><i class="fa-solid fa-magnifying-glass-chart mr-2"></i> LogiLENS Deep Visual Inspector</h3>
-                        <p class="text-xs text-slate-200 mb-4">Container damage detection, OCR waybill scanning, and automated compliance auditing synced with Supabase storage uploads.</p>
+                        <p class="text-xs text-slate-200 mb-4">Container damage detection, OCR waybill scanning, and automated compliance auditing synced with Database storage uploads.</p>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">Container Condition</span><div class="text-lg font-bold text-emerald-400 mt-1">100% Clean (0 defects)</div></div>
                             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-300 font-semibold">OCR Waybill Matches</span><div class="text-lg font-bold text-sky-400 mt-1">Ready</div></div>
@@ -6602,7 +6624,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     <div class="flex justify-between items-center mb-4 text-white">
                         <div>
                             <h3 class="text-xl font-bold"><i class="fa-solid fa-user-shield text-sky-400 mr-2"></i> User Provisioning & RBAC Access Rights</h3>
-                            <p class="text-xs text-slate-300">Add new users, configure role permissions, or delete accounts from both RBAC & Supabase Authentication.</p>
+                            <p class="text-xs text-slate-300">Add new users, configure role permissions, or delete accounts from both RBAC & Database Authentication.</p>
                         </div>
                         <button onclick="openNewUserRegistrationModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold">+ Add New User</button>
                     </div>
@@ -6738,7 +6760,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 if (!requireAdminExecution("access Data Backup & Storage Maintenance")) { closeSubModule(); return; }
                 content.innerHTML = `
                     <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-database text-amber-400 mr-2"></i> Management Backend Data Backup, Restore & Storage Maintenance</h3>
-                    <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your Skymover Unified Fleet and Yard database, or clean unreferenced files from Supabase Storage.</p>
+                    <p class="text-xs text-slate-300 mb-6">Download a complete JSON snapshot of your Skymover Unified Fleet and Yard database, or clean unreferenced files from Database Storage.</p>
                     <div class="space-y-6 text-slate-900">
                         <div class="bg-white p-6 rounded-2xl shadow border border-slate-200">
                             <h4 class="font-bold text-sm text-slate-900 mb-1">Export Unified Enterprise Backup</h4>
@@ -6753,7 +6775,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                                 <div>
                                     <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
                                         <i class="fa-solid fa-broom text-rose-600"></i>
-                                        Supabase Storage Orphaned File Cleaner (<span class="font-mono text-xs text-sky-700">${STORAGE_BUCKET_NAME}</span>)
+                                        Database Storage Orphaned File Cleaner (<span class="font-mono text-xs text-sky-700">${STORAGE_BUCKET_NAME}</span>)
                                     </h4>
                                     <p class="text-xs text-slate-600 mt-1">Scans all bucket folders and compares them against active Fleet, Driver, Maintenance, Expense, and Yard records to identify unreferenced files.</p>
                                 </div>
@@ -6976,7 +6998,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 .filter(idx => !isNaN(idx) && scannedOrphanedFiles[idx]);
 
             if (selectedIndices.length === 0) { alert("Please select at least one orphaned file to remove."); return; }
-            if (!confirm(`⚠️ Permanently delete ${selectedIndices.length} orphaned file(s) from Supabase Storage (${STORAGE_BUCKET_NAME})? This cannot be undone.`)) return;
+            if (!confirm(`⚠️ Permanently delete ${selectedIndices.length} orphaned file(s) from Database Storage (${STORAGE_BUCKET_NAME})? This cannot be undone.`)) return;
 
             const delBtn = document.getElementById('deleteSelectedOrphansBtn');
             if (delBtn) { delBtn.disabled = true; delBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...'; }
@@ -7076,7 +7098,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             if (!db.fuelLogs) db.fuelLogs = [];
             db.fuelLogs.unshift(fuelRecord);
             await saveCloudData();
-            alert('✅ Fuel log successfully recorded and synced to Supabase cloud!');
+            alert('✅ Fuel log successfully recorded and synced to Database cloud!');
             return true;
         }
 
@@ -7659,7 +7681,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
             closeSubModule();
             renderYardRevenue();
             refreshYardDashboard();
-            alert('✅ Yard revenue record successfully updated and synced to Supabase!');
+            alert('✅ Yard revenue record successfully updated and synced to Database!');
         }
 
         async function fetchLogiTrackDataFromSupabase() {
@@ -8787,9 +8809,9 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
                     const emailMsg = emailResult && emailResult.sent
                         ? `\n📧 Email alert delivered to ${emailResult.recipientEmail}.`
-                        : `\n⚠️ Record saved to Supabase, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
+                        : `\n⚠️ Record saved to Database, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
 
-                    alert(`✅ Gate-In Entry (${containerNo}) saved directly to Supabase for Yard Personnel review! Electronic waiver signed by ${waiverSignature}.${emailMsg}`);
+                    alert(`✅ Gate-In Entry (${containerNo}) saved directly to Database for Yard Personnel review! Electronic waiver signed by ${waiverSignature}.${emailMsg}`);
                 } catch (err) {
                     alert(`❌ Failed to save Gate-In entry: ${err.message || err}`);
                 } finally {
@@ -8850,7 +8872,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 await syncYardContainerToSupabase(updatedContainer);
                 await saveCloudData();
                 clearGateInFormAndPhotos();
-                alert('✅ Container inventory record successfully updated and synced to Supabase!');
+                alert('✅ Container inventory record successfully updated and synced to Database!');
                 switchYardTab('yardInventory');
                 return;
             }
@@ -9103,9 +9125,9 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
                     const emailMsg = emailResult && emailResult.sent
                         ? `\n📧 Email alert delivered to ${emailResult.recipientEmail}.`
-                        : `\n⚠️ Record saved to Supabase, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
+                        : `\n⚠️ Record saved to Database, but email delivery failed (${emailResult ? emailResult.errorDetail || 'check recipient' : 'no email'}).`;
 
-                    alert(`✅ Gate-Out Request (${containerNo}) saved directly to Supabase for Yard Personnel review!${emailMsg}`);
+                    alert(`✅ Gate-Out Request (${containerNo}) saved directly to Database for Yard Personnel review!${emailMsg}`);
                 } catch (err) {
                     alert(`❌ Failed to save Gate-Out request: ${err.message || err}`);
                 } finally {
@@ -9393,11 +9415,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 const updatedRecord = { ...existing, ...expenseRecord };
                 yardDb.expenses[currentEditingYardExpenseIndex] = updatedRecord;
                 if (existing.id) await updateYardExpenseInSupabase(existing.id, updatedRecord);
-                alert('✅ Yard operating expense successfully updated and synced to Supabase!');
+                alert('✅ Yard operating expense successfully updated and synced to Database!');
             } else {
                 yardDb.expenses.unshift(expenseRecord);
                 await insertYardExpenseToSupabase(expenseRecord);
-                alert('✅ Yard operating expense successfully recorded and synced to Supabase!');
+                alert('✅ Yard operating expense successfully recorded and synced to Database!');
             }
 
             await saveCloudData();
