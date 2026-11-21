@@ -989,16 +989,17 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </div>
             </div>
 
-            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+			<div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
                 <div class="flex items-center justify-between">
-                    <label class="font-bold text-emerald-400"><i class="fa-solid fa-envelope-circle-check mr-1.5"></i> Gate-In / Gate-Out Email Notification Recipient</label>
-                    <span class="text-[10px] text-slate-400 font-mono">Auto-Send on Submit</span>
+                    <label for="clientQrNotifyEmailInput" class="font-bold text-emerald-400"><i class="fa-solid fa-envelope-circle-check mr-1.5"></i> Gate-In / Gate-Out Email Notification Recipients</label>
+                    <span class="text-[10px] text-slate-400 font-mono">Multiple Emails Supported</span>
                 </div>
-                <p class="text-[11px] text-slate-400">Whenever a client or yard operator submits a <strong>Gate-In or Gate-Out</strong> record, an automated email with clickable photo links is sent to this assigned address.</p>
+                <p class="text-[11px] text-slate-400">Enter one or more email addresses separated by commas (<code>,</code>) or semicolons (<code>;</code>). All listed recipients will automatically receive Gate-In &amp; Gate-Out alerts.</p>
                 <div class="flex gap-2">
-                    <input type="email" id="clientQrNotifyEmailInput" placeholder="yard-ops@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
-                    <button type="button" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0">Save Email</button>
+                    <input type="text" id="clientQrNotifyEmailInput" placeholder="ops1@skymover.com, ops2@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                    <button type="button" id="saveClientQrEmailBtn" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0 transition">Save Email</button>
                 </div>
+                <div id="clientQrEmailSaveStatus" class="text-[11px] font-semibold hidden"></div>
             </div>
 
             <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-800">
@@ -1661,39 +1662,117 @@ Skymover Transport is not liable for charges incurred due to operational constra
             document.body.removeChild(link);
         }
 
+		function parseMultipleEmails(rawStr) {
+            if (!rawStr || typeof rawStr !== 'string') return [];
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const parts = rawStr
+                .split(/[,;\n]+/)
+                .map(e => e.trim())
+                .filter(Boolean);
+            const uniqueValid = [];
+            const invalid = [];
+
+            parts.forEach(addr => {
+                if (emailRegex.test(addr)) {
+                    if (!uniqueValid.some(u => u.toLowerCase() === addr.toLowerCase())) {
+                        uniqueValid.push(addr);
+                    }
+                } else {
+                    invalid.push(addr);
+                }
+            });
+            return { valid: uniqueValid, invalid };
+        }
+
         async function saveClientQrNotifyEmail() {
             if (!requireYardOperationExecution("update the Gate-In notification email")) return;
+
             const emailInput = document.getElementById('clientQrNotifyEmailInput');
+            const saveBtn = document.getElementById('saveClientQrEmailBtn');
+            const statusEl = document.getElementById('clientQrEmailSaveStatus');
             if (!emailInput) return;
-            const emailVal = emailInput.value.trim();
-            if (!emailVal || !emailVal.includes('@')) {
-                alert('Please enter a valid email address.');
+
+            const { valid, invalid } = parseMultipleEmails(emailInput.value);
+
+            if (valid.length === 0) {
+                if (statusEl) {
+                    statusEl.className = 'text-[11px] font-semibold text-rose-400';
+                    statusEl.textContent = '❌ Please enter at least one valid email address.';
+                    statusEl.classList.remove('hidden');
+                }
+                alert('❌ Please enter at least one valid email address (e.g., user1@gmail.com, user2@gmail.com).');
                 return;
             }
-            localStorage.setItem(CLIENT_QR_NOTIFY_EMAIL_KEY, emailVal);
-            if (db) db.clientQrNotifyEmail = emailVal;
-            await saveCloudData();
-            alert(`✅ Gate-In & Gate-Out email notifications will now be sent to: ${emailVal}`);
+
+            if (invalid.length > 0) {
+                if (statusEl) {
+                    statusEl.className = 'text-[11px] font-semibold text-amber-400';
+                    statusEl.textContent = `⚠️ Invalid email format detected: ${invalid.join(', ')}`;
+                    statusEl.classList.remove('hidden');
+                }
+                alert(`⚠️ Please fix the invalid email address(es): ${invalid.join(', ')}`);
+                return;
+            }
+
+            const normalizedList = valid.join(', ');
+            emailInput.value = normalizedList;
+
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+            }
+
+            try {
+                localStorage.setItem(CLIENT_QR_NOTIFY_EMAIL_KEY, normalizedList);
+                if (typeof db === 'object' && db !== null) {
+                    db.clientQrNotifyEmail = normalizedList;
+                }
+                await saveCloudData();
+
+                if (statusEl) {
+                    statusEl.className = 'text-[11px] font-semibold text-emerald-400';
+                    statusEl.textContent = `✅ Saved ${valid.length} recipient(s): ${normalizedList}`;
+                    statusEl.classList.remove('hidden');
+                }
+                alert(`✅ Gate-In & Gate-Out email notifications will now be sent to (${valid.length}):\n${normalizedList}`);
+            } catch (err) {
+                console.error('saveClientQrNotifyEmail error:', err);
+                if (statusEl) {
+                    statusEl.className = 'text-[11px] font-semibold text-rose-400';
+                    statusEl.textContent = `❌ Failed to save: ${err.message || err}`;
+                    statusEl.classList.remove('hidden');
+                }
+                alert(`❌ Failed to save email recipients: ${err.message || err}`);
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Email';
+                }
+            }
         }
 
         // ==========================================
-        // RELIABLE MULTI-PROVIDER EMAIL DISPATCHER (BUG FIX #1)
+        // RELIABLE MULTI-RECIPIENT EMAIL DISPATCHER (BUG FIX #1)
         // ==========================================
-        async function dispatchReliableYardEmail(recipientEmail, subject, payload) {
-            if (!recipientEmail || !recipientEmail.includes('@')) {
-                return { sent: false, recipientEmail: recipientEmail || '', provider: 'none', errorDetail: 'Invalid or missing recipient email' };
+        async function dispatchReliableYardEmail(recipientEmailRaw, subject, payload) {
+            const { valid: recipients } = parseMultipleEmails(recipientEmailRaw || '');
+            if (recipients.length === 0) {
+                return { sent: false, recipientEmail: recipientEmailRaw || '', provider: 'none', errorDetail: 'No valid recipient email configured' };
             }
 
+            const primaryRecipient = recipients[0];
+            const ccRecipients = recipients.slice(1);
+            const allRecipientsLabel = recipients.join(', ');
             let lastError = '';
 
             // Provider 1: Supabase Edge Function (send-gate-in-email)
             if (supabaseClient && supabaseClient.functions) {
                 try {
                     const { data, error } = await supabaseClient.functions.invoke('send-gate-in-email', {
-                        body: { to: recipientEmail, subject, data: payload }
+                        body: { to: recipients, subject, data: payload }
                     });
                     if (!error && (!data || data.success !== false)) {
-                        return { sent: true, recipientEmail, provider: 'supabase_edge_function' };
+                        return { sent: true, recipientEmail: allRecipientsLabel, provider: 'supabase_edge_function' };
                     }
                     lastError = (error && error.message) ? error.message : (data && data.error ? data.error : 'Edge function returned failure');
                 } catch (fnErr) {
@@ -1702,7 +1781,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 }
             }
 
-            // Prepare flat string-only payload for FormSubmit
+            // Prepare flat string-only payload for FormSubmit (with _cc for additional recipients)
             const flatPayload = {};
             Object.keys(payload || {}).forEach(k => {
                 if (k === 'Attachment_Links') return;
@@ -1715,10 +1794,13 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     flatPayload[k] = String(val);
                 }
             });
+            if (ccRecipients.length > 0) {
+                flatPayload._cc = ccRecipients.join(',');
+            }
 
-            // Provider 2: FormSubmit AJAX JSON
+            // Provider 2: FormSubmit AJAX JSON (primary recipient in URL + _cc for others)
             try {
-                const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+                const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(primaryRecipient)}`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -1731,7 +1813,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 try { resJson = JSON.parse(resText); } catch (e) {}
 
                 if (res.ok && (!resJson || resJson.success === true || resJson.success === 'true')) {
-                    return { sent: true, recipientEmail, provider: 'formsubmit_json' };
+                    return { sent: true, recipientEmail: allRecipientsLabel, provider: 'formsubmit_json' };
                 }
                 lastError = (resJson && resJson.message) ? resJson.message : `FormSubmit JSON HTTP ${res.status}`;
             } catch (err) {
@@ -1739,11 +1821,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 console.warn("FormSubmit JSON fallback triggered:", lastError);
             }
 
-            // Provider 3: FormSubmit FormData POST (bypasses strict JSON CORS preflight)
+            // Provider 3: FormSubmit FormData POST
             try {
                 const fd = new FormData();
                 Object.keys(flatPayload).forEach(k => fd.append(k, flatPayload[k]));
-                const res2 = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+                const res2 = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(primaryRecipient)}`, {
                     method: "POST",
                     headers: { "Accept": "application/json" },
                     body: fd
@@ -1753,7 +1835,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 try { res2Json = JSON.parse(res2Text); } catch (e) {}
 
                 if (res2.ok && (!res2Json || res2Json.success === true || res2Json.success === 'true')) {
-                    return { sent: true, recipientEmail, provider: 'formsubmit_formdata' };
+                    return { sent: true, recipientEmail: allRecipientsLabel, provider: 'formsubmit_formdata' };
                 }
                 lastError = (res2Json && res2Json.message) ? res2Json.message : `FormSubmit FormData HTTP ${res2.status}`;
             } catch (err2) {
@@ -1761,7 +1843,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 console.warn("FormSubmit FormData notice:", lastError);
             }
 
-            return { sent: false, recipientEmail, provider: 'failed', errorDetail: lastError };
+            return { sent: false, recipientEmail: allRecipientsLabel, provider: 'failed', errorDetail: lastError };
         }
 
         async function sendGateInEmailNotification(containerData) {
