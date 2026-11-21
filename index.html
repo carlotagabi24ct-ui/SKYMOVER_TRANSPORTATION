@@ -1754,6 +1754,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
         // ==========================================
         // RELIABLE MULTI-RECIPIENT EMAIL DISPATCHER (BUG FIX #1)
         // ==========================================
+		const GAS_EMAIL_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzj0rFUa0yxsmZEDfoUeDh7lC0S5mgQO76HnyzVYlpNeWwHBNMVpGQmNRIhoHdXdq6Y/exec";
         async function dispatchReliableYardEmail(recipientEmailRaw, subject, payload) {
             const { valid: recipients } = parseMultipleEmails(recipientEmailRaw || '');
             if (recipients.length === 0) {
@@ -1765,22 +1766,22 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const allRecipientsLabel = recipients.join(', ');
             let lastError = '';
 
-            // Provider 1: Supabase Edge Function (send-gate-in-email)
-            if (supabaseClient && supabaseClient.functions) {
+			// Provider 1: Google Apps Script Gmail Relay (Native Gmail Sender, Multi-Recipient)
+            if (GAS_EMAIL_WEBHOOK_URL && GAS_EMAIL_WEBHOOK_URL.startsWith('https://script.google.com/')) {
                 try {
-                    const { data, error } = await supabaseClient.functions.invoke('send-gate-in-email', {
-                        body: { to: recipients, subject, data: payload }
+                    await fetch(GAS_EMAIL_WEBHOOK_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ to: recipients, subject, data: payload })
                     });
-                    if (!error && (!data || data.success !== false)) {
-                        return { sent: true, recipientEmail: allRecipientsLabel, provider: 'supabase_edge_function' };
-                    }
-                    lastError = (error && error.message) ? error.message : (data && data.error ? data.error : 'Edge function returned failure');
-                } catch (fnErr) {
-                    lastError = fnErr.message || String(fnErr);
-                    console.warn("Supabase email edge function fallback triggered:", lastError);
+                    return { sent: true, recipientEmail: allRecipientsLabel, provider: 'google_apps_script' };
+                } catch (gasErr) {
+                    lastError = gasErr.message || String(gasErr);
+                    console.warn("Google Apps Script email relay fallback triggered:", lastError);
                 }
             }
-
+			
             // Prepare flat string-only payload for FormSubmit (with _cc for additional recipients)
             const flatPayload = {};
             Object.keys(payload || {}).forEach(k => {
