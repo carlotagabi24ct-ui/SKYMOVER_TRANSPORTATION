@@ -4905,13 +4905,14 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 reportContentHTML = `<p class="text-sm">Comprehensive operational statement generated for ${moduleName} on ${new Date().toLocaleString()}.</p>`;
             }
 
-            const targetWidthPx = orientationMode === 'landscape' ? '1040px' : '730px';
+			const targetWidthNum = orientationMode === 'landscape' ? 1060 : 750;
+            const targetWidthPx = `${targetWidthNum}px`;
 
             const element = document.createElement('div');
             element.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
             element.style.width = targetWidthPx;
             element.style.maxWidth = targetWidthPx;
-            element.style.padding = '16px';
+            element.style.padding = '12px';
             element.style.margin = '0';
             element.style.boxSizing = 'border-box';
 
@@ -4943,10 +4944,10 @@ Skymover Transport is not liable for charges incurred due to operational constra
             await embedAllImagesInElementForPdf(element);
 
             const opt = {
-                margin:        [6, 6, 6, 6],
+                margin:        [8, 8, 8, 8],
                 filename:      `Skymover_${moduleName.replace(/\s+/g, '_')}_Full_Report.pdf`,
                 image:         { type: 'jpeg', quality: 0.98 },
-                html2canvas:   { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                html2canvas:   { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, windowWidth: targetWidthNum },
                 jsPDF:         { unit: 'mm', format: 'a4', orientation: orientationMode },
                 pagebreak:     { mode: ['avoid-all', 'css', 'legacy'] }
             };
@@ -6147,16 +6148,17 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
         }
 
-        function exportExpenseForecastPDF() {
+		function exportExpenseForecastPDF() {
             if (!requireAdminExecution("export Fleet Expense Forecast PDF")) return;
             const el = document.getElementById('forecastPrintableArea');
             if (!el) return;
             html2pdf().from(el).set({
-                margin: 10,
+                margin: [8, 8, 8, 8],
                 filename: `Skymover_Expense_Forecast_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, windowWidth: 750 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).save();
         }
 
@@ -6281,13 +6283,14 @@ Skymover Transport is not liable for charges incurred due to operational constra
             }
 
             const orientationMode = tpl.orientation || 'portrait';
-            const targetWidthPx = orientationMode === 'landscape' ? '1040px' : '730px';
+            const targetWidthNum = orientationMode === 'landscape' ? 1060 : 750;
+            const targetWidthPx = `${targetWidthNum}px`;
 
             const el = document.createElement('div');
             el.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
             el.style.width = targetWidthPx;
             el.style.maxWidth = targetWidthPx;
-            el.style.padding = '16px';
+            el.style.padding = '12px';
             el.style.margin = '0';
             el.style.boxSizing = 'border-box';
 
@@ -6323,10 +6326,10 @@ Skymover Transport is not liable for charges incurred due to operational constra
             await embedAllImagesInElementForPdf(el);
 
             html2pdf().from(el).set({
-                margin: [6, 6, 6, 6],
+                margin: [8, 8, 8, 8],
                 filename: `${tpl.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, windowWidth: targetWidthNum },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: orientationMode },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).save();
@@ -8414,7 +8417,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
         }
 
 		// ==========================================
-        // BUG FIX #2: FULL UNCROPPED PDF EXPORT FOR VISUAL EXTRACTION REPORT
+        // BUG FIX #2: FULL CENTERED, UNCROPPED PDF EXPORT FOR VISUAL EXTRACTION REPORT
         // ==========================================
         async function exportVisualExtractionPDF() {
             const filterMode = currentExtractionFilter || 'ALL';
@@ -8424,12 +8427,11 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 exportBtn.textContent = 'Generating Full PDF...';
             }
 
-            // Keep wrapper detached (no off-screen fixed positioning) so html2pdf mounts it cleanly at (0,0)
             const wrapper = document.createElement('div');
             wrapper.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-4';
-            wrapper.style.width = '1040px';
-            wrapper.style.maxWidth = '1040px';
-            wrapper.style.padding = '16px';
+            wrapper.style.width = '1060px';
+            wrapper.style.maxWidth = '1060px';
+            wrapper.style.padding = '12px';
             wrapper.style.margin = '0';
             wrapper.style.boxSizing = 'border-box';
             wrapper.innerHTML = `
@@ -8449,7 +8451,6 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 </div>
             `;
 
-            // Ensure tables fit comfortably within 1040px with no horizontal clipping
             wrapper.querySelectorAll('.overflow-x-auto').forEach(el => {
                 el.classList.remove('overflow-x-auto');
                 el.style.overflow = 'visible';
@@ -8469,7 +8470,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 await embedAllImagesInElementForPdf(wrapper);
 
                 await html2pdf().from(wrapper).set({
-                    margin: [6, 6, 6, 6],
+                    margin: [8, 8, 8, 8],
                     filename: 'Skymover_Visual_Extraction_' + filterMode + '_' + new Date().toISOString().slice(0, 10) + '.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: {
@@ -8478,8 +8479,7 @@ Skymover Transport is not liable for charges incurred due to operational constra
                         allowTaint: true,
                         scrollX: 0,
                         scrollY: 0,
-                        x: 0,
-                        y: 0
+                        windowWidth: 1060
                     },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
                     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -9355,9 +9355,9 @@ Skymover Transport is not liable for charges incurred due to operational constra
 
             const element = document.createElement('div');
             element.className = 'pdf-export-wrapper bg-white text-slate-900 font-sans space-y-5';
-            element.style.width = '730px';
-            element.style.maxWidth = '730px';
-            element.style.padding = '16px';
+            element.style.width = '750px';
+            element.style.maxWidth = '750px';
+            element.style.padding = '12px';
             element.style.margin = '0';
             element.style.boxSizing = 'border-box';
 
@@ -9403,10 +9403,10 @@ Skymover Transport is not liable for charges incurred due to operational constra
             });
 
             html2pdf().from(element).set({
-                margin: [6, 6, 6, 6],
+                margin: [8, 8, 8, 8],
                 filename: `Skymover_Monthly_Statement_${selectedMonth}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, x: 0, y: 0 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, windowWidth: 750 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).save();
