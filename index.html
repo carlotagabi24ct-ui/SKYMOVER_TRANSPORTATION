@@ -998,7 +998,6 @@ Skymover Transport is not liable for charges incurred due to operational constra
                 <div class="flex gap-2">
                     <input type="text" id="clientQrNotifyEmailInput" placeholder="ops1@skymover.com, ops2@skymover.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
                     <button type="button" id="saveClientQrEmailBtn" onclick="saveClientQrNotifyEmail()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shrink-0 transition">Save Email</button>
-					<button type="button" onclick="testClientQrEmailNotification()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-2 rounded-lg font-bold shrink-0 transition">Test</button>
                 </div>
                 <div id="clientQrEmailSaveStatus" class="text-[11px] font-semibold hidden"></div>
             </div>
@@ -1749,27 +1748,6 @@ Skymover Transport is not liable for charges incurred due to operational constra
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Email';
                 }
-            }
-        }
-
-		async function testClientQrEmailNotification() {
-            const emailInput = document.getElementById('clientQrNotifyEmailInput');
-            const target = emailInput ? emailInput.value.trim() : getAssignedNotificationEmail();
-            const res = await dispatchReliableYardEmail(
-                target,
-                '[Skymover Yard] Test Email Notification',
-                {
-                    _subject: '[Skymover Yard] Test Email Notification',
-                    _template: 'table',
-                    _captcha: 'false',
-                    Message: 'If you received this email, automated Gate-In & Gate-Out notifications are working!',
-                    Sent_At: new Date().toLocaleString()
-                }
-            );
-            if (res.sent) {
-                alert(`✅ Test email sent via ${res.provider} to:\n${res.recipientEmail}\n\n(If this is your first time using FormSubmit, check Inbox/Spam for the one-time "Activate Form" email.)`);
-            } else {
-                alert(`❌ Test email failed (${res.provider}):\n${res.errorDetail}`);
             }
         }
 		
