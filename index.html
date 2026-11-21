@@ -1766,16 +1766,19 @@ Skymover Transport is not liable for charges incurred due to operational constra
             const allRecipientsLabel = recipients.join(', ');
             let lastError = '';
 
-			// Provider 1: Google Apps Script Gmail Relay (Native Gmail Sender, Multi-Recipient)
+			// Provider 1: Google Apps Script Gmail Relay (Verified Response)	
             if (GAS_EMAIL_WEBHOOK_URL && GAS_EMAIL_WEBHOOK_URL.startsWith('https://script.google.com/')) {
                 try {
-                    await fetch(GAS_EMAIL_WEBHOOK_URL, {
+                    const gasRes = await fetch(GAS_EMAIL_WEBHOOK_URL, {
                         method: "POST",
-                        mode: "no-cors",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify({ to: recipients, subject, data: payload })
                     });
-                    return { sent: true, recipientEmail: allRecipientsLabel, provider: 'google_apps_script' };
+                    const gasJson = await gasRes.json();
+                    if (gasJson && gasJson.success) {
+                        return { sent: true, recipientEmail: allRecipientsLabel, provider: 'google_apps_script' };
+                    }
+                    lastError = (gasJson && gasJson.error) ? gasJson.error : 'Apps Script returned failure';
                 } catch (gasErr) {
                     lastError = gasErr.message || String(gasErr);
                     console.warn("Google Apps Script email relay fallback triggered:", lastError);
